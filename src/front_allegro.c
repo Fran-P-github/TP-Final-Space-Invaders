@@ -46,8 +46,8 @@ static void draw_player_shot();
 static void draw_alien_shot();
 static void init_error(bool state, const char* name);
 
-
-//static void kill_all();
+static void front_loop();
+static void kill_all();
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -68,6 +68,9 @@ static double* aliens_move_interval;
 static shot_t* player_shot;
 static shot_t* alien_shot;
 
+static void front_init();
+static void front_update();
+
 /*******************************************************************************
  *******************************************************************************
                         GLOBAL FUNCTION DEFINITIONS
@@ -76,7 +79,7 @@ static shot_t* alien_shot;
 
 void front_run(){
     front_init();
-    //front_loop();
+    front_loop();
 }
 
 /*******************************************************************************
@@ -84,11 +87,13 @@ void front_run(){
                         LOCAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
-/*
+
 //Complete...
 static void kill_all(){
-
-}*/
+    al_destroy_display(disp);
+    al_destroy_timer (timer);
+    al_destroy_event_queue(queue);
+}
 
 static void init_error(bool state, const char* name){
     if(!state){
@@ -98,18 +103,22 @@ static void init_error(bool state, const char* name){
 }
 
 
-/*
+
 void front_loop(){
-    char state = MENU;
+    char state = GAME;
     while (state){
         switch (state){
             case MENU:
-            load_menu();
+            menu_load();
+            break;
+            case GAME:
+            front_update();
+            state = CLOSED;
             break;
         }
     }
-    killall();
-}*/
+    kill_all();
+}
 
 /*static */void front_init(){
     player = get_player();

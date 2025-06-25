@@ -56,10 +56,10 @@
 int main(){
     player_init();
     aliens_init();
-    front_init(); //Now static
-    //front_run();
+    //front_init(); //Now static
+    front_run();
 
-    front_update();   //Now static
+    //front_update();   //Now static
 
     return 0;
 }
