@@ -12,6 +12,8 @@
 
 static player_t player;
 
+static shield_t shields[SHIELDS_CANT];
+
 static alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
 static double aliens_move_interval = 0.01; // Seconds
 
@@ -19,11 +21,47 @@ static double aliens_move_interval = 0.01; // Seconds
 static shot_t player_shot;
 static shot_t alien_shot;
 
+shield_t (*get_shields(void)) [SHIELDS_CANT]{ return &shields; }
 player_t* get_player(){ return &player; }
 alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS]{ return &aliens; }
 double* get_aliens_move_interval(){ return &aliens_move_interval; }
 shot_t* get_player_shot(){ return &player_shot; }
 shot_t* get_alien_shot(){ return &alien_shot; }
+
+static void shield_init(unsigned k, int x, int y);
+static void player_shot_update();
+static void alien_shot_update();
+static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2);
+
+static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2){
+    if(ax1 > bx2) return false;
+    if(ax2 < bx1) return false;
+    if(ay1 > by2) return false;
+    if(ay2 < by1) return false;
+
+    return true;
+}
+
+void shields_init(){
+    unsigned i;
+    for(i=0; i<SHIELDS_CANT; ++i){
+        int x = (i+1) * WORLD_WIDTH/(SHIELDS_CANT+1) - SHIELD_W*SHIELD_BLOCK_W/2;
+        int y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H;
+        shield_init(i, x, y);
+    }
+}
+
+static void shield_init(unsigned k, int x, int y){
+    char form[SHIELD_H][SHIELD_W] = SHIELD_FORM;
+    unsigned i, j;
+    for(i=0; i<SHIELD_H; ++i){
+        for(j=0; j<SHIELD_W; ++j){
+            shields[k][i][j].x = x + j * SHIELD_BLOCK_W;
+            shields[k][i][j].y = y + i * SHIELD_BLOCK_H;
+            shields[k][i][j].lives = (form[i][j] == '*') ? SHIELD_BLOCK_LIVES : 0;
+        }
+    }
+}
 
 #define INITIAL_PLAYER_X_COORDINATE ( (WORLD_WIDTH - PLAYER_W) / 2 )
 void player_init(){
@@ -31,6 +69,7 @@ void player_init(){
     player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
     player.lives = PLAYER_INITIAL_LIVES;
     player_shot.is_used = false;
+    player.score = 0;
 }
 
 #define FIRST_ALIEN_X_COORDINATE ( (WORLD_WIDTH - ALL_ALIENS_WIDTH) / 2 )
@@ -43,6 +82,7 @@ void aliens_init(){
             aliens[i][j].x = x;
             aliens[i][j].y = y;
             aliens[i][j].is_alive = true;
+            aliens[i][j].points = 2;
 
             x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
         }
@@ -95,6 +135,9 @@ static unsigned aliens_alive_in_column(unsigned c){
     }
     return 0;
 }
+
+// Returns: index of the lowest alien alive in the column, or -1 if no aliens are alive
+#define lowest_alien_alive_index(c) ( aliens_alive_in_column(c) - 1 )
 
 typedef enum movement{
     MOVEMENT_RIGHT=0,
@@ -159,11 +202,33 @@ bool alien_try_shoot(unsigned c){
 }
 
 void shots_update(){
+    player_shot_update();
+    alien_shot_update();
+}
+
+static void player_shot_update(){
     if(player_shot.is_used){
         player_shot.y -= SHOT_DY;
+        unsigned i, j;
+        for(i=0; i<ALIENS_ROWS && player_shot.is_used; ++i){
+            for(j=0; j<ALIENS_COLUMNS; ++j){
+                if(aliens[i][j].is_alive && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W, player_shot.y+SHOT_H, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x+ALIENS_W, aliens[i][j].y+ALIENS_H)){
+                    player_shot.is_used = false;
+                    aliens[i][j].is_alive = false;
+                    player.score += aliens[i][j].points;
+                    break;
+                }
+            }
+        }
     }
+}
 
+static void alien_shot_update(){
     if(alien_shot.is_used){
         alien_shot.y += SHOT_DY;
+        if(collide(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W, alien_shot.y+SHOT_H, player.x, player.y, player.x+PLAYER_W, player.y+PLAYER_H)){
+            alien_shot.is_used = false;
+            player.lives--;
+        }
     }
 }

@@ -38,6 +38,19 @@
 #define SHOT_W 4
 #define SHOT_H 14
 
+#define SHIELDS_CANT 5
+#define SHIELD_BLOCK_LIVES 2
+#define SHIELD_BLOCK_W 12
+#define SHIELD_BLOCK_H 12
+#define SHIELD_W 7
+#define SHIELD_H 4
+#define SHIELD_FORM { \
+{' ', '*', '*', '*', '*', '*', ' '}, \
+{' ', '*', '*', '*', '*', '*', ' '}, \
+{'*', '*', '*', '*', '*', '*', '*'}, \
+{'*', '*', ' ', ' ', ' ', '*', '*'}  }
+#define SHIELD_TO_PLAYER_MARGIN 14
+
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/

@@ -10,12 +10,20 @@
 typedef struct{
     int x, y;
     bool is_alive;
+    int points; // Point given to player when killed
 } alien_t;
 
 typedef struct{
     int x, y;
     int lives;
+    int score;
 } player_t;
+
+struct shield{
+    int x, y;
+    int lives; // Shots that a block of the shield can resist
+};
+typedef struct shield shield_t[SHIELD_H][SHIELD_W];
 
 typedef struct{
     int x, y;
@@ -28,6 +36,7 @@ alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS];
 double* get_aliens_move_interval();
 shot_t* get_player_shot();
 shot_t* get_alien_shot();
+shield_t (*get_shields(void)) [SHIELDS_CANT];
 
 void aliens_init();
 void aliens_update_position();
@@ -39,5 +48,7 @@ void player_move_left();
 void shots_update();
 bool player_try_shoot();
 bool alien_try_shoot(unsigned column);
+
+void shields_init();
 
 #endif // _BACK_H_
