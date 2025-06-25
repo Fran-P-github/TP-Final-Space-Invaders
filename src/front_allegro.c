@@ -30,8 +30,6 @@
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
-
-
  
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
@@ -93,7 +91,12 @@ void front_run(){
 
 
 void front_loop(){
-    char state;
+    char state = MENU;
+    while (state){
+        switch (state){
+            
+        }
+    }
 }
 
 void front_init(){
