@@ -1,3 +1,18 @@
+/***************************************************************************/ /**
+     TP-FINAL-SPACE-INVADERS
+     front_allegro.c
+     25/6/25
+
+     Description:
+
+
+     
+  ******************************************************************************/
+
+/*******************************************************************************
+ * INCLUDE HEADER FILES
+ ******************************************************************************/
+
 #include<stdio.h>
 #include<allegro5/allegro5.h>
 #include<allegro5/allegro_primitives.h>
@@ -6,17 +21,43 @@
 #include"general_defines.h"
 #include"back.h"
 
+/*******************************************************************************
+ * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
+ ******************************************************************************/
+
 #define MSJ_ERR_INIT "Problema al inicializar: "
 
-static ALLEGRO_TIMER* timer;
-static ALLEGRO_DISPLAY* disp;
-static ALLEGRO_EVENT_QUEUE* queue;
+/*******************************************************************************
+ * ENUMERATIONS, STRUCTURES AND TYPEDEFS
+ ******************************************************************************/
+
+
+ 
+/*******************************************************************************
+ * VARIABLES WITH GLOBAL SCOPE
+ ******************************************************************************/
+
+/*******************************************************************************
+ * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
+ ******************************************************************************/
 
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
 static void draw_player_shot();
 static void draw_alien_shot();
 static void init_error(bool state, const char* name);
+
+/*******************************************************************************
+ * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
+ ******************************************************************************/
+
+/*******************************************************************************
+ * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
+ ******************************************************************************/
+
+static ALLEGRO_TIMER* timer;
+static ALLEGRO_DISPLAY* disp;
+static ALLEGRO_EVENT_QUEUE* queue;
 
 // Back variables
 static player_t* player;
@@ -25,11 +66,34 @@ static double* aliens_move_interval;
 static shot_t* player_shot;
 static shot_t* alien_shot;
 
-static void init_error(bool state, const char* name){
+/*******************************************************************************
+ *******************************************************************************
+                        GLOBAL FUNCTION DEFINITIONS
+ *******************************************************************************
+ ******************************************************************************/
+
+void front_run(){
+    front_init();
+    front_loop();
+}
+
+/*******************************************************************************
+ *******************************************************************************
+                        LOCAL FUNCTION DEFINITIONS
+ *******************************************************************************
+ ******************************************************************************/
+
+ static void init_error(bool state, const char* name){
     if(!state){
         fprintf(stderr, "%s%s\n", MSJ_ERR_INIT, name);
         exit(-1);
     }
+}
+
+
+
+void front_loop(){
+    char state;
 }
 
 void front_init(){
@@ -55,6 +119,8 @@ void front_init(){
     al_register_event_source(queue, al_get_display_event_source(disp));
     al_register_event_source(queue, al_get_timer_event_source(timer));
 }
+
+
 
 // TODO acomodar esto para que no se quede adentro de la funcion. mejor que se llame muchas veces desde el main
 void front_update(){

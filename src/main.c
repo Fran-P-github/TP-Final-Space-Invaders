@@ -11,6 +11,7 @@ int main(){
     player_init();
     aliens_init();
     front_init();
+    front_run();
 
     front_update();
 
