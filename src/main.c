@@ -54,6 +54,7 @@
  ******************************************************************************/
 
 int main(){
+    shields_init();
     player_init();
     aliens_init();
     //front_init(); //Now static

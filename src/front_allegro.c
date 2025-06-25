@@ -112,8 +112,6 @@ static void init_error(bool state, const char* name){
     }
 }
 
-
-
 void front_loop(){
     char state = GAME;
     while (state){
@@ -149,7 +147,7 @@ static void front_init(){
     
 
     font = al_create_builtin_font();
-  // init_error(timer, "Font");
+    init_error(font, "Font");
 
     timer = al_create_timer(1.0 / 30.0); // 30 FPS
     init_error(timer, "Timer");
