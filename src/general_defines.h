@@ -1,8 +1,13 @@
 #ifndef _GENERAL_H_
 #define _GENERAL_H_
 
-#define WORLD_WIDTH 500
-#define WORLD_HEIGHT 500
+#define WORLD_WIDTH 1600
+#define WORLD_HEIGHT 900
+
+#define PLAYER_INITIAL_LIVES 3
+#define PLAYER_W 10
+#define PLAYER_H 20
+#define PLAYER_MARGIN 10 // Que tan separado debe estar de margenes laterales e inferior
 
 #define ALIENS_ROWS 6
 #define ALIENS_COLUMNS 4

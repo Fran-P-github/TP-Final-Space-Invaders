@@ -3,11 +3,22 @@
 
 #include"back.h"
 
+player_t player;
+
 alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
 double aliens_move_interval = 0.01; // Segundos
 
 #define ALIENS_DX ( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
 #define ALIENS_DY ( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
+
+#define PLAYER_DX ( PLAYER_W / 2 )
+
+#define INITIAL_PLAYER_X_COORDINATE ( (WORLD_WIDTH - PLAYER_W) / 2 )
+void player_init(){
+    player.x = INITIAL_PLAYER_X_COORDINATE;
+    player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
+    player.lives = PLAYER_INITIAL_LIVES;
+}
 
 #define FIRST_ALIEN_X_COORDINATE ( (WORLD_WIDTH - ALL_ALIENS_WIDTH) / 2 )
 void aliens_init(){
@@ -25,6 +36,20 @@ void aliens_init(){
         y += ALIENS_H + ALIENS_VERTICAL_SEPARATION;
         x = FIRST_ALIEN_X_COORDINATE;
     }
+}
+
+static void player_move(int x, int y){
+    player.x += x;
+    player.y += y;
+}
+
+void player_move_right(){
+    if(player.x + PLAYER_DX + PLAYER_W <= WORLD_WIDTH - PLAYER_MARGIN)
+        player_move(PLAYER_DX, 0);
+}
+void player_move_left(){
+    if(player.x - PLAYER_DX >= PLAYER_MARGIN)
+    player_move(-PLAYER_DX, 0);
 }
 
 static void aliens_move(int x, int y){

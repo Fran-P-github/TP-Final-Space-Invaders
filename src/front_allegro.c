@@ -13,6 +13,7 @@ static ALLEGRO_DISPLAY* disp;
 static ALLEGRO_EVENT_QUEUE* queue;
 
 static void draw_alien(unsigned i, unsigned j);
+static void draw_player();
 static void init_error(bool state, const char* name);
 
 static void init_error(bool state, const char* name){
@@ -67,6 +68,7 @@ void front_update(){
             al_clear_to_color(al_map_rgb(0, 0, 0));
             unsigned i, j;
 
+            draw_player();
             for(i=0; i<ALIENS_ROWS; ++i){
                 for(j=0; j<ALIENS_COLUMNS; ++j){
                     if(aliens[i][j].is_alive){
@@ -82,4 +84,8 @@ void front_update(){
 
 static void draw_alien(unsigned i, unsigned j){
     al_draw_filled_rectangle(aliens[i][j].x, aliens[i][j].y, aliens[i][j].x+ALIENS_W, aliens[i][j].y+ALIENS_H, al_map_rgb(255, 0, 0));
+}
+
+static void draw_player(){
+    al_draw_filled_rectangle(player.x, player.y, player.x+PLAYER_W, player.y+PLAYER_H, al_map_rgb(0, 255, 0));
 }

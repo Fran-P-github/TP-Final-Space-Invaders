@@ -8,6 +8,7 @@
 #include <allegro5/allegro_primitives.h>
 
 int main(){
+    player_init();
     aliens_init();
     front_init();
 
