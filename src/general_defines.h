@@ -16,4 +16,7 @@
 #define ALIENS_W 32
 #define ALIENS_H 32
 
+#define SHOT_W 4
+#define SHOT_H 14
+
 #endif // _GENERAL_H_

@@ -14,6 +14,8 @@ static ALLEGRO_EVENT_QUEUE* queue;
 
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
+static void draw_player_shot();
+static void draw_alien_shot();
 static void init_error(bool state, const char* name);
 
 static void init_error(bool state, const char* name){
@@ -53,7 +55,8 @@ void front_update(){
 
         switch(event.type){
             case ALLEGRO_EVENT_TIMER:
-                aliens_update_position();
+                //aliens_update_position();
+                shots_update();
                 redraw = true;
                 ++frame;
                 break;
@@ -67,6 +70,11 @@ void front_update(){
             redraw = false;
             al_clear_to_color(al_map_rgb(0, 0, 0));
             unsigned i, j;
+
+            player_try_shoot();
+            draw_player_shot();
+            alien_try_shoot(3);
+            draw_alien_shot();
 
             draw_player();
             for(i=0; i<ALIENS_ROWS; ++i){
@@ -88,4 +96,14 @@ static void draw_alien(unsigned i, unsigned j){
 
 static void draw_player(){
     al_draw_filled_rectangle(player.x, player.y, player.x+PLAYER_W, player.y+PLAYER_H, al_map_rgb(0, 255, 0));
+}
+
+static void draw_alien_shot(){
+    if(alien_shot.is_used)
+        al_draw_filled_rectangle(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W, alien_shot.y+SHOT_H, al_map_rgb(255, 255, 255));
+}
+
+static void draw_player_shot(){
+    if(player_shot.is_used)
+        al_draw_filled_rectangle(player_shot.x, player_shot.y, player_shot.x+SHOT_W, player_shot.y+SHOT_H, al_map_rgb(255, 255, 255));
 }

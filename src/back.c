@@ -3,21 +3,28 @@
 
 #include"back.h"
 
-player_t player;
-
-alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
-double aliens_move_interval = 0.01; // Segundos
-
 #define ALIENS_DX ( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
 #define ALIENS_DY ( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
 
 #define PLAYER_DX ( PLAYER_W / 2 )
+
+#define SHOT_DY 10
+
+player_t player;
+
+alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
+double aliens_move_interval = 0.01; // Seconds
+
+// Player and Aliens can have only one active shot at a time
+shot_t player_shot;
+shot_t alien_shot;
 
 #define INITIAL_PLAYER_X_COORDINATE ( (WORLD_WIDTH - PLAYER_W) / 2 )
 void player_init(){
     player.x = INITIAL_PLAYER_X_COORDINATE;
     player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
     player.lives = PLAYER_INITIAL_LIVES;
+    player_shot.is_used = false;
 }
 
 #define FIRST_ALIEN_X_COORDINATE ( (WORLD_WIDTH - ALL_ALIENS_WIDTH) / 2 )
@@ -36,6 +43,7 @@ void aliens_init(){
         y += ALIENS_H + ALIENS_VERTICAL_SEPARATION;
         x = FIRST_ALIEN_X_COORDINATE;
     }
+    alien_shot.is_used = false;
 }
 
 static void player_move(int x, int y){
@@ -72,13 +80,14 @@ static void aliens_move_down(){
     aliens_move(0, ALIENS_DY);
 }
 
-static bool alien_alive_in_column(unsigned c){
-    if(c >= ALIENS_COLUMNS) return false;
+// Returns: how many aliens are alive in column c
+static unsigned aliens_alive_in_column(unsigned c){
+    if(c >= ALIENS_COLUMNS) return 0;
     unsigned i;
-    for(i=0; i<ALIENS_ROWS; ++i){
-        if(aliens[i][c].is_alive) return true;
+    for(i=ALIENS_ROWS-1; i<ALIENS_ROWS; --i){
+        if(aliens[i][c].is_alive) return i+1;
     }
-    return false;
+    return 0;
 }
 
 typedef enum movement{
@@ -98,7 +107,7 @@ void aliens_update_position(){
             case MOVEMENT_RIGHT:
                 aliens_move_right();
                 for(i=ALIENS_COLUMNS-1; i<ALIENS_COLUMNS; --i){ // Comparación así por i unsigned
-                    if(alien_alive_in_column(i)
+                    if(aliens_alive_in_column(i)
                     && (aliens[0][i].x+ALIENS_W > WORLD_WIDTH-1)){
                         aliens_move_left(); // Nos habíamos pasado
                         aliens_move_down();
@@ -110,7 +119,7 @@ void aliens_update_position(){
             case MOVEMENT_LEFT:
                 aliens_move_left();
                 for(i=0; i<ALIENS_COLUMNS; ++i){
-                    if(alien_alive_in_column(i)
+                    if(aliens_alive_in_column(i)
                     && (aliens[0][i].x < 0)){
                         aliens_move_right(); // Nos habíamos pasado
                         aliens_move_down();
@@ -120,5 +129,35 @@ void aliens_update_position(){
                 }
                 break;
         }
+    }
+}
+
+bool player_try_shoot(){
+    if(player_shot.is_used) return false;
+
+    player_shot.is_used = true;
+    player_shot.x = player.x + PLAYER_W/2 - SHOT_W/2;
+    player_shot.y = player.y - SHOT_H;
+    return true;
+}
+
+// c = columna de aliens que quiere disparar
+bool alien_try_shoot(unsigned c){
+    unsigned alive_aliens = aliens_alive_in_column(c);
+    if(alien_shot.is_used || !alive_aliens) return false;
+
+    alien_shot.is_used = true;
+    alien_shot.x = aliens[0][c].x + ALIENS_W/2 - SHOT_W/2;
+    alien_shot.y = aliens[alive_aliens-1][c].y + ALIENS_H;
+    return true;
+}
+
+void shots_update(){
+    if(player_shot.is_used){
+        player_shot.y -= SHOT_DY;
+    }
+
+    if(alien_shot.is_used){
+        alien_shot.y += SHOT_DY;
     }
 }
