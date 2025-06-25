@@ -13,13 +13,14 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include<stdio.h>
-#include<allegro5/allegro5.h>
-#include<allegro5/allegro_primitives.h>
+#include <stdio.h>
+#include <allegro5/allegro5.h>
+#include <allegro5/allegro_primitives.h>
 
-#include"front_allegro.h"
-#include"general_defines.h"
-#include"back.h"
+#include "front_allegro.h"
+#include "general_defines.h"
+#include "back.h"
+#include "menu_allegro.h"
 
 /*******************************************************************************
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
