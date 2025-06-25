@@ -136,6 +136,7 @@ static void front_init(){
     aliens_move_interval = get_aliens_move_interval();
     player_shot = get_player_shot();
     alien_shot = get_alien_shot();
+    shields = get_shields();
 
     init_error(al_init(), "Allegro");
 
@@ -145,8 +146,10 @@ static void front_init(){
 
     al_set_new_display_flags (ALLEGRO_RESIZABLE);
 
+    
+
     font = al_create_builtin_font();
-  //  init_error(timer, "Font");
+  // init_error(timer, "Font");
 
     timer = al_create_timer(1.0 / 30.0); // 30 FPS
     init_error(timer, "Timer");
@@ -201,7 +204,9 @@ static void game_update(){
             draw_player_shot();
             alien_try_shoot(3);
             draw_alien_shot();
-
+            for (int x = 0; x < SHIELDS_CANT; x++){
+                draw_shield(x);
+            }
             draw_player();
             for(i=0; i<ALIENS_ROWS; ++i){
                 for(j=0; j<ALIENS_COLUMNS; ++j){
