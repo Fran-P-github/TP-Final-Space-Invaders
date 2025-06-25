@@ -16,9 +16,7 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-void front_setup();
 
-void front_update();
 
 void front_run();
 

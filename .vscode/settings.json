@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "stdio.h": "c",
-        "allegro_primitives.h": "c"
+        "allegro_primitives.h": "c",
+        "allegro5.h": "c"
     }
 }

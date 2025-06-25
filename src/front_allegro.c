@@ -46,6 +46,10 @@ static void draw_player_shot();
 static void draw_alien_shot();
 static void init_error(bool state, const char* name);
 
+static void front_init();
+static void front_update();
+static void kill_all();
+
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -82,7 +86,12 @@ void front_run(){
  *******************************************************************************
  ******************************************************************************/
 
- static void init_error(bool state, const char* name){
+//Complete...
+static void kill_all(){
+
+}
+
+static void init_error(bool state, const char* name){
     if(!state){
         fprintf(stderr, "%s%s\n", MSJ_ERR_INIT, name);
         exit(-1);
@@ -95,12 +104,16 @@ void front_loop(){
     char state = MENU;
     while (state){
         switch (state){
+            case MENU:
+            load_menu();
+            break;
             
         }
     }
+    killall();
 }
 
-void front_init(){
+static void front_init(){
     player = get_player();
     aliens = get_aliens();
     aliens_move_interval = get_aliens_move_interval();
@@ -127,7 +140,7 @@ void front_init(){
 
 
 // TODO acomodar esto para que no se quede adentro de la funcion. mejor que se llame muchas veces desde el main
-void front_update(){
+static void front_update(){
     ALLEGRO_EVENT event;
     bool redraw = false;
     bool done = false;
