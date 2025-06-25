@@ -20,8 +20,8 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
-#define WORLD_WIDTH 
-#define WORLD_HEIGHT 900
+#define WORLD_WIDTH 960
+#define WORLD_HEIGHT 540
 
 #define PLAYER_INITIAL_LIVES 3
 #define PLAYER_W 10
