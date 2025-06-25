@@ -10,14 +10,20 @@
 
 #define SHOT_DY 10
 
-player_t player;
+static player_t player;
 
-alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
-double aliens_move_interval = 0.01; // Seconds
+static alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
+static double aliens_move_interval = 0.01; // Seconds
 
 // Player and Aliens can have only one active shot at a time
-shot_t player_shot;
-shot_t alien_shot;
+static shot_t player_shot;
+static shot_t alien_shot;
+
+player_t* get_player(){ return &player; }
+alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS]{ return &aliens; }
+double* get_aliens_move_interval(){ return &aliens_move_interval; }
+shot_t* get_player_shot(){ return &player_shot; }
+shot_t* get_alien_shot(){ return &alien_shot; }
 
 #define INITIAL_PLAYER_X_COORDINATE ( (WORLD_WIDTH - PLAYER_W) / 2 )
 void player_init(){

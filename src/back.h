@@ -23,13 +23,11 @@ typedef struct{
     int is_used;
 } shot_t;
 
-extern alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
-extern double aliens_move_interval;
-
-extern player_t player;
-
-extern shot_t player_shot;
-extern shot_t alien_shot;
+player_t* get_player();
+alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS];
+double* get_aliens_move_interval();
+shot_t* get_player_shot();
+shot_t* get_alien_shot();
 
 void aliens_init();
 void aliens_update_position();

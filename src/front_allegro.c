@@ -18,6 +18,13 @@ static void draw_player_shot();
 static void draw_alien_shot();
 static void init_error(bool state, const char* name);
 
+// Back variables
+static player_t* player;
+static alien_t (*aliens) [ALIENS_ROWS][ALIENS_COLUMNS];
+static double* aliens_move_interval;
+static shot_t* player_shot;
+static shot_t* alien_shot;
+
 static void init_error(bool state, const char* name){
     if(!state){
         fprintf(stderr, "%s%s\n", MSJ_ERR_INIT, name);
@@ -26,6 +33,12 @@ static void init_error(bool state, const char* name){
 }
 
 void front_init(){
+    player = get_player();
+    aliens = get_aliens();
+    aliens_move_interval = get_aliens_move_interval();
+    player_shot = get_player_shot();
+    alien_shot = get_alien_shot();
+
     init_error(al_init(), "Allegro");
 
     init_error(al_init_primitives_addon(), "Allegro Primitives");
@@ -55,7 +68,7 @@ void front_update(){
 
         switch(event.type){
             case ALLEGRO_EVENT_TIMER:
-                //aliens_update_position();
+                aliens_update_position();
                 shots_update();
                 redraw = true;
                 ++frame;
@@ -79,7 +92,7 @@ void front_update(){
             draw_player();
             for(i=0; i<ALIENS_ROWS; ++i){
                 for(j=0; j<ALIENS_COLUMNS; ++j){
-                    if(aliens[i][j].is_alive){
+                    if((*aliens)[i][j].is_alive){
                         draw_alien(i, j);
                     }
                 }
@@ -91,19 +104,19 @@ void front_update(){
 }
 
 static void draw_alien(unsigned i, unsigned j){
-    al_draw_filled_rectangle(aliens[i][j].x, aliens[i][j].y, aliens[i][j].x+ALIENS_W, aliens[i][j].y+ALIENS_H, al_map_rgb(255, 0, 0));
+    al_draw_filled_rectangle((*aliens)[i][j].x, (*aliens)[i][j].y, (*aliens)[i][j].x+ALIENS_W, (*aliens)[i][j].y+ALIENS_H, al_map_rgb(255, 0, 0));
 }
 
 static void draw_player(){
-    al_draw_filled_rectangle(player.x, player.y, player.x+PLAYER_W, player.y+PLAYER_H, al_map_rgb(0, 255, 0));
+    al_draw_filled_rectangle(player->x, player->y, player->x+PLAYER_W, player->y+PLAYER_H, al_map_rgb(0, 255, 0));
 }
 
 static void draw_alien_shot(){
-    if(alien_shot.is_used)
-        al_draw_filled_rectangle(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W, alien_shot.y+SHOT_H, al_map_rgb(255, 255, 255));
+    if(alien_shot->is_used)
+        al_draw_filled_rectangle(alien_shot->x, alien_shot->y, alien_shot->x+SHOT_W, alien_shot->y+SHOT_H, al_map_rgb(255, 255, 255));
 }
 
 static void draw_player_shot(){
-    if(player_shot.is_used)
-        al_draw_filled_rectangle(player_shot.x, player_shot.y, player_shot.x+SHOT_W, player_shot.y+SHOT_H, al_map_rgb(255, 255, 255));
+    if(player_shot->is_used)
+        al_draw_filled_rectangle(player_shot->x, player_shot->y, player_shot->x+SHOT_W, player_shot->y+SHOT_H, al_map_rgb(255, 255, 255));
 }
