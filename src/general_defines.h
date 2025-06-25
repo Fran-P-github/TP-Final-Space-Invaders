@@ -1,0 +1,14 @@
+#ifndef _GENERAL_H_
+#define _GENERAL_H_
+
+#define WORLD_WIDTH 500
+#define WORLD_HEIGHT 500
+
+#define ALIENS_ROWS 6
+#define ALIENS_COLUMNS 4
+#define ALIENS_HORIZONTAL_SEPARATION 6
+#define ALIENS_VERTICAL_SEPARATION 12
+#define ALIENS_W 32
+#define ALIENS_H 32
+
+#endif // _GENERAL_H_
