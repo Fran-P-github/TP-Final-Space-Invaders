@@ -58,6 +58,7 @@ int main(){
     aliens_init();
     //front_init(); //Now static
     front_run();
+    shields_init();
 
     //front_update();   //Now static
 
