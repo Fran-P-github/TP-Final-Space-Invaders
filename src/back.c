@@ -28,7 +28,7 @@ double* get_aliens_move_interval(){ return &aliens_move_interval; }
 shot_t* get_player_shot(){ return &player_shot; }
 shot_t* get_alien_shot(){ return &alien_shot; }
 
-static void shield_init(unsigned k, int x, int y);
+static void shield_init(unsigned shield, int x, int y);
 static void player_shot_update();
 static void alien_shot_update();
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2);
@@ -42,11 +42,12 @@ static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx
     return true;
 }
 
+#define INITIAL_SHIELD_Y_COORDINATE WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H
 void shields_init(){
     unsigned i;
     for(i=0; i<SHIELDS_CANT; ++i){
         int x = (i+1) * WORLD_WIDTH/(SHIELDS_CANT+1) - SHIELD_W*SHIELD_BLOCK_W/2;
-        int y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H;
+        int y = INITIAL_SHIELD_Y_COORDINATE;
         shield_init(i, x, y);
     }
 }
@@ -210,6 +211,8 @@ static void player_shot_update(){
     if(player_shot.is_used){
         player_shot.y -= SHOT_DY;
         unsigned i, j;
+
+        // Alien collition
         for(i=0; i<ALIENS_ROWS && player_shot.is_used; ++i){
             for(j=0; j<ALIENS_COLUMNS; ++j){
                 if(aliens[i][j].is_alive && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W, player_shot.y+SHOT_H, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x+ALIENS_W, aliens[i][j].y+ALIENS_H)){
@@ -220,15 +223,50 @@ static void player_shot_update(){
                 }
             }
         }
+
+        // Shield collition
+        unsigned k; // shield
+        if(player_shot.y+SHOT_H >= INITIAL_SHIELD_Y_COORDINATE){
+            for(k=0; k<SHIELDS_CANT && player_shot.is_used; ++k){
+                for(j=0; j<SHIELD_W && player_shot.is_used; ++j){
+                    for(i=SHIELD_H-1; i<SHIELD_H; --i){
+                        if(shields[k][i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W, player_shot.y+SHOT_H, shields[k][i][j].x, shields[k][i][j].y, shields[k][i][j].x+SHIELD_BLOCK_W, shields[k][i][j].y+SHIELD_BLOCK_H)){
+                        player_shot.is_used = false;
+                        shields[k][i][j].lives--;
+                        break;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 static void alien_shot_update(){
     if(alien_shot.is_used){
         alien_shot.y += SHOT_DY;
+
+        // Player collition
         if(collide(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W, alien_shot.y+SHOT_H, player.x, player.y, player.x+PLAYER_W, player.y+PLAYER_H)){
             alien_shot.is_used = false;
             player.lives--;
+        }
+
+        // Shield collition
+        unsigned i, j;
+        unsigned k; // shield
+        if(alien_shot.y <= INITIAL_SHIELD_Y_COORDINATE + SHIELD_H*SHIELD_BLOCK_H){
+            for(k=0; k<SHIELDS_CANT && alien_shot.is_used; ++k){
+                for(j=0; j<SHIELD_W && alien_shot.is_used; ++j){
+                    for(i=0; i<SHIELD_H; ++i){
+                        if(shields[k][i][j].lives && collide(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W, alien_shot.y+SHOT_H, shields[k][i][j].x, shields[k][i][j].y, shields[k][i][j].x+SHIELD_BLOCK_W, shields[k][i][j].y+SHIELD_BLOCK_H)){
+                        alien_shot.is_used = false;
+                        shields[k][i][j].lives--;
+                        break;
+                        }
+                    }
+                }
+            }
         }
     }
 }
