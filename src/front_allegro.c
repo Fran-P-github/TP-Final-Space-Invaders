@@ -119,7 +119,7 @@ void front_init(){
     default_font = al_create_builtin_font();
     init_error(default_font, "Font");
 
-    timer = al_create_timer(1.0 / 30.0); // 30 FPS
+    timer = al_create_timer(1.0 / 60.0); // 60 FPS
     init_error(timer, "Timer");
     al_start_timer(timer);
 
@@ -167,7 +167,7 @@ void front_loop(){
         switch (state){
             case MENU:
             menu_allegro(disp, timer, queue, default_font, buffer);
-            state = GAME;
+            state = CLOSED;
             break;
             case GAME:
             game_update();
@@ -191,7 +191,7 @@ static void game_update(){
 
         switch(event.type){
             case ALLEGRO_EVENT_TIMER:
-                aliens_update();
+                aliens_update_position();
                 shots_update();
                 redraw = true;
                 ++frame;
