@@ -17,6 +17,7 @@
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
+#include <allegro5/allegro_video.h>
 
 #include "front_allegro.h"
 #include "general_defines.h"
@@ -63,7 +64,8 @@ static void kill_all();
 static ALLEGRO_TIMER* timer;
 static ALLEGRO_DISPLAY* disp;
 static ALLEGRO_EVENT_QUEUE* queue;
-static ALLEGRO_FONT* font;
+static ALLEGRO_FONT* default_font;
+static ALLEGRO_BITMAP* buffer;
 
 //keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
@@ -86,6 +88,7 @@ static void game_update();
 
 void front_run(){
     front_loop();
+    kill_all();
 }
 
 void front_init(){
@@ -102,12 +105,12 @@ void front_init(){
 
     init_error(al_install_keyboard(), "Keyboard");
 
+    init_error(al_init_video_addon(),"Allegro Videos");
+
     al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_WINDOWED);
 
-
-
-    font = al_create_builtin_font();
-    init_error(font, "Font");
+    default_font = al_create_builtin_font();
+    init_error(default_font, "Font");
 
     timer = al_create_timer(1.0 / 30.0); // 30 FPS
     init_error(timer, "Timer");
@@ -115,6 +118,12 @@ void front_init(){
 
     disp = al_create_display(WORLD_WIDTH, WORLD_HEIGHT);
     init_error(disp, "Display");
+
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_flip_display();
+
+    buffer = al_create_bitmap(WORLD_WIDTH, WORLD_HEIGHT);
+    init_error(buffer, "Buffer");
 
     queue = al_create_event_queue();
     init_error(queue, "Queue");
@@ -135,7 +144,7 @@ static void kill_all(){
     al_destroy_display(disp);
     al_destroy_timer (timer);
     al_destroy_event_queue(queue);
-    al_destroy_font(font);
+    al_destroy_font(default_font);
 }
 
 static void init_error(bool state, const char* name){
@@ -144,13 +153,14 @@ static void init_error(bool state, const char* name){
         exit(-1);
     }
 }
-
+//change state to MENU if testing game segment
 void front_loop(){
-    char state = GAME;
+    char state = MENU;
     while (state){
         switch (state){
             case MENU:
-            menu_load();
+            menu_allegro(disp, timer, queue, default_font, buffer);
+            state = GAME;
             break;
             case GAME:
             game_update();
@@ -158,7 +168,7 @@ void front_loop(){
             break;
         }
     }
-    kill_all();
+    
 }
 
 // TODO acomodar esto para que no se quede adentro de la funcion. mejor que se llame muchas veces desde el main
@@ -166,6 +176,7 @@ static void game_update(){
     ALLEGRO_EVENT event;
     bool redraw = false;
     bool done = false;
+    bool fullscreen = false;
     unsigned long long frame = 0;
 
     while(!done){
@@ -180,8 +191,20 @@ static void game_update(){
                 break;
 
             case ALLEGRO_EVENT_KEY_DOWN:
+            key[event.keyboard.keycode] = 1;
             if (key[ALLEGRO_KEY_ESCAPE])
-            done =1;
+            done = true;
+            if (key[ALLEGRO_KEY_F])
+            fullscreen = !fullscreen;
+            al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
+            break;
+
+            case ALLEGRO_EVENT_KEY_UP:
+            key[event.keyboard.keycode] = 0;
+            break;
+
+            case ALLEGRO_EVENT_DISPLAY_RESIZE:
+            al_acknowledge_resize(disp);
             break;
 
             case ALLEGRO_EVENT_DISPLAY_CLOSE:
@@ -191,8 +214,9 @@ static void game_update(){
         
         if(redraw){
             redraw = false;
+            al_set_target_bitmap(buffer);
             al_clear_to_color(al_map_rgb(0, 0, 0));
-            al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 0, 0, "width: %d height: %d", al_get_display_width (disp), al_get_display_height(disp));
+            al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "width: %d height: %d", al_get_display_width (disp), al_get_display_height(disp));
             unsigned i, j;
             player_try_shoot();
             draw_player_shot();
@@ -209,7 +233,8 @@ static void game_update(){
                     }
                 }
             }
-
+            al_set_target_backbuffer(disp);
+            al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width (disp), al_get_display_height(disp), 0);                           // flags
             al_flip_display();
         }
     }

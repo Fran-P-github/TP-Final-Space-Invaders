@@ -16,6 +16,14 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <allegro5/allegro5.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_video.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
+
 /*******************************************************************************
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
@@ -32,7 +40,7 @@
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-void menu_load();
+void menu_allegro(ALLEGRO_DISPLAY* display, ALLEGRO_TIMER* timer, ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_FONT* dfont, ALLEGRO_BITMAP* buffer);
 
 /*******************************************************************************
  ******************************************************************************/
