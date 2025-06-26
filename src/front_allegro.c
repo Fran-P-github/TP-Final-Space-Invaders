@@ -107,6 +107,13 @@ void front_init(){
 
     init_error(al_init_video_addon(),"Allegro Videos");
 
+    init_error(al_install_audio(), "Allegro Audio");
+
+    init_error(al_init_acodec_addon(), "Allegro Audio Codec");
+
+    al_reserve_samples(1);
+
+
     al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_WINDOWED);
 
     default_font = al_create_builtin_font();
@@ -184,7 +191,7 @@ static void game_update(){
 
         switch(event.type){
             case ALLEGRO_EVENT_TIMER:
-                aliens_update_position();
+                aliens_update();
                 shots_update();
                 redraw = true;
                 ++frame;

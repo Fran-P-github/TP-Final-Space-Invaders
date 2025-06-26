@@ -54,32 +54,39 @@ void menu_allegro(ALLEGRO_DISPLAY* display, ALLEGRO_TIMER* timer, ALLEGRO_EVENT_
   ALLEGRO_MIXER* mixer_player1;
   ALLEGRO_EVENT menu_event;
   char select = INTRO;
+  bool redraw = false;
 
   mixer_player1= al_get_default_mixer();
 
   video_player1 = al_open_video("./assets/Intro_backgroundhigh.ogv");
   if (video_player1 == NULL){
     printf ("Error");
-    exit(1);
+    select = QUIT;
   }
-//al_start_video(video_player1,mixer_player1);
+al_start_video(video_player1,mixer_player1);
 
   while (select != QUIT){
     al_wait_for_event (queue,&menu_event);
-   /* if (menu_event.type == ALLEGRO_EVENT_VIDEO_FRAME_SHOW) {
+
+    switch (menu_event.type){
+      case ALLEGRO_EVENT_TIMER:
+      redraw = true;
+      break;
+    }
+   if (menu_event.type == ALLEGRO_EVENT_VIDEO_FRAME_SHOW) {
         al_set_target_bitmap(buffer);
         al_draw_bitmap(al_get_video_frame(video_player1),0,0,0);
         al_set_target_backbuffer(display);
         al_draw_scaled_bitmap(buffer,0,0,WORLD_WIDTH,WORLD_HEIGHT,0,0,al_get_display_width(display),al_get_display_height(display),0);
         al_flip_display();
     }
-
+/*
     if (al_get_video_position(video_player1) >= al_get_video_length(video_player1)) {
         al_seek_video(video_player1, 0);  //Reset loop
     }*/
 
     if (menu_event.type == ALLEGRO_EVENT_DISPLAY_CLOSE){
-        //al_close_video(video_player1);
+        al_close_video(video_player1);
         select = QUIT;
     }
   }
