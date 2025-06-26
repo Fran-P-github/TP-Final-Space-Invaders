@@ -11,12 +11,30 @@
 #include <SDL2/SDL.h>
 #include "../libs/SDL2/audio.h"
 
+#define JOY_THRESHOLD_SLOW  20
+#define JOY_THRESHOLD_FAST  100
+
+#define SLOW_MOVEMENT_WAIT_TIME 4
+#define FAST_MOVEMENT_WAIT_TIME 0.3
+
+typedef enum{
+    MOVE_RIGHT_SLOW=0,
+    MOVE_RIGHT_FAST,
+    MOVE_LEFT_SLOW,
+    MOVE_LEFT_FAST,
+    NO_MOVE
+} movement_t;
+
 static void draw_rectangle(int x1, int y1, int x2, int y2);
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
 static void draw_player_shot();
 static void draw_alien_shot();
 static void draw_shield(unsigned shield);
+
+static void update_joystick();
+
+static movement_t movement_read(int joystick_x_coordinate);
 
 // Back variables
 static player_t* player;
@@ -34,9 +52,10 @@ void front_init(){
     alien_shot = get_alien_shot();
     shields = get_shields();
 
-    //joy_init(); // Se inicializan el joystick y el display.
+    joy_init();
+
     disp_init();
-    disp_clear(); // Se apaga el display.
+    disp_clear();
     disp_update();
 }
 
@@ -46,14 +65,15 @@ void front_run(){
     unsigned long long frame = 0;
 
     while(!done){
-        static clock_t start = 0;
-        double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
-        const double fps = 6;
-        const double frame_time = 1 / fps;
+        update_joystick();
 
-        if(elapsed >= frame_time){
+        static clock_t frame_start = 0;
+        double frame_elapsed = (double)(clock() - frame_start) / CLOCKS_PER_SEC;
+        const double fps = 6;
+        const double frame_time = 1 / fps; // Seconds
+        if(frame_elapsed >= frame_time){
             ++frame;
-            start = clock();
+            frame_start = clock();
             aliens_update_position();
             shots_update();
             redraw = true;
@@ -67,8 +87,8 @@ void front_run(){
             draw_player_shot();
             alien_try_shoot(1);
             draw_alien_shot();
-            for (int x = 0; x < SHIELDS_CANT; x++){
-                draw_shield(x);
+            for (i=0; i<SHIELDS_CANT; ++i){
+                draw_shield(i);
             }
             draw_player();
             for(i=0; i<ALIENS_ROWS; ++i){
@@ -82,6 +102,65 @@ void front_run(){
             disp_update();
         }
     }
+}
+
+#define same_direction() ( ( (movement == MOVE_LEFT_SLOW  || movement == MOVE_LEFT_FAST ) && \
+                      (prev_movement == MOVE_LEFT_SLOW || prev_movement == MOVE_LEFT_FAST) ) \
+                   || ( (movement == MOVE_RIGHT_SLOW || movement == MOVE_RIGHT_FAST) && \
+                      (prev_movement == MOVE_RIGHT_SLOW || prev_movement == MOVE_RIGHT_FAST) ) )
+// TODO: fix bug where player sometimes moves two places at a time (usually one every four moves)
+static void update_joystick(){
+        joyinfo_t joystick = joy_read();
+        movement_t movement = movement_read(joystick.x);
+        static movement_t prev_movement = NO_MOVE;
+        static clock_t player_time_start = 0;
+        double player_elapsed = (double)(clock() - player_time_start) / CLOCKS_PER_SEC;
+        double player_wait_time =   movement == MOVE_LEFT_FAST || movement == MOVE_RIGHT_FAST ? FAST_MOVEMENT_WAIT_TIME :
+                                    movement == MOVE_LEFT_SLOW || movement == MOVE_RIGHT_SLOW ? SLOW_MOVEMENT_WAIT_TIME :
+                                    99999;
+        if(movement != NO_MOVE && (!same_direction() || player_elapsed > player_wait_time)){
+            player_time_start = clock();
+
+            switch(movement){
+                case MOVE_RIGHT_SLOW:
+                        player_move_right();
+                    break;
+                case MOVE_RIGHT_FAST:
+                        player_move_right();
+                    break;
+                case MOVE_LEFT_SLOW:
+                        player_move_left();
+                    break;
+                case MOVE_LEFT_FAST:
+                        player_move_left();
+                    break;
+                case NO_MOVE:
+                    break;
+            }
+        }
+        prev_movement = movement;
+}
+
+static movement_t movement_read(int x){
+    movement_t movement;
+
+    if(x > JOY_THRESHOLD_FAST){
+        movement = MOVE_RIGHT_FAST;
+    }
+    else if(x > JOY_THRESHOLD_SLOW){
+        movement = MOVE_RIGHT_SLOW;
+    }
+    else if(x < -JOY_THRESHOLD_FAST){
+        movement = MOVE_LEFT_FAST;
+    }
+    else if(x < -JOY_THRESHOLD_SLOW){
+        movement = MOVE_LEFT_SLOW;
+    }
+    else{
+        movement = NO_MOVE;
+    }
+
+    return movement;
 }
 
 static void draw_rectangle(int x1, int y1, int x2, int y2){
