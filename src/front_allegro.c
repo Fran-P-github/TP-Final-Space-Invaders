@@ -102,7 +102,7 @@ void front_init(){
 
     init_error(al_install_keyboard(), "Keyboard");
 
-    al_set_new_display_flags (ALLEGRO_RESIZABLE);
+    al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_WINDOWED);
 
 
 
@@ -169,7 +169,7 @@ static void game_update(){
     unsigned long long frame = 0;
 
     while(!done){
-        while(!al_get_next_event(queue, &event));
+        al_wait_for_event(queue, &event);
 
         switch(event.type){
             case ALLEGRO_EVENT_TIMER:
@@ -182,12 +182,13 @@ static void game_update(){
             case ALLEGRO_EVENT_KEY_DOWN:
             if (key[ALLEGRO_KEY_ESCAPE])
             done =1;
+            break;
 
             case ALLEGRO_EVENT_DISPLAY_CLOSE:
                 done = true;
                 break;
         }
-
+        
         if(redraw){
             redraw = false;
             al_clear_to_color(al_map_rgb(0, 0, 0));
@@ -213,6 +214,7 @@ static void game_update(){
         }
     }
 }
+
 
 static void draw_alien(unsigned i, unsigned j){
     al_draw_filled_rectangle((*aliens)[i][j].x, (*aliens)[i][j].y, (*aliens)[i][j].x+ALIENS_W, (*aliens)[i][j].y+ALIENS_H, al_map_rgb(255, 0, 0));
