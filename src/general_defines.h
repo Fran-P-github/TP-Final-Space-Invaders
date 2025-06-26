@@ -75,7 +75,7 @@
 #define PLAYER_MARGIN 0 // Que tan separado debe estar de margenes laterales e inferior
 
 #define ALIENS_ROWS 2
-#define ALIENS_COLUMNS 2
+#define ALIENS_COLUMNS 3
 #define ALIENS_HORIZONTAL_SEPARATION 2
 #define ALIENS_VERTICAL_SEPARATION 1
 #define ALIENS_W 2

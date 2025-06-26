@@ -1,9 +1,28 @@
+/***************************************************************************/ /**
+     TP-FINAL-SPACE-INVADERS
+     front_allegro.h
+     25/6/25
+
+     Description:
+
+
+
+  ******************************************************************************/
+
 #ifndef _BACK_H_
 #define _BACK_H_
+
+/*******************************************************************************
+ * INCLUDE HEADER FILES
+ ******************************************************************************/
 
 #include<stdbool.h>
 
 #include"general_defines.h"
+
+/*******************************************************************************
+ * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
+ ******************************************************************************/
 
 typedef struct{
     int x, y;
@@ -29,6 +48,11 @@ typedef struct{
     int is_used;
 } shot_t;
 
+/*******************************************************************************
+ * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
+ ******************************************************************************/
+
+// Functions to get typedefs instances
 player_t* get_player();
 alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS];
 double* get_aliens_move_interval();
