@@ -3,12 +3,25 @@
 
 #include"back.h"
 
+#if PLATFORM == ALLEGRO
 #define ALIENS_DX ( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
 #define ALIENS_DY ( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
 
 #define PLAYER_DX ( PLAYER_W / 2 )
 
-#define SHOT_DY 10
+#define SHOT_DY ( SHOT_W / 2 )
+
+#elif PLATFORM == RPI
+#define ALIENS_DX 1
+#define ALIENS_DY 1
+
+#define PLAYER_DX 1
+
+#define SHOT_DY 1
+
+#endif
+
+#define ALL_ALIENS_WIDTH ( ALIENS_COLUMNS*ALIENS_W + (ALIENS_COLUMNS-1)*ALIENS_HORIZONTAL_SEPARATION )
 
 static player_t player;
 
@@ -77,7 +90,7 @@ void player_init(){
 void aliens_init(){
     unsigned i, j;
     int x = FIRST_ALIEN_X_COORDINATE;
-    int y = 20;
+    int y = ALIENS_MARGIN;
     for(i=0; i<ALIENS_ROWS; ++i){
         for(j=0; j<ALIENS_COLUMNS; ++j){
             aliens[i][j].x = x;
@@ -215,7 +228,7 @@ static void player_shot_update(){
         // Alien collition
         for(i=0; i<ALIENS_ROWS && player_shot.is_used; ++i){
             for(j=0; j<ALIENS_COLUMNS; ++j){
-                if(aliens[i][j].is_alive && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W, player_shot.y+SHOT_H, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x+ALIENS_W, aliens[i][j].y+ALIENS_H)){
+                if(aliens[i][j].is_alive && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W-1, player_shot.y+SHOT_H-1, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x+ALIENS_W-1, aliens[i][j].y+ALIENS_H-1)){
                     player_shot.is_used = false;
                     aliens[i][j].is_alive = false;
                     player.score += aliens[i][j].points;
@@ -230,7 +243,7 @@ static void player_shot_update(){
             for(k=0; k<SHIELDS_CANT && player_shot.is_used; ++k){
                 for(j=0; j<SHIELD_W && player_shot.is_used; ++j){
                     for(i=SHIELD_H-1; i<SHIELD_H; --i){
-                        if(shields[k][i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W, player_shot.y+SHOT_H, shields[k][i][j].x, shields[k][i][j].y, shields[k][i][j].x+SHIELD_BLOCK_W, shields[k][i][j].y+SHIELD_BLOCK_H)){
+                        if(shields[k][i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W-1, player_shot.y+SHOT_H-1, shields[k][i][j].x, shields[k][i][j].y, shields[k][i][j].x+SHIELD_BLOCK_W-1, shields[k][i][j].y+SHIELD_BLOCK_H-1)){
                         player_shot.is_used = false;
                         shields[k][i][j].lives--;
                         break;
@@ -247,7 +260,7 @@ static void alien_shot_update(){
         alien_shot.y += SHOT_DY;
 
         // Player collition
-        if(collide(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W, alien_shot.y+SHOT_H, player.x, player.y, player.x+PLAYER_W, player.y+PLAYER_H)){
+        if(collide(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W-1, alien_shot.y+SHOT_H-1, player.x, player.y, player.x+PLAYER_W-1, player.y+PLAYER_H-1)){
             alien_shot.is_used = false;
             player.lives--;
         }
@@ -259,7 +272,7 @@ static void alien_shot_update(){
             for(k=0; k<SHIELDS_CANT && alien_shot.is_used; ++k){
                 for(j=0; j<SHIELD_W && alien_shot.is_used; ++j){
                     for(i=0; i<SHIELD_H; ++i){
-                        if(shields[k][i][j].lives && collide(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W, alien_shot.y+SHOT_H, shields[k][i][j].x, shields[k][i][j].y, shields[k][i][j].x+SHIELD_BLOCK_W, shields[k][i][j].y+SHIELD_BLOCK_H)){
+                        if(shields[k][i][j].lives && collide(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W-1, alien_shot.y+SHOT_H-1, shields[k][i][j].x, shields[k][i][j].y, shields[k][i][j].x+SHIELD_BLOCK_W-1, shields[k][i][j].y+SHIELD_BLOCK_H-1)){
                         alien_shot.is_used = false;
                         shields[k][i][j].lives--;
                         break;

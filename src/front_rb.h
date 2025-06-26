@@ -1,7 +1,7 @@
-#ifndef FRONT_RB
-#define FRONT_RB
+#ifndef _FRONT_RB_
+#define _FRONT_RB_
 
 void front_init();
-void front_update();
+void front_run();
 
-#endif
+#endif // _FRONT_RB_

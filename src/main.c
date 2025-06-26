@@ -15,7 +15,11 @@
 
 #include"general_defines.h"
 #include"back.h"
+#if PLATFORM == ALLEGRO
 #include"front_allegro.h"
+#elif PLATFORM == RPI
+#include"front_rb.h"
+#endif
 
 /*******************************************************************************
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
@@ -57,10 +61,11 @@ int main(){
     shields_init();
     player_init();
     aliens_init();
+    front_init();
     //front_init(); //Now static
     //shields_init();
+
     front_run();
-    
 
     //front_update();   //Now static
 

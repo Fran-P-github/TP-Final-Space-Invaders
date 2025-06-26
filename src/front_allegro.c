@@ -45,12 +45,12 @@ static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
 static void draw_player_shot();
 static void draw_alien_shot();
+static void draw_shield(unsigned shield);
+
 static void init_error(bool state, const char* name);
 
 static void front_loop();
 static void kill_all();
-
-static void draw_shield(unsigned shield);
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -65,8 +65,6 @@ static ALLEGRO_DISPLAY* disp;
 static ALLEGRO_EVENT_QUEUE* queue;
 static ALLEGRO_FONT* font;
 
-static shield_t (*shields) [SHIELDS_CANT];
-
 //keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
 
@@ -76,8 +74,8 @@ static alien_t (*aliens) [ALIENS_ROWS][ALIENS_COLUMNS];
 static double* aliens_move_interval;
 static shot_t* player_shot;
 static shot_t* alien_shot;
+static shield_t (*shields) [SHIELDS_CANT];
 
-static void front_init();
 static void game_update();
 
 /*******************************************************************************
@@ -87,8 +85,43 @@ static void game_update();
  ******************************************************************************/
 
 void front_run(){
-    front_init();
     front_loop();
+}
+
+void front_init(){
+    player = get_player();
+    aliens = get_aliens();
+    aliens_move_interval = get_aliens_move_interval();
+    player_shot = get_player_shot();
+    alien_shot = get_alien_shot();
+    shields = get_shields();
+
+    init_error(al_init(), "Allegro");
+
+    init_error(al_init_primitives_addon(), "Allegro Primitives");
+
+    init_error(al_install_keyboard(), "Keyboard");
+
+    al_set_new_display_flags (ALLEGRO_RESIZABLE);
+
+
+
+    font = al_create_builtin_font();
+    init_error(font, "Font");
+
+    timer = al_create_timer(1.0 / 30.0); // 30 FPS
+    init_error(timer, "Timer");
+    al_start_timer(timer);
+
+    disp = al_create_display(WORLD_WIDTH, WORLD_HEIGHT);
+    init_error(disp, "Display");
+
+    queue = al_create_event_queue();
+    init_error(queue, "Queue");
+
+    al_register_event_source(queue, al_get_keyboard_event_source());
+    al_register_event_source(queue, al_get_display_event_source(disp));
+    al_register_event_source(queue, al_get_timer_event_source(timer));
 }
 
 /*******************************************************************************
@@ -127,44 +160,6 @@ void front_loop(){
     }
     kill_all();
 }
-
-static void front_init(){
-    player = get_player();
-    aliens = get_aliens();
-    aliens_move_interval = get_aliens_move_interval();
-    player_shot = get_player_shot();
-    alien_shot = get_alien_shot();
-    shields = get_shields();
-
-    init_error(al_init(), "Allegro");
-
-    init_error(al_init_primitives_addon(), "Allegro Primitives");
-
-    init_error(al_install_keyboard(), "Keyboard");
-
-    al_set_new_display_flags (ALLEGRO_RESIZABLE);
-
-    
-
-    font = al_create_builtin_font();
-    init_error(font, "Font");
-
-    timer = al_create_timer(1.0 / 30.0); // 30 FPS
-    init_error(timer, "Timer");
-    al_start_timer(timer);
-
-    disp = al_create_display(WORLD_WIDTH, WORLD_HEIGHT);
-    init_error(disp, "Display");
-
-    queue = al_create_event_queue();
-    init_error(queue, "Queue");
-
-    al_register_event_source(queue, al_get_keyboard_event_source());
-    al_register_event_source(queue, al_get_display_event_source(disp));
-    al_register_event_source(queue, al_get_timer_event_source(timer));
-}
-
-
 
 // TODO acomodar esto para que no se quede adentro de la funcion. mejor que se llame muchas veces desde el main
 static void game_update(){
