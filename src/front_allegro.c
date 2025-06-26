@@ -191,7 +191,7 @@ static void game_update(){
 
         switch(event.type){
             case ALLEGRO_EVENT_TIMER:
-                aliens_update_position();
+                aliens_update();
                 shots_update();
                 redraw = true;
                 ++frame;
