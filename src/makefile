@@ -1,27 +1,36 @@
 CC := gcc
-PLATFORM := allegro
+# Puede ser allegro o rb
+PLATFORM ?= allegro
+FLAGS := -Wall
+OBJS := main.o front_$(PLATFORM).o back.o menu_$(PLATFORM).o
 
-ifeq($(PLATFORM), allegro)
-	CFLAGS := -Wall $(shell pkg-config --cflags allegro-5 allegro_font-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_image-5)
-	LDFLAGS := $(shell pkg-config --libs allegro-5 allegro_font-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_image-5)
+ifeq ($(PLATFORM), allegro)
+ALFLAGS := $(shell pkg-config allegro-5 allegro_font-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_image-5 allegro_video-5 --libs --cflags)
+DEFINE := ALLEGRO
+else
+ifeq ($(PLATFORM), rb)
+DEFINE := RPI
+else
+$(error Plataforma no soportada: '$(PLATFORM)' por favor usar: PLATFORM=allegro o PLATFORM=rb)
+endif
 endif
 
-OBJS := main.o front_$(PLATFORM).o back.o
-
-all: SpaceInvaders
+FLAGS += -DPLATFORM=$(DEFINE)
 
 SpaceInvaders: $(OBJS)
-		$(CC) $(OBJS) -o SpaceInvaders $(LDFLAGS)
+	$(CC) $(FLAGS) $(OBJS) -o SpaceInvaders $(ALFLAGS)
 
 main.o: main.c general_defines.h back.h front_$(PLATFORM).h
-		$(CC) $(CFLAGS) -c main.c
+	$(CC) $(FLAGS) $(ALFLAGS) -c main.c
 
 front_$(PLATFORM).o: front_$(PLATFORM).c front_$(PLATFORM).h general_defines.h back.h
-		$(CC) $(CFLAGS) -c front_$(PLATFORM).c
+	$(CC) $(FLAGS) $(ALFLAGS) -c front_$(PLATFORM).c
 
 back.o: back.c back.h
-		$(CC) $(CFLAGS) -c back.c
+	$(CC) $(FLAGS) $(ALFLAGS) -c back.c
+
+menu_$(PLATFORM).o: menu_$(PLATFORM).c menu_$(PLATFORM).h general_defines.h
+	$(CC) $(FLAGS) $(ALFLAGS) -c menu_$(PLATFORM).c
 
 clear:
-		rm -f *.o SpaceInvaders
-
+	rm -f *.o SpaceInvaders
