@@ -74,7 +74,7 @@ void front_run(){
         if(frame_elapsed >= frame_time){
             ++frame;
             frame_start = clock();
-            aliens_update_position();
+            done = aliens_update(); // aliens_update() returns true when aliens reach player height
             shots_update();
             redraw = true;
         }
@@ -104,11 +104,6 @@ void front_run(){
     }
 }
 
-#define same_direction() ( ( (movement == MOVE_LEFT_SLOW  || movement == MOVE_LEFT_FAST ) && \
-                      (prev_movement == MOVE_LEFT_SLOW || prev_movement == MOVE_LEFT_FAST) ) \
-                   || ( (movement == MOVE_RIGHT_SLOW || movement == MOVE_RIGHT_FAST) && \
-                      (prev_movement == MOVE_RIGHT_SLOW || prev_movement == MOVE_RIGHT_FAST) ) )
-// TODO: fix bug where player sometimes moves two places at a time (usually one every four moves)
 static void update_joystick(){
         joyinfo_t joystick = joy_read();
         movement_t movement = movement_read(joystick.x);
@@ -118,7 +113,8 @@ static void update_joystick(){
         double player_wait_time =   movement == MOVE_LEFT_FAST || movement == MOVE_RIGHT_FAST ? FAST_MOVEMENT_WAIT_TIME :
                                     movement == MOVE_LEFT_SLOW || movement == MOVE_RIGHT_SLOW ? SLOW_MOVEMENT_WAIT_TIME :
                                     99999;
-        if(movement != NO_MOVE && (!same_direction() || player_elapsed > player_wait_time)){
+
+        if(movement != prev_movement || player_elapsed > player_wait_time){
             player_time_start = clock();
 
             switch(movement){

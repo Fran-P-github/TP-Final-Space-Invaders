@@ -61,7 +61,7 @@ shot_t* get_alien_shot();
 shield_t (*get_shields(void)) [SHIELDS_CANT];
 
 void aliens_init();
-void aliens_update_position();
+bool aliens_update(); // Returns: true if aliens reach player height, false otherwise
 
 void player_init();
 void player_move_right();
