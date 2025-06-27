@@ -121,7 +121,6 @@ void front_init(){
     al_reserve_samples(AUDIO_SAMPLES);
     init_error(al_init_image_addon(), "Allegro Image Addon");
 
-    al_reserve_samples(1);
 
     // Se cargan los archivos de audio
     playerShotSound = al_load_sample(AUDIO_PLAYER_SHOT);
