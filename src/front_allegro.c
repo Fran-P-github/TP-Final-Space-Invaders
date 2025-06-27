@@ -226,12 +226,16 @@ static void game_update(){
             done = true;
             if (key[ALLEGRO_KEY_F])
             fullscreen = !fullscreen;
+            al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
             // Al pulsar la tecla X el jugador dispara (se aprovecha el "laziness" de C)
             if(key[ALLEGRO_KEY_X] && player_try_shoot())
             al_play_sample(playerShotSound, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
-            al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
             break;
-
+            // El jugador se mueve con las flechas (falta agregar para mantener presionado)
+            if(key[ALLEGRO_KEY_RIGHT])
+            player_move_right();
+            if(key[ALLEGRO_KEY_LEFT])
+            player_move_left();
             case ALLEGRO_EVENT_KEY_UP:
             key[event.keyboard.keycode] = 0;
             break;
