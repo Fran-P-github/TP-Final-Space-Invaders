@@ -41,7 +41,7 @@
  * VARIABLES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-extern bool aliensMoved;
+extern const bool aliensMoved;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
@@ -55,7 +55,6 @@ static void draw_shield(unsigned shield);
 
 static void init_error(bool state, const char* name);
 
-static void front_loop();
 static void kill_all();
 
 /*******************************************************************************
@@ -90,20 +89,13 @@ static shot_t* player_shot;
 static shot_t* alien_shot;
 static shield_t (*shields) [SHIELDS_CANT];
 
-static void game_update();
-
 /*******************************************************************************
  *******************************************************************************
                         GLOBAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
 
-void front_run(){
-    front_loop();
-    kill_all();
-}
-
-void front_init(){
+game_state_t front_init(){
     player = get_player();
     aliens = get_aliens();
     aliens_move_interval = get_aliens_move_interval();
@@ -161,6 +153,17 @@ void front_init(){
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(disp));
     al_register_event_source(queue, al_get_timer_event_source(timer));
+
+    return MENU;
+}
+
+game_state_t menu(){
+    menu_allegro(disp, timer, queue, default_font, buffer);
+    return GAME;
+}
+
+void endgame(){
+
 }
 
 /*******************************************************************************
@@ -189,29 +192,8 @@ static void init_error(bool state, const char* name){
         exit(-1);
     }
 }
-//change state to MENU if testing game segment
-void front_loop(){
-    game_state_t state = MENU;
-    while (state != CLOSED){
-        switch (state){
-            case MENU:
-            menu_allegro(disp, timer, queue, default_font, buffer);
-            state = GAME;
-            break;
-            case GAME:
-            game_update();
-            state = CLOSED;
-            break;
-            case PAUSE:
-            break;
-            case CLOSED:
-            break;
-        }
-    }
-}
 
-// TODO acomodar esto para que no se quede adentro de la funcion. mejor que se llame muchas veces desde el main
-static void game_update(){
+game_state_t game_update(){
     ALLEGRO_EVENT event;
     bool redraw = false;
     bool done = false;
@@ -289,6 +271,9 @@ static void game_update(){
             al_flip_display();
         }
     }
+
+    kill_all();
+    return CLOSED;
 }
 
 static void draw_alien(unsigned i, unsigned j){

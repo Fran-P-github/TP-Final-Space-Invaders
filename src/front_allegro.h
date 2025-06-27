@@ -16,9 +16,15 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-void front_init();
+#include "back.h"
 
-void front_run();
+game_state_t front_init();
+
+game_state_t menu();
+
+game_state_t game_update();
+
+void endgame();
 
 /*******************************************************************************
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
