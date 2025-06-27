@@ -17,6 +17,11 @@
 #define SLOW_MOVEMENT_WAIT_TIME 4
 #define FAST_MOVEMENT_WAIT_TIME 0.3
 
+#define LETTER_HEIGHT 5
+#define LETTER_MARGIN 2
+#define LETTERS_WIDTH 57
+#define LETTERS_WAIT_TIME 0.1 // Seconds
+
 typedef enum{
     MOVE_RIGHT_SLOW=0,
     MOVE_RIGHT_FAST,
@@ -44,7 +49,7 @@ static shot_t* player_shot;
 static shot_t* alien_shot;
 static shield_t (*shields) [SHIELDS_CANT];
 
-void front_init(){
+game_state_t front_init(){
     player = get_player();
     aliens = get_aliens();
     aliens_move_interval = get_aliens_move_interval();
@@ -57,9 +62,63 @@ void front_init(){
     disp_init();
     disp_clear();
     disp_update();
+
+    return MENU;
 }
 
-void front_run(){
+game_state_t menu(){
+    const char space[LETTER_HEIGHT][LETTERS_WIDTH] = {
+        "        ***  ****   ***   ***  *****                    ",
+        "       *     *   * *   * *     *                        ",
+        "        ***  ****  ***** *     ***                      ",
+        "           * *     *   * *     *                        ",
+        "        ***  *     *   *  ***  *****                    "
+    };
+    const char invaders[LETTER_HEIGHT][LETTERS_WIDTH] = {
+        "***** *   * *   *  ***  ****  ***** ****   ***         ",
+        "  *   **  * *   * *   * *   * *     *   * *            ",
+        "  *   * * *  * *  ***** *   * ***   ****   ***         ",
+        "  *   *  **  * *  *   * *   * *     * *       *        ",
+        "***** *   *   *   *   * ****  ***** *  *   ***         "
+    };
+    static unsigned column = 0;
+
+    static clock_t start = 0;
+    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    if(elapsed >= LETTERS_WAIT_TIME){
+        start = clock();
+
+        unsigned i, j;
+        // SPACE
+        for(i=0; i<LETTER_HEIGHT; ++i){
+            for(j=0; j<WORLD_WIDTH; ++j){
+                dcoord_t coord = { .x=j, .y=i+LETTER_MARGIN };
+                disp_write(coord, space[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
+            }
+        }
+
+        // INVADERS
+        for(i=0; i<LETTER_HEIGHT; ++i){
+            for(j=0; j<WORLD_WIDTH; ++j){
+                dcoord_t coord = { .x=j, .y=i+LETTER_HEIGHT+2*LETTER_MARGIN };
+                disp_write(coord, invaders[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
+            }
+        }
+
+        disp_update();
+        ++column;
+    }
+
+    jswitch_t button = joy_read().sw;
+    if(button == J_PRESS){
+        column = 0;
+        return GAME;
+    }else{
+        return MENU;
+    }
+}
+
+game_state_t game_update(){
     bool redraw = false;
     bool done = false;
     unsigned long long frame = 0;
@@ -83,7 +142,6 @@ void front_run(){
             redraw = false;
             disp_clear();
             unsigned i, j;
-            player_try_shoot();
             draw_player_shot();
             alien_try_shoot(1);
             draw_alien_shot();
@@ -102,10 +160,21 @@ void front_run(){
             disp_update();
         }
     }
+
+    return CLOSED;
+}
+
+void endgame(){
+
 }
 
 static void update_joystick(){
         joyinfo_t joystick = joy_read();
+
+        if(joystick.sw == J_PRESS){
+            player_try_shoot();
+        }
+
         movement_t movement = movement_read(joystick.x);
         static movement_t prev_movement = NO_MOVE;
         static clock_t player_time_start = 0;

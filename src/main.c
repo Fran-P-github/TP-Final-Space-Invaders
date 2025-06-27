@@ -61,13 +61,25 @@ int main(){
     shields_init();
     player_init();
     aliens_init();
-    front_init();
-    //front_init(); //Now static
-    //shields_init();
 
-    front_run();
+    game_state_t state = front_init();
 
-    //front_update();   //Now static
+    while(state != CLOSED){
+        switch (state){
+          case MENU:
+            state = menu();
+            break;
+          case GAME:
+            state = game_update();
+            break;
+          case PAUSE:
+            break;
+          case CLOSED:
+            break;
+      }
+    }
+
+    endgame();
 
     return 0;
 }
