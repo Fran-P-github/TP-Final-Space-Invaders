@@ -191,8 +191,8 @@ static void init_error(bool state, const char* name){
 }
 //change state to MENU if testing game segment
 void front_loop(){
-    char state = MENU;
-    while (state){
+    game_state_t state = MENU;
+    while (state != CLOSED){
         switch (state){
             case MENU:
             menu_allegro(disp, timer, queue, default_font, buffer);
@@ -201,6 +201,10 @@ void front_loop(){
             case GAME:
             game_update();
             state = CLOSED;
+            break;
+            case PAUSE:
+            break;
+            case CLOSED:
             break;
         }
     }

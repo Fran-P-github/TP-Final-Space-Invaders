@@ -107,7 +107,7 @@
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-enum flags {CLOSED = 0, MENU, GAME, PAUSE};
+typedef enum {CLOSED = 0, MENU, GAME, PAUSE} game_state_t;
 
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
