@@ -102,6 +102,7 @@
 #define AUDIO_INVADER_DEATH "../audio/invaderkilled.wav" 
 #define AUDIO_INVADER_MOVED "../audio/invadermoved.wav" 
 #define AUDIO_UFO "../audio/ufo.wav"
+#define AUDIO_MENU_SONG "../audio/menuSong.wav"
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS

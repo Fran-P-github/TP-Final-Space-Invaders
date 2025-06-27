@@ -76,6 +76,8 @@ static ALLEGRO_SAMPLE* playerDeathSound = NULL;
 static ALLEGRO_SAMPLE* alienDeathSound = NULL;
 static ALLEGRO_SAMPLE* alienMovedSound = NULL;
 static ALLEGRO_SAMPLE* ufoSound = NULL;
+static ALLEGRO_SAMPLE* menuSong = NULL;
+static ALLEGRO_SAMPLE_ID menuSongID;
 
 
 //keyboard
@@ -120,11 +122,13 @@ game_state_t front_init(){
     alienDeathSound = al_load_sample(AUDIO_INVADER_DEATH);
     alienMovedSound = al_load_sample(AUDIO_INVADER_MOVED);
     ufoSound = al_load_sample(AUDIO_UFO);
+    menuSong = al_load_sample(AUDIO_MENU_SONG);
     init_error(playerShotSound, "Audio disparo del jugador.");
     init_error(playerDeathSound, "Audio muerte del jugador.");
     init_error(alienDeathSound, "Audio muerte del alien.");
     init_error(playerDeathSound, "Audio muerte del jugador.");
     init_error(ufoSound, "Audio del OVNI.");
+    init_error(menuSong, "Audio cancion del menu.");
 
     al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_WINDOWED);
 
@@ -158,6 +162,7 @@ game_state_t front_init(){
 }
 
 game_state_t menu(){
+    al_play_sample(menuSong, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &menuSongID);
     menu_allegro(disp, timer, queue, default_font, buffer);
     return GAME;
 }
@@ -184,6 +189,7 @@ static void kill_all(){
     al_destroy_sample(alienDeathSound);
     al_destroy_sample(alienMovedSound);
     al_destroy_sample(ufoSound);
+    al_destroy_sample(menuSong);
 }
 
 static void init_error(bool state, const char* name){
@@ -199,7 +205,9 @@ game_state_t game_update(){
     bool done = false;
     bool fullscreen = false;
     unsigned long long frame = 0;
-
+    
+    al_stop_sample(&menuSongID);
+    
     al_start_timer(timer);
 
     while(!done){
@@ -303,3 +311,5 @@ static void draw_shield(unsigned shield){
         }
     }
 }
+
+// MENU ALLEGRO
