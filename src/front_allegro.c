@@ -118,13 +118,10 @@ void front_init(){
     init_error(al_install_audio(), "Allegro Audio");
     init_error(al_init_acodec_addon(), "Allegro Audio Codec");
 
-<<<<<<< HEAD
     al_reserve_samples(AUDIO_SAMPLES);
-=======
     init_error(al_init_image_addon(), "Allegro Image Addon");
 
     al_reserve_samples(1);
->>>>>>> abb0fcb (Added workaround for video loops. NOTE: As of now, loops should work flawlessly, but may consume more ram.)
 
     // Se cargan los archivos de audio
     playerShotSound = al_load_sample(AUDIO_PLAYER_SHOT);
@@ -143,11 +140,7 @@ void front_init(){
     default_font = al_create_builtin_font();
     init_error(default_font, "Font");
 
-<<<<<<< HEAD
     timer = al_create_timer(1.0 / 30.0); // 30 FPS
-=======
-    timer = al_create_timer(1.0 / 30.0); // 60 FPS
->>>>>>> abb0fcb (Added workaround for video loops. NOTE: As of now, loops should work flawlessly, but may consume more ram.)
     init_error(timer, "Timer");
 
     al_set_new_display_option(ALLEGRO_SAMPLE_BUFFERS, 1, ALLEGRO_SUGGEST);
