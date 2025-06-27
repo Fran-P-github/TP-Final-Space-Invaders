@@ -42,6 +42,10 @@
 
 #define ALL_ALIENS_WIDTH ( ALIENS_COLUMNS*ALIENS_W + (ALIENS_COLUMNS-1)*ALIENS_HORIZONTAL_SEPARATION )
 
+// VARIABLE GLOBAL Y PUBLICA
+
+bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los aliens
+
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
@@ -280,7 +284,7 @@ static void aliens_update_position(){
     static clock_t start = 0;
     double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
     static movement_t movement = MOVEMENT_RIGHT;
-
+    aliensMoved = elapsed >= aliens_move_interval; 
     if(elapsed >= aliens_move_interval){
         start = clock();
 

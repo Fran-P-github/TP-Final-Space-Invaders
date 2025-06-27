@@ -18,6 +18,8 @@
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_video.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
 
 #include "front_allegro.h"
 #include "general_defines.h"
@@ -29,6 +31,7 @@
  ******************************************************************************/
 
 #define MSJ_ERR_INIT "Problema al inicializar: "
+#define AUDIO_SAMPLES 16 
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -37,6 +40,8 @@
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
  ******************************************************************************/
+
+extern bool aliensMoved;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
@@ -66,6 +71,13 @@ static ALLEGRO_DISPLAY* disp;
 static ALLEGRO_EVENT_QUEUE* queue;
 static ALLEGRO_FONT* default_font;
 static ALLEGRO_BITMAP* buffer;
+// Punteros a los samples para el audio
+static ALLEGRO_SAMPLE* playerShotSound = NULL;
+static ALLEGRO_SAMPLE* playerDeathSound = NULL;
+static ALLEGRO_SAMPLE* alienDeathSound = NULL;
+static ALLEGRO_SAMPLE* alienMovedSound = NULL;
+static ALLEGRO_SAMPLE* ufoSound = NULL;
+
 
 //keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
@@ -100,26 +112,32 @@ void front_init(){
     shields = get_shields();
 
     init_error(al_init(), "Allegro");
-
     init_error(al_init_primitives_addon(), "Allegro Primitives");
-
     init_error(al_install_keyboard(), "Keyboard");
-
     init_error(al_init_video_addon(),"Allegro Videos");
-
     init_error(al_install_audio(), "Allegro Audio");
-
     init_error(al_init_acodec_addon(), "Allegro Audio Codec");
 
-    al_reserve_samples(1);
+    al_reserve_samples(AUDIO_SAMPLES);
 
+    // Se cargan los archivos de audio
+    playerShotSound = al_load_sample(AUDIO_PLAYER_SHOT);
+    playerDeathSound = al_load_sample(AUDIO_PLAYER_DEATH);
+    alienDeathSound = al_load_sample(AUDIO_INVADER_DEATH);
+    alienMovedSound = al_load_sample(AUDIO_INVADER_MOVED);
+    ufoSound = al_load_sample(AUDIO_UFO);
+    init_error(playerShotSound, "Audio disparo del jugador.");
+    init_error(playerDeathSound, "Audio muerte del jugador.");
+    init_error(alienDeathSound, "Audio muerte del alien.");
+    init_error(playerDeathSound, "Audio muerte del jugador.");
+    init_error(ufoSound, "Audio del OVNI.");
 
     al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_WINDOWED);
 
     default_font = al_create_builtin_font();
     init_error(default_font, "Font");
 
-    timer = al_create_timer(1.0 / 60.0); // 60 FPS
+    timer = al_create_timer(1.0 / 30.0); // 30 FPS
     init_error(timer, "Timer");
     al_start_timer(timer);
 
@@ -152,6 +170,12 @@ static void kill_all(){
     al_destroy_timer (timer);
     al_destroy_event_queue(queue);
     al_destroy_font(default_font);
+    // Se destruyen los samples de audio usados
+    al_destroy_sample(playerShotSound);
+    al_destroy_sample(playerDeathSound);
+    al_destroy_sample(alienDeathSound);
+    al_destroy_sample(alienMovedSound);
+    al_destroy_sample(ufoSound);
 }
 
 static void init_error(bool state, const char* name){
@@ -167,7 +191,7 @@ void front_loop(){
         switch (state){
             case MENU:
             menu_allegro(disp, timer, queue, default_font, buffer);
-            state = CLOSED;
+            state = GAME;
             break;
             case GAME:
             game_update();
@@ -175,7 +199,6 @@ void front_loop(){
             break;
         }
     }
-    
 }
 
 // TODO acomodar esto para que no se quede adentro de la funcion. mejor que se llame muchas veces desde el main
@@ -203,6 +226,9 @@ static void game_update(){
             done = true;
             if (key[ALLEGRO_KEY_F])
             fullscreen = !fullscreen;
+            // Al pulsar la tecla X el jugador dispara (se aprovecha el "laziness" de C)
+            if(key[ALLEGRO_KEY_X] && player_try_shoot())
+            al_play_sample(playerShotSound, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
             al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
             break;
 
@@ -218,6 +244,10 @@ static void game_update(){
                 done = true;
                 break;
         }
+
+        // Reproduce el sonido cuando los aliens se mueven.
+        if(aliensMoved)
+        al_play_sample(alienMovedSound, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
         
         if(redraw){
             redraw = false;
@@ -225,7 +255,6 @@ static void game_update(){
             al_clear_to_color(al_map_rgb(0, 0, 0));
             al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "width: %d height: %d", al_get_display_width (disp), al_get_display_height(disp));
             unsigned i, j;
-            player_try_shoot();
             draw_player_shot();
             alien_try_shoot(3);
             draw_alien_shot();
@@ -246,7 +275,6 @@ static void game_update(){
         }
     }
 }
-
 
 static void draw_alien(unsigned i, unsigned j){
     al_draw_filled_rectangle((*aliens)[i][j].x, (*aliens)[i][j].y, (*aliens)[i][j].x+ALIENS_W, (*aliens)[i][j].y+ALIENS_H, al_map_rgb(255, 0, 0));
