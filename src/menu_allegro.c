@@ -35,6 +35,8 @@ enum choice {INTRO = 0, QUIT};
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+static void kill_all(ALLEGRO_BITMAP** Intro_frames);
+
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -50,45 +52,51 @@ enum choice {INTRO = 0, QUIT};
  ******************************************************************************/
 
 void menu_allegro(ALLEGRO_DISPLAY* display, ALLEGRO_TIMER* timer, ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_FONT* dfont, ALLEGRO_BITMAP* buffer){
-  ALLEGRO_VIDEO* video_player1;
-  ALLEGRO_MIXER* mixer_player1;
-  ALLEGRO_BITMAP* video_frame1;
+  ALLEGRO_BITMAP* Intro_background_frames[300];
   ALLEGRO_EVENT menu_event;
+  ALLEGRO_EVENT dummy;
   char select = INTRO;
   bool redraw = false;
-
-  mixer_player1= al_get_default_mixer();
-
-  video_player1 = al_open_video("../assets/Intro_backgroundhigh.ogv");
-
-  if (video_player1 == NULL){
-    printf ("Error");
-    select = QUIT;
+  bool fullscreen = false;
+  char Intro_background_path[64];
+  int i;
+  for (i = 1; i <= 300 && select != QUIT; i++) {
+      sprintf(Intro_background_path, "../assets/Intro_background/frames/frame_%03d.png", i);
+      Intro_background_frames[i-1] = al_load_bitmap(Intro_background_path);
+      if (!Intro_background_frames[i-1]) {
+          fprintf(stderr, "Error loading frame %d: %s\n", i-1, Intro_background_path);
+          select = QUIT;
+      }
   }
-  else{
-    al_register_event_source(queue, al_get_video_event_source(video_player1));
-    al_start_video(video_player1,mixer_player1);
-  }
+  i = 0;
+
+  al_start_timer(timer);
+  while (al_get_next_event(queue,&dummy));
 
   while (select != QUIT){
     al_wait_for_event (queue,&menu_event);
 
     switch (menu_event.type){
       case ALLEGRO_EVENT_TIMER:
-      if (!al_is_video_playing(video_player1)){
-        al_seek_video(video_player1,0.0);
-        al_set_video_playing(video_player1,true);
-      }
-      break;
-      case ALLEGRO_EVENT_VIDEO_FRAME_SHOW:
       redraw = true;
       al_set_target_bitmap(buffer);
-      video_frame1 = al_get_video_frame(video_player1);
-      al_draw_bitmap(video_frame1,0,0,0);
+      al_draw_bitmap(Intro_background_frames[i++],0,0,0);
+      if (i == 300) i = 0;
+      break;
+      case ALLEGRO_EVENT_KEY_DOWN:
+      switch (menu_event.keyboard.keycode){
+        case ALLEGRO_KEY_F:
+        fullscreen = !fullscreen;
+        al_toggle_display_flag(display,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
+        break;
+        case ALLEGRO_KEY_ESCAPE:
+        select = QUIT;
+        break;
+      }
       break;
       case ALLEGRO_EVENT_DISPLAY_CLOSE:
-      al_close_video(video_player1);
       select = QUIT;
+      kill_all(Intro_background_frames);
       break;
 
     }
@@ -104,6 +112,8 @@ void menu_allegro(ALLEGRO_DISPLAY* display, ALLEGRO_TIMER* timer, ALLEGRO_EVENT_
 
 }
 
+al_stop_timer(timer);
+
 }
 
 /*******************************************************************************
@@ -111,3 +121,10 @@ void menu_allegro(ALLEGRO_DISPLAY* display, ALLEGRO_TIMER* timer, ALLEGRO_EVENT_
                         LOCAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
+
+
+ void kill_all(ALLEGRO_BITMAP** Intro_frames){
+  for (int i = 1; i <= 300; i++){
+    al_destroy_bitmap(Intro_frames[i-1]);
+  }
+ }
