@@ -70,6 +70,8 @@ static ALLEGRO_DISPLAY* disp;
 static ALLEGRO_EVENT_QUEUE* queue;
 static ALLEGRO_FONT* default_font;
 static ALLEGRO_BITMAP* buffer;
+
+
 // Punteros a los samples para el audio
 static ALLEGRO_SAMPLE* playerShotSound = NULL;
 static ALLEGRO_SAMPLE* playerDeathSound = NULL;
@@ -168,7 +170,7 @@ game_state_t menu(){
 }
 
 void endgame(){
-
+    kill_all();
 }
 
 /*******************************************************************************
