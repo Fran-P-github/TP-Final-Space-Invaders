@@ -356,6 +356,12 @@ static void player_shot_update(){
     player_shot.y -= SHOT_DY;
     unsigned i, j;
 
+    // Alien_shot collition
+    if(collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W-1, player_shot.y+SHOT_H-1, alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W-1, alien_shot.y+SHOT_H-1)){
+        player_shot.is_used = false;
+        alien_shot.is_used = false;
+    }
+
     // Alien collition
     for(i=0; i<ALIENS_ROWS && player_shot.is_used; ++i){
         for(j=0; j<ALIENS_COLUMNS; ++j){
@@ -389,6 +395,8 @@ static void alien_shot_update(){
     if(!alien_shot.is_used) return;
 
     alien_shot.y += SHOT_DY;
+
+    // Player_shot collition: it is in player_shot_update
 
     // Player collition
     if(collide(alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W-1, alien_shot.y+SHOT_H-1, player.x, player.y, player.x+PLAYER_W-1, player.y+PLAYER_H-1)){
