@@ -1,4 +1,5 @@
 #include<time.h>
+#include<unistd.h>
 
 // Modulos
 #include "front_rb.h"
@@ -27,6 +28,10 @@
 #define ARROW_Y 6
 #define ARROW_SPACING 5   // Espaciado horizontal entre opciones
 #define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
+
+#define DIGIT_W 3
+#define DIGIT_H 5
+#define DIGIT_SPACING 1
 
 typedef enum{
     MOVE_RIGHT_SLOW=0,
@@ -182,6 +187,9 @@ static void draw3x3(const char icon[3][4], unsigned x, unsigned y){
     }
 }
 
+static void draw_digit(unsigned digit, int x, int y);
+static void draw_number_wrapped(unsigned num, int x, int y);
+
 game_state_t game_pause(){
     const char resume[3][4] = {
         " * ",
@@ -237,6 +245,7 @@ game_state_t game_pause(){
         // Selección con botón
         if (js.sw == J_PRESS) {
             wait_button_release();
+            disp_clear();
             switch(selected){
                 case 0:
                     return GAME;
@@ -254,15 +263,74 @@ game_state_t game_pause(){
 }
 
 void endgame(){
+    disp_clear();
+    for(unsigned i=0; i<3; ++i){ // Score blinks 3 times
+        draw_number_wrapped(10 * player->score, 3, 3);
+        disp_update();
+        usleep(400000); // 0.4 sec
+        disp_clear();
+        disp_update();
+        usleep(300000); // 0.3 sec
+    }
+}
 
+static void draw_number_wrapped(unsigned num, int x, int y){
+    const int initial_x = x;
+
+    if (num == 0){
+        draw_digit(0, x, y);
+        return;
+    }
+
+    // Primero calculamos cuántos dígitos tiene (necesario para imprimir en orden)
+    unsigned digits[10]; // hasta 10 cifras (sobra para unsigned)
+    unsigned count = 0;
+    while(num > 0) {
+        digits[count++] = num % 10;
+        num /= 10;
+    }
+
+    // Imprimir de izquierda a derecha (invertimos el orden)
+    for(int i = count - 1; i >= 0; --i){
+        if (x + DIGIT_W > WORLD_WIDTH){
+            x = initial_x;
+            y += DIGIT_H + 1;
+            if (y + DIGIT_H > WORLD_HEIGHT)
+                return; // no hay más espacio en el display
+        }
+        draw_digit(digits[i], x, y);
+        x += DIGIT_W + DIGIT_SPACING;
+    }
+}
+
+static void draw_digit(unsigned digit, int x, int y){
+    const char NUM_FONT[10][5][4] = {
+        { " * ", "* *", "* *", "* *", " * " }, // 0
+        { "  *", " **", "* *", "  *", "  *" }, // 1
+        { "***", "  *", " * ", "*  ", "***" }, // 2
+        { "***", "  *", " * ", "  *", "***" }, // 3
+        { "* *", "* *", "***", "  *", "  *" }, // 4
+        { "***", "*  ", "***", "  *", "***" }, // 5
+        { "***", "*  ", "***", "* *", "***" }, // 6
+        { "***", "  *", "  *", " * ", " * " }, // 7
+        { "***", "* *", "***", "* *", "***" }, // 8
+        { "***", "* *", "***", "  *", "***" }, // 9
+    };
+
+    if(digit > 9) return;
+    for(int i = 0; i < 5; ++i) {
+        for(int j = 0; j < 3; ++j) {
+            dcoord_t coord = { .x = x + j, .y = y + i };
+            disp_write(coord, NUM_FONT[digit][i][j] == '*' ? D_ON : D_OFF);
+        }
+    }
 }
 
 static void wait_button_release(){
     while(joy_read().sw == J_PRESS);
 
     // Debouncing
-    clock_t clk = clock();
-    while((double)(clock() - clk)/CLOCKS_PER_SEC <= 0.01);
+    usleep(100000); // 0.1 sec
 }
 
 // Returns: true when going into PAUSE. false otherwise
