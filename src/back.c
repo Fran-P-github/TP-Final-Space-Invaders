@@ -25,7 +25,7 @@
 
 #if PLATFORM == ALLEGRO
 
-#define MOTHERSHIP_X_VELOCITY 400
+#define MOTHERSHIP_X_VELOCITY 250
 #define MOTHERSHIP_DX ( MOTHERSHIP_X_VELOCITY / FRAME_RATE )
 
 #define ALIENS_X_VELOCITY 500//( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
@@ -340,7 +340,7 @@ static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx
 
 static bool should_spawn_mothership(double elapsed_time){
     const double max_prob = 0.5; // 50% max
-    double rate = 0.01;    // 1% increase per second
+    const double rate = 0.00005;    // 0.005% increase per second
 
     double probability = elapsed_time * rate;
 

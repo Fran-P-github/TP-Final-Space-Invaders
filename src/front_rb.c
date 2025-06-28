@@ -138,6 +138,7 @@ game_state_t game_update(){
             frame_start = clock();
             done = aliens_update(); // aliens_update() returns true when aliens reach player height
             shots_update();
+            mothership_update();
             redraw = true;
         }
 
@@ -159,7 +160,6 @@ game_state_t game_update(){
                     }
                 }
             }
-            mothership_update();
             if(mothership_is_active()){
                 draw_mothership();
             }

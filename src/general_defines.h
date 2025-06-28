@@ -39,8 +39,8 @@
 #define WORLD_WIDTH 960
 #define WORLD_HEIGHT 540
 
-#define MOTHERSHIP_W 14
-#define MOTHERSHIP_H 8
+#define MOTHERSHIP_W 60
+#define MOTHERSHIP_H 12
 #define MOTHERSHIP_MARGIN 10
 
 #define PLAYER_W 10

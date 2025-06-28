@@ -51,6 +51,7 @@ extern const bool aliensMoved;
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
 static void draw_player_shot();
@@ -215,6 +216,7 @@ game_state_t game_update(){
                 case ALLEGRO_EVENT_TIMER:
                     aliens_update();
                     shots_update();
+                    mothership_update();
                     redraw = true;
                     ++frame;
                     moveThisFrame = false;
@@ -283,12 +285,19 @@ game_state_t game_update(){
                     }
                 }
             }
+            if(mothership_is_active()){
+                draw_mothership();
+            }
             al_set_target_backbuffer(disp);
             al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width (disp), al_get_display_height(disp), 0);                           // flags
             al_flip_display();
         }
     }
     return CLOSED;
+}
+
+static void draw_mothership(){
+    al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x()+MOTHERSHIP_W-1, mothership_get_y()+MOTHERSHIP_H-1, al_map_rgb(128, 0, 255));
 }
 
 static void draw_alien(unsigned i, unsigned j){
