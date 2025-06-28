@@ -77,8 +77,8 @@ static ALLEGRO_SAMPLE* playerDeathSound = NULL;
 static ALLEGRO_SAMPLE* alienDeathSound = NULL;
 static ALLEGRO_SAMPLE* alienMovedSound = NULL;
 static ALLEGRO_SAMPLE* ufoSound = NULL;
-//static ALLEGRO_SAMPLE* menuSong = NULL;
-//static ALLEGRO_SAMPLE_ID menuSongID;
+static ALLEGRO_SAMPLE* menuSong = NULL;
+static ALLEGRO_SAMPLE_ID menuSongID;
 
 
 //keyboard
