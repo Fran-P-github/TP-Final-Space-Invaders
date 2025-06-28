@@ -32,6 +32,9 @@
 
 #define MSJ_ERR_INIT "Problema al inicializar: "
 #define AUDIO_SAMPLES 16
+// Floats para el volumen de los efectos de sonido
+#define VOLUME_PLAYER_SHOT .1
+#define VOLUME_ALIENS_MOVED .1
 //#define FRAME_LOCK_NUM 2
 
 /*******************************************************************************
@@ -53,6 +56,9 @@ static void draw_player();
 static void draw_player_shot();
 static void draw_alien_shot();
 static void draw_shield(unsigned shield);
+
+// Funcion wrapper para reproducir un efecto de sonido
+static void playSound(ALLEGRO_SAMPLE* sample, float volume, ALLEGRO_SAMPLE_ID* id);
 
 static void init_error(bool state, const char* name);
 
@@ -81,8 +87,8 @@ static ALLEGRO_SAMPLE* playerDeathSound = NULL;
 static ALLEGRO_SAMPLE* alienDeathSound = NULL;
 static ALLEGRO_SAMPLE* alienMovedSound = NULL;
 static ALLEGRO_SAMPLE* ufoSound = NULL;
-//static ALLEGRO_SAMPLE* menuSong = NULL;
-//static ALLEGRO_SAMPLE_ID menuSongID;
+static ALLEGRO_SAMPLE_ID playerShotSoundID = {0, 0};
+static ALLEGRO_SAMPLE_ID alienMovedSoundID = {0, 0};
 
 
 //keyboard
@@ -105,20 +111,17 @@ game_state_t front_init(){
     al_reserve_samples(AUDIO_SAMPLES);
     init_error(al_init_image_addon(), "Allegro Image Addon");
 
-
     // Se cargan los archivos de audio
     playerShotSound = al_load_sample(AUDIO_PLAYER_SHOT);
     playerDeathSound = al_load_sample(AUDIO_PLAYER_DEATH);
     alienDeathSound = al_load_sample(AUDIO_INVADER_DEATH);
     alienMovedSound = al_load_sample(AUDIO_INVADER_MOVED);
     ufoSound = al_load_sample(AUDIO_UFO);
-    //menuSong = al_load_sample(AUDIO_MENU_SONG);
     init_error(playerShotSound, "Audio disparo del jugador.");
     init_error(playerDeathSound, "Audio muerte del jugador.");
     init_error(alienDeathSound, "Audio muerte del alien.");
     init_error(playerDeathSound, "Audio muerte del jugador.");
     init_error(ufoSound, "Audio del OVNI.");
-   // init_error(menuSong, "Audio cancion del menu.");
 
     al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
 
@@ -155,7 +158,6 @@ game_state_t front_init(){
 }
 
 game_state_t menu(){
-    //al_play_sample(menuSong, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &menuSongID);
     return menu_allegro(disp, timer, queue, default_font, buffer, mixer);
 }
 
@@ -186,7 +188,10 @@ static void kill_all(){
     al_destroy_sample(alienDeathSound);
     al_destroy_sample(alienMovedSound);
     al_destroy_sample(ufoSound);
-    //al_destroy_sample(menuSong);
+}
+
+static void playSound(ALLEGRO_SAMPLE* sample, float volume, ALLEGRO_SAMPLE_ID* id){
+    al_play_sample(sample, volume, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, id);
 }
 
 static void init_error(bool state, const char* name){
@@ -200,9 +205,7 @@ game_state_t game_update(){
     ALLEGRO_EVENT event;
     bool redraw = false, done = false, fullscreen = false, moveThisFrame = true;
     unsigned long long frame = 0;
-    
-    //al_stop_sample(&menuSongID);
-    
+        
     al_start_timer(timer);
 
     while(!done){
@@ -239,22 +242,26 @@ game_state_t game_update(){
                     break;
             }
         }
-        // Al pulsar la tecla X el jugador dispara (se aprovecha el "laziness" de C)
-        if(key[ALLEGRO_KEY_X] && player_try_shoot())
-            al_play_sample(playerShotSound, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
-        // El jugador se mueve con las flechas (falta agregar para mantener presionado)
-        if(key[ALLEGRO_KEY_RIGHT] && !moveThisFrame){ //&& frame%FRAME_LOCK_NUM == 0){
+        // Se utiliza X para disparar
+        //printf("PLayer shot used: %d\n", player_shot_is_used());
+        if(key[ALLEGRO_KEY_X] && player_try_shoot()){
+            // Se corta el sample si ya estaba reproduciendose
+            //al_stop_sample(&playerShotSoundID);
+            playSound(playerShotSound, VOLUME_PLAYER_SHOT, &playerShotSoundID);
+        }
+        // Se utilizan las flechas para mover al jugador
+        if(key[ALLEGRO_KEY_RIGHT] && !moveThisFrame){ 
             player_move_right();
             moveThisFrame = true;
         }
-        if(key[ALLEGRO_KEY_LEFT] && !moveThisFrame){ //&& frame%FRAME_LOCK_NUM == 0){
+        if(key[ALLEGRO_KEY_LEFT] && !moveThisFrame){ 
             player_move_left();
             moveThisFrame = true;
         }
 
         // Reproduce el sonido cuando los aliens se mueven.
         if(aliensMoved)
-        al_play_sample(alienMovedSound, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+        playSound(alienMovedSound, VOLUME_ALIENS_MOVED, &alienMovedSoundID);
         
         if(redraw){
             redraw = false;

@@ -139,7 +139,7 @@ static alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
 static double aliens_move_interval = 0.3; // Seconds. Time in between aliens movements
 
 // Player and Aliens can have only one active shot at a time
-static shot_t player_shot;
+static shot_t player_shot = {.is_used = true};
 static shot_t alien_shot;
 
 /*******************************************************************************
