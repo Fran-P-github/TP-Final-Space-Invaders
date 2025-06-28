@@ -60,6 +60,30 @@ bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los ali
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
+typedef struct{
+    int x, y;
+    bool is_alive;
+    int points; // Point given to player when killed
+} alien_t;
+
+typedef struct{
+    int x, y;
+    int lives;
+    int score;
+} player_t;
+
+struct shield{
+    int x, y;
+    int lives; // Shots that a block of the shield can resist
+};
+typedef struct shield shield_t[SHIELD_H][SHIELD_W];
+
+typedef struct{
+    int x, y;
+    int dy;
+    bool is_used;
+} shot_t;
+
 typedef enum movement{
     MOVEMENT_RIGHT=0,
     MOVEMENT_LEFT
@@ -124,12 +148,30 @@ static shot_t alien_shot;
  *******************************************************************************
  ******************************************************************************/
 
+int player_get_x(){ return player.x; }
+int player_get_y(){ return player.y; }
+int player_get_score(){ return player.score; }
+int player_shot_get_x(){ return player_shot.x; }
+int player_shot_get_y(){ return player_shot.y; }
+bool player_shot_is_used(){ return player_shot.is_used; }
+
+int aliens_get_x(unsigned i, unsigned j){ return aliens[i][j].x; }
+int aliens_get_y(unsigned i, unsigned j){ return aliens[i][j].y; }
+bool aliens_is_alive(unsigned i, unsigned j){ return aliens[i][j].is_alive; }
+double aliens_get_move_interval(){ return aliens_move_interval; }
+void aliens_set_move_interval(double interval){ aliens_move_interval = interval; }
+int alien_shot_get_x(){ return alien_shot.x; }
+int alien_shot_get_y(){ return alien_shot.y; }
+bool alien_shot_is_used(){ return alien_shot.is_used; }
+
+int shield_get_x(unsigned s, unsigned y, unsigned x){ return shields[s][y][x].x; }
+int shield_get_y(unsigned s, unsigned y, unsigned x){ return shields[s][y][x].y; }
+int shield_get_lives(unsigned s, unsigned y, unsigned x){ return shields[s][y][x].lives; }
+
 shield_t (*get_shields(void)) [SHIELDS_CANT]{ return &shields; }
 player_t* get_player(){ return &player; }
 alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS]{ return &aliens; }
 double* get_aliens_move_interval(){ return &aliens_move_interval; }
-shot_t* get_player_shot(){ return &player_shot; }
-shot_t* get_alien_shot(){ return &alien_shot; }
 
 #define INITIAL_SHIELD_Y_COORDINATE     WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H
 void shields_init(){

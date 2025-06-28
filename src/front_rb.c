@@ -53,22 +53,7 @@ static bool update_joystick();
 static bool check_pause(joyinfo_t joystick);
 static movement_t movement_read(int joystick_x_coordinate);
 
-// Back variables
-static player_t* player;
-static alien_t (*aliens) [ALIENS_ROWS][ALIENS_COLUMNS];
-static double* aliens_move_interval;
-static shot_t* player_shot;
-static shot_t* alien_shot;
-static shield_t (*shields) [SHIELDS_CANT];
-
 game_state_t front_init(){
-    player = get_player();
-    aliens = get_aliens();
-    aliens_move_interval = get_aliens_move_interval();
-    player_shot = get_player_shot();
-    alien_shot = get_alien_shot();
-    shields = get_shields();
-
     joy_init();
 
     disp_init();
@@ -165,7 +150,7 @@ game_state_t game_update(){
             draw_player();
             for(i=0; i<ALIENS_ROWS; ++i){
                 for(j=0; j<ALIENS_COLUMNS; ++j){
-                    if((*aliens)[i][j].is_alive){
+                    if(aliens_is_alive(i,j)){
                         draw_alien(i, j);
                     }
                 }
@@ -265,7 +250,7 @@ game_state_t game_pause(){
 void endgame(){
     disp_clear();
     for(unsigned i=0; i<3; ++i){ // Score blinks 3 times
-        draw_number_wrapped(10 * player->score, 3, 3);
+        draw_number_wrapped(10 * player_get_score(), 3, 3);
         disp_update();
         usleep(400000); // 0.4 sec
         disp_clear();
@@ -432,29 +417,29 @@ static void draw_rectangle(int x1, int y1, int x2, int y2){
 }
 
 static void draw_alien(unsigned i, unsigned j){
-    draw_rectangle((*aliens)[i][j].x, (*aliens)[i][j].y, (*aliens)[i][j].x+ALIENS_W-1, (*aliens)[i][j].y+ALIENS_H-1);
+    draw_rectangle(aliens_get_x(i,j), aliens_get_y(i,j), aliens_get_x(i,j)+ALIENS_W-1, aliens_get_y(i,j)+ALIENS_H-1);
 }
 
 static void draw_player(){
-    draw_rectangle(player->x, player->y, player->x+PLAYER_W-1, player->y+PLAYER_H-1);
+    draw_rectangle(player_get_x(), player_get_y(), player_get_x()+PLAYER_W-1, player_get_y()+PLAYER_H-1);
 }
 
 static void draw_alien_shot(){
-    if(alien_shot->is_used)
-        draw_rectangle(alien_shot->x, alien_shot->y, alien_shot->x+SHOT_W-1, alien_shot->y+SHOT_H-1);
+    if(alien_shot_is_used())
+        draw_rectangle(alien_shot_get_x(), alien_shot_get_y(), alien_shot_get_x()+SHOT_W-1, alien_shot_get_y()+SHOT_H-1);
 }
 
 static void draw_player_shot(){
-    if(player_shot->is_used)
-        draw_rectangle(player_shot->x, player_shot->y, player_shot->x+SHOT_W-1, player_shot->y+SHOT_H-1);
+    if(player_shot_is_used())
+        draw_rectangle(player_shot_get_x(), player_shot_get_y(), player_shot_get_x()+SHOT_W-1, player_shot_get_y()+SHOT_H-1);
 }
 
 static void draw_shield(unsigned shield){
     unsigned i, j;
     for(i=0; i<SHIELD_H; ++i){
         for(j=0; j<SHIELD_W; ++j){
-            if((*shields)[shield][i][j].lives)
-            draw_rectangle((*shields)[shield][i][j].x, (*shields)[shield][i][j].y, (*shields)[shield][i][j].x+SHIELD_BLOCK_W-1, (*shields)[shield][i][j].y+SHIELD_BLOCK_H-1);
+            if(shield_get_lives(shield,i,j))
+            draw_rectangle(shield_get_x(shield,i,j), shield_get_y(shield,i,j), shield_get_x(shield,i,j)+SHIELD_BLOCK_W-1, shield_get_y(shield,i,j)+SHIELD_BLOCK_H-1);
         }
     }
 }

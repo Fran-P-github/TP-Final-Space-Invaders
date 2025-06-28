@@ -64,7 +64,7 @@ int main(){
 
     game_state_t state = front_init();
 
-    state = MENU;
+    state = GAME;
     while(state != CLOSED){
         switch (state){
           case MENU:

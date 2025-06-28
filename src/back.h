@@ -24,41 +24,29 @@
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-typedef struct{
-    int x, y;
-    bool is_alive;
-    int points; // Point given to player when killed
-} alien_t;
-
-typedef struct{
-    int x, y;
-    int lives;
-    int score;
-} player_t;
-
-struct shield{
-    int x, y;
-    int lives; // Shots that a block of the shield can resist
-};
-typedef struct shield shield_t[SHIELD_H][SHIELD_W];
-
-typedef struct{
-    int x, y;
-    int dy;
-    int is_used;
-} shot_t;
-
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-// Functions to get typedefs instances
-player_t* get_player();
-alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS];
-double* get_aliens_move_interval();
-shot_t* get_player_shot();
-shot_t* get_alien_shot();
-shield_t (*get_shields(void)) [SHIELDS_CANT];
+int player_get_x();
+int player_get_y();
+int player_get_score();
+int player_shot_get_x();
+int player_shot_get_y();
+bool player_shot_is_used();
+
+int aliens_get_x(unsigned i, unsigned j);
+int aliens_get_y(unsigned i, unsigned j);
+bool aliens_is_alive(unsigned i, unsigned j);
+int alien_shot_get_x();
+int alien_shot_get_y();
+bool alien_shot_is_used();
+double aliens_get_move_interval();
+void aliens_set_move_interval(double interval);
+
+int shield_get_x(unsigned shield, unsigned block_y, unsigned block_x);
+int shield_get_y(unsigned shield, unsigned block_y, unsigned block_x);
+int shield_get_lives(unsigned shield, unsigned block_y, unsigned block_x);
 
 void aliens_init();
 bool aliens_update(); // Returns: true if aliens reach player height, false otherwise
