@@ -28,7 +28,9 @@
 
 #define PLAYER_DX ( PLAYER_W / 2 )
 
-#define SHOT_DY ( SHOT_W / 2 )
+//#define SHOT_DY ( SHOT_W / 2 )
+#define SHOT_DY_ALIEN 1
+#define SHOT_DY_PLAYER 10
 
 #elif PLATFORM == RPI
 #define ALIENS_DX 1
@@ -36,7 +38,8 @@
 
 #define PLAYER_DX 1
 
-#define SHOT_DY 1
+#define SHOT_DY_ALIEN 1
+#define SHOT_DY_PLAYER 1
 
 #endif
 
@@ -353,7 +356,7 @@ void aliens_shield_collition(){
 static void player_shot_update(){
     if(!player_shot.is_used) return;
 
-    player_shot.y -= SHOT_DY;
+    player_shot.y -= SHOT_DY_PLAYER;
     unsigned i, j;
 
     // Alien_shot collition
@@ -389,12 +392,16 @@ static void player_shot_update(){
             }
         }
     }
+
+    // Window limit
+    if(player_shot.y+SHOT_H <= 0) // esta en el origen
+        player_shot.is_used = false;
 }
 
 static void alien_shot_update(){
     if(!alien_shot.is_used) return;
 
-    alien_shot.y += SHOT_DY;
+    alien_shot.y += SHOT_DY_ALIEN;
 
     // Player_shot collition: it is in player_shot_update
 
