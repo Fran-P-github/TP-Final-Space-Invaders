@@ -71,6 +71,10 @@ static ALLEGRO_DISPLAY* disp;
 static ALLEGRO_EVENT_QUEUE* queue;
 static ALLEGRO_FONT* default_font;
 static ALLEGRO_BITMAP* buffer;
+static ALLEGRO_MIXER* mixer;
+
+
+
 // Punteros a los samples para el audio
 static ALLEGRO_SAMPLE* playerShotSound = NULL;
 static ALLEGRO_SAMPLE* playerDeathSound = NULL;
@@ -131,7 +135,10 @@ game_state_t front_init(){
     init_error(ufoSound, "Audio del OVNI.");
    // init_error(menuSong, "Audio cancion del menu.");
 
-    al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_WINDOWED);
+    al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
+
+    mixer = al_create_mixer(44100,ALLEGRO_AUDIO_DEPTH_FLOAT32,ALLEGRO_CHANNEL_CONF_2);
+    init_error(mixer, "Mixer");
 
     default_font = al_create_builtin_font();
     init_error(default_font, "Font");
@@ -164,7 +171,7 @@ game_state_t front_init(){
 
 game_state_t menu(){
     //al_play_sample(menuSong, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &menuSongID);
-    return menu_allegro(disp, timer, queue, default_font, buffer);
+    return menu_allegro(disp, timer, queue, default_font, buffer, mixer);
 }
 
 game_state_t game_pause(){
@@ -187,6 +194,7 @@ static void kill_all(){
     al_destroy_timer (timer);
     al_destroy_event_queue(queue);
     al_destroy_font(default_font);
+    al_destroy_mixer(mixer);
     // Se destruyen los samples de audio usados
     al_destroy_sample(playerShotSound);
     al_destroy_sample(playerDeathSound);

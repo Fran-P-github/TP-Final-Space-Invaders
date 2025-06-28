@@ -5,6 +5,7 @@
         "allegro5.h": "c",
         "allegro_font.h": "c",
         "menu_allegro.h": "c",
-        "allegro_acodec.h": "c"
+        "allegro_acodec.h": "c",
+        "cstdlib": "c"
     }
 }
