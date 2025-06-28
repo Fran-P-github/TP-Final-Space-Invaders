@@ -61,7 +61,7 @@ void menu_allegro(ALLEGRO_DISPLAY* display, ALLEGRO_TIMER* timer, ALLEGRO_EVENT_
   char Intro_background_path[64];
   int i;
   for (i = 1; i <= 300 && select != QUIT; i++) {
-      sprintf(Intro_background_path, "../assets/Intro_background/frames/frame_%03d.png", i);
+      sprintf(Intro_background_path, "../assets/Bitmap/Intro_background/frames/frame_%03d.png", i);
       Intro_background_frames[i-1] = al_load_bitmap(Intro_background_path);
       if (!Intro_background_frames[i-1]) {
           fprintf(stderr, "Error loading frame %d: %s\n", i-1, Intro_background_path);

@@ -98,12 +98,12 @@
 #endif
 
 // Audio files (Son los mismos independientemente de la plataforma)
-#define AUDIO_PLAYER_SHOT "../audio/shoot.wav" 
-#define AUDIO_PLAYER_DEATH "../audio/explosion.wav" 
-#define AUDIO_INVADER_DEATH "../audio/invaderkilled.wav" 
-#define AUDIO_INVADER_MOVED "../audio/invadermoved.wav" 
-#define AUDIO_UFO "../audio/ufo.wav"
-#define AUDIO_MENU_SONG "../audio/menuSong.wav"
+#define AUDIO_PLAYER_SHOT "../assets/Audio/shoot.wav" 
+#define AUDIO_PLAYER_DEATH "../assets/Audio/explosion.wav" 
+#define AUDIO_INVADER_DEATH "../assets/Audio/invaderkilled.wav" 
+#define AUDIO_INVADER_MOVED "../assets/Audio/invadermoved.wav" 
+#define AUDIO_UFO "../assets/Audio/ufo.wav"
+#define AUDIO_MENU_SONG "../assets/Audio/menuSong.wav"
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
