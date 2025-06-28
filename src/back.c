@@ -226,8 +226,12 @@ bool alien_try_shoot(unsigned c){
  ******************************************************************************/
 
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2){
-    bool condition = (ax1 < bx2) && (ax2 > bx1) && (ay1 < by2) && (ay2 > by1);
-    return condition;
+    if(ax1 > bx2) return false;
+    if(ax2 < bx1) return false;
+    if(ay1 > by2) return false;
+    if(ay2 < by1) return false;
+
+    return true;
 }
 
 static void shield_init(unsigned k, int x, int y){
