@@ -214,7 +214,7 @@ game_state_t game_update(){
     
     al_start_timer(timer);
 
-    while(!done && al_get_next_event(queue, &event)){
+    while(!done){
         al_wait_for_event(queue, &event);
 
         switch(event.type){
