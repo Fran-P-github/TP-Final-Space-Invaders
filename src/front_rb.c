@@ -45,6 +45,7 @@ typedef enum{
 } movement_t;
 
 static void draw_rectangle(int x1, int y1, int x2, int y2);
+static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
 static void draw_player_shot();
@@ -157,6 +158,10 @@ game_state_t game_update(){
                         draw_alien(i, j);
                     }
                 }
+            }
+            mothership_update();
+            if(mothership_is_active()){
+                draw_mothership();
             }
 
             disp_update();
@@ -416,6 +421,10 @@ static void draw_rectangle(int x1, int y1, int x2, int y2){
                 disp_write((dcoord_t){.x=i, .y=j}, D_ON); // Se prende el led en la posicion {i, j}
         }
     } 
+}
+
+static void draw_mothership(){
+    draw_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x()+MOTHERSHIP_W-1, mothership_get_y()+MOTHERSHIP_H-1);
 }
 
 static void draw_alien(unsigned i, unsigned j){

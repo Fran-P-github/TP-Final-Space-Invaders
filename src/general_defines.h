@@ -39,6 +39,10 @@
 #define WORLD_WIDTH 960
 #define WORLD_HEIGHT 540
 
+#define MOTHERSHIP_W 14
+#define MOTHERSHIP_H 8
+#define MOTHERSHIP_MARGIN 10
+
 #define PLAYER_W 10
 #define PLAYER_H 20
 #define PLAYER_MARGIN 10 // Que tan separado debe estar de margenes laterales e inferior
@@ -72,6 +76,10 @@
 #define FRAME_RATE 1
 #define WORLD_WIDTH 16
 #define WORLD_HEIGHT 16
+
+#define MOTHERSHIP_W 3
+#define MOTHERSHIP_H 1
+#define MOTHERSHIP_MARGIN 0
 
 #define PLAYER_W 3
 #define PLAYER_H 1

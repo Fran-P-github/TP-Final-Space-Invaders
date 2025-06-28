@@ -15,6 +15,7 @@
 
 #include<time.h>
 #include<stdbool.h>
+#include<stdlib.h>
 
 #include"back.h"
 
@@ -23,6 +24,9 @@
  ******************************************************************************/
 
 #if PLATFORM == ALLEGRO
+
+#define MOTHERSHIP_X_VELOCITY 400
+#define MOTHERSHIP_DX ( MOTHERSHIP_X_VELOCITY / FRAME_RATE )
 
 #define ALIENS_X_VELOCITY 500//( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
 #define ALIENS_Y_VELOCITY 500//( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
@@ -39,6 +43,8 @@
 #define SHOT_DY_PLAYER (SHOT_VELOCITY_PLAYER / FRAME_RATE)
 
 #elif PLATFORM == RPI
+
+#define MOTHERSHIP_DX 1
 
 #define ALIENS_DX 1
 #define ALIENS_DY 1
@@ -89,6 +95,13 @@ typedef enum movement{
     MOVEMENT_LEFT
 } movement_t;
 
+typedef struct{
+    int x, y;
+    int dx;
+    bool is_active;
+    int points; // Point given to player when shot
+} mothership_t;
+
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -96,8 +109,12 @@ typedef enum movement{
 // Inits shield in given coordinates
 static void shield_init(unsigned shield, int x, int y);
 
+static int rand_between(int lo, int hi);
+
 // Detects collition between a and b
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2);
+
+static bool should_spawn_mothership(double elapsed_time);
 
 // Call for shots to update
 static void player_shot_update();
@@ -142,11 +159,17 @@ static double aliens_move_interval = 0.3; // Seconds. Time in between aliens mov
 static shot_t player_shot = {.is_used = true};
 static shot_t alien_shot;
 
+static mothership_t mothership;
+
 /*******************************************************************************
  *******************************************************************************
                         GLOBAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
+
+int mothership_get_x(){ return mothership.x; }
+int mothership_get_y(){ return mothership.y; }
+bool mothership_is_active(){ return mothership.is_active; }
 
 int player_get_x(){ return player.x; }
 int player_get_y(){ return player.y; }
@@ -239,6 +262,41 @@ void shots_update(){
     alien_shot_update();
 }
 
+void mothership_update(){
+    static clock_t start = 0;
+    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    if(!mothership.is_active && !should_spawn_mothership(elapsed)) return; // Mothership inactive and not activated yet
+    start = clock();
+
+    static bool spawn_right;
+
+    if(!mothership.is_active){
+        spawn_right = rand()%2;
+
+        mothership.is_active = true;
+        mothership.points = 5 * rand_between(2, 16); // 10 to 80, 5 steps
+        mothership.y = MOTHERSHIP_MARGIN;
+        if(spawn_right){
+            mothership.x = WORLD_WIDTH;
+        }else{
+            mothership.x = -MOTHERSHIP_W;
+        }
+    }
+
+    if(spawn_right){
+        if(mothership.x+MOTHERSHIP_W-1 < 0){
+            mothership.is_active = false;
+        }
+        mothership.x -= MOTHERSHIP_DX;
+    }
+    else{
+        if(mothership.x > WORLD_WIDTH-1){
+            mothership.is_active = false;
+        }
+        mothership.x += MOTHERSHIP_DX;
+    }
+}
+
 // Returns: true if shot was available when called, false otherwise
 bool player_try_shoot(){
     if(player_shot.is_used) return false;
@@ -267,6 +325,10 @@ bool alien_try_shoot(unsigned c){
  *******************************************************************************
  ******************************************************************************/
 
+static int rand_between(int lo, int hi){
+    return lo + rand() % (hi - lo + 1);
+}
+
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2){
     if(ax1 > bx2) return false;
     if(ax2 < bx1) return false;
@@ -274,6 +336,22 @@ static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx
     if(ay2 < by1) return false;
 
     return true;
+}
+
+static bool should_spawn_mothership(double elapsed_time){
+    const double max_prob = 0.5; // 50% max
+    double rate = 0.01;    // 1% increase per second
+
+    double probability = elapsed_time * rate;
+
+    // Limita al máximo
+    if (probability > max_prob)
+        probability = max_prob;
+
+    // Genera número entre 0 y 1
+    double r = (double)rand() / RAND_MAX;
+
+    return r < probability;
 }
 
 static void shield_init(unsigned k, int x, int y){
@@ -408,6 +486,13 @@ static void player_shot_update(){
     player_shot.y -= SHOT_DY_PLAYER;
     unsigned i, j;
 
+    // Mothership collition
+    if(collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W-1, player_shot.y+SHOT_H-1, mothership.x, mothership.y, mothership.x+MOTHERSHIP_W-1, mothership.y+MOTHERSHIP_H-1)){
+        player_shot.is_used = false;
+        player.score += mothership.points;
+        mothership.is_active = false;
+    }
+
     // Alien_shot collition
     if(collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W-1, player_shot.y+SHOT_H-1, alien_shot.x, alien_shot.y, alien_shot.x+SHOT_W-1, alien_shot.y+SHOT_H-1)){
         player_shot.is_used = false;
@@ -443,7 +528,7 @@ static void player_shot_update(){
     }
 
     // Window limit
-    if(player_shot.y <= 0) // esta en el origen
+    if(player_shot.y < 0) // Out of bounds
         player_shot.is_used = false;
 }
 
