@@ -22,6 +22,12 @@
 #define LETTERS_WIDTH 57
 #define LETTERS_WAIT_TIME 0.1 // Seconds
 
+#define MENU_OPTIONS 3
+#define ARROW_X 2
+#define ARROW_Y 6
+#define ARROW_SPACING 5   // Espaciado horizontal entre opciones
+#define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
+
 typedef enum{
     MOVE_RIGHT_SLOW=0,
     MOVE_RIGHT_FAST,
@@ -167,12 +173,36 @@ game_state_t game_update(){
     return CLOSED;
 }
 
-#define MENU_OPTIONS 3
-#define ARROW_X 4         // Columna izquierda
-#define ARROW_SPACING 2   // Espaciado vertical entre opciones
-#define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
+static void draw3x3(const char icon[3][4], unsigned x, unsigned y){
+    for(unsigned i=0; i<3; ++i){
+        for(unsigned j=0; j<3; ++j){
+            dcoord_t coord = { .x = x+j, .y = y+i };
+            disp_write(coord, icon[i][j]=='*' ? D_ON : D_OFF);
+        }
+    }
+}
+
 game_state_t game_pause(){
+    const char resume[3][4] = {
+        " * ",
+        " **",
+        " * "
+    };
+    const char menu[3][4] = {
+        " * ",
+        "***",
+        "* *"
+    };
+    const char exit[3][4] = {
+        "* *",
+        " * ",
+        "* *"
+    };
+
     disp_clear();
+    draw3x3(resume, 1, 8);
+    draw3x3(menu, 6, 8);
+    draw3x3(exit, 11, 8);
     disp_update();
 
     // Wait for button release
@@ -199,16 +229,14 @@ game_state_t game_pause(){
 
         // Draw options
         for (int i = 0; i < MENU_OPTIONS; ++i) {
-            dcoord_t coord = { .x = ARROW_X, .y = (i+1)*ARROW_SPACING };
+            dcoord_t coord = { .x = ARROW_X+i*ARROW_SPACING, .y = ARROW_Y };
             disp_write(coord, i == selected ? D_ON : D_OFF);
         }
         disp_update();
-        printf("%d\n", selected);
 
         // Selección con botón
         if (js.sw == J_PRESS) {
             wait_button_release();
-            #include<stdio.h>
             switch(selected){
                 case 0:
                     return GAME;
