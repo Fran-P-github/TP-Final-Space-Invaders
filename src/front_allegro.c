@@ -203,10 +203,6 @@ static void init_error(bool state, const char* name){
     }
 }
 
-game_state_t game_pause(){
-    return CLOSED;
-}
-
 game_state_t game_update(){
     ALLEGRO_EVENT event;
     bool redraw = false;
