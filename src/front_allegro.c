@@ -169,6 +169,10 @@ game_state_t menu(){
     return GAME;
 }
 
+game_state_t game_pause(){
+    return GAME;
+}
+
 void endgame(){
     kill_all();
 }

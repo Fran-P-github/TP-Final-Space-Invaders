@@ -24,6 +24,8 @@ game_state_t menu();
 
 game_state_t game_update();
 
+game_state_t game_pause();
+
 void endgame();
 
 /*******************************************************************************
