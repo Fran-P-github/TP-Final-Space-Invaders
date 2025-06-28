@@ -70,8 +70,6 @@ static ALLEGRO_DISPLAY* disp;
 static ALLEGRO_EVENT_QUEUE* queue;
 static ALLEGRO_FONT* default_font;
 static ALLEGRO_BITMAP* buffer;
-
-
 // Punteros a los samples para el audio
 static ALLEGRO_SAMPLE* playerShotSound = NULL;
 static ALLEGRO_SAMPLE* playerDeathSound = NULL;
@@ -201,6 +199,10 @@ static void init_error(bool state, const char* name){
     }
 }
 
+game_state_t game_pause(){
+    return CLOSED;
+}
+
 game_state_t game_update(){
     ALLEGRO_EVENT event;
     bool redraw = false;
@@ -212,7 +214,7 @@ game_state_t game_update(){
     
     al_start_timer(timer);
 
-    while(!done){
+    while(!done && al_get_next_event(queue, &event)){
         al_wait_for_event(queue, &event);
 
         switch(event.type){
@@ -224,33 +226,35 @@ game_state_t game_update(){
                 break;
 
             case ALLEGRO_EVENT_KEY_DOWN:
-            key[event.keyboard.keycode] = 1;
-            if (key[ALLEGRO_KEY_ESCAPE])
-            done = true;
-            if (key[ALLEGRO_KEY_F])
-            fullscreen = !fullscreen;
-            al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
-            // Al pulsar la tecla X el jugador dispara (se aprovecha el "laziness" de C)
-            if(key[ALLEGRO_KEY_X] && player_try_shoot())
-            al_play_sample(playerShotSound, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
-            break;
-            // El jugador se mueve con las flechas (falta agregar para mantener presionado)
-            if(key[ALLEGRO_KEY_RIGHT])
-            player_move_right();
-            if(key[ALLEGRO_KEY_LEFT])
-            player_move_left();
+                key[event.keyboard.keycode] = 1;
+                break;
             case ALLEGRO_EVENT_KEY_UP:
-            key[event.keyboard.keycode] = 0;
-            break;
+                key[event.keyboard.keycode] = 0;
+                break;
 
             case ALLEGRO_EVENT_DISPLAY_RESIZE:
-            al_acknowledge_resize(disp);
-            break;
+                al_acknowledge_resize(disp);
+                break;
 
             case ALLEGRO_EVENT_DISPLAY_CLOSE:
                 done = true;
                 break;
         }
+
+        if (key[ALLEGRO_KEY_ESCAPE])
+            done = true;
+        if (key[ALLEGRO_KEY_F]){
+            fullscreen = !fullscreen;
+            al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
+        }
+        // Al pulsar la tecla X el jugador dispara (se aprovecha el "laziness" de C)
+        if(key[ALLEGRO_KEY_X] && player_try_shoot())
+            al_play_sample(playerShotSound, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+        // El jugador se mueve con las flechas (falta agregar para mantener presionado)
+        if(key[ALLEGRO_KEY_RIGHT])
+            player_move_right();
+        if(key[ALLEGRO_KEY_LEFT])
+            player_move_left();
 
         // Reproduce el sonido cuando los aliens se mueven.
         if(aliensMoved)
@@ -281,8 +285,6 @@ game_state_t game_update(){
             al_flip_display();
         }
     }
-
-    kill_all();
     return CLOSED;
 }
 
