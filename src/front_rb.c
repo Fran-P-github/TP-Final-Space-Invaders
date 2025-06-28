@@ -1,10 +1,12 @@
 #include<time.h>
 #include<unistd.h>
+#include<string.h>
 
 // Modulos
 #include "front_rb.h"
 #include "general_defines.h"
 #include "back.h"
+#include "font_3x5.h"
 // Matriz de leds y joystick
 #include "../libs/joydisp/disdrv.h"
 #include "../libs/joydisp/joydrv.h"
@@ -29,9 +31,10 @@
 #define ARROW_SPACING 5   // Espaciado horizontal entre opciones
 #define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
 
-#define DIGIT_W 3
-#define DIGIT_H 5
-#define DIGIT_SPACING 1
+#define CHAR_WIDTH 3
+#define CHAR_HEIGHT 5
+#define CHAR_SPACING 1
+#define LINE_SPACING 1
 
 typedef enum{
     MOVE_RIGHT_SLOW=0,
@@ -172,8 +175,7 @@ static void draw3x3(const char icon[3][4], unsigned x, unsigned y){
     }
 }
 
-static void draw_digit(unsigned digit, int x, int y);
-static void draw_number_wrapped(unsigned num, int x, int y);
+static void draw_text_wrapped(const char* str, int x, int y);
 
 game_state_t game_pause(){
     const char resume[3][4] = {
@@ -250,7 +252,9 @@ game_state_t game_pause(){
 void endgame(){
     disp_clear();
     for(unsigned i=0; i<3; ++i){ // Score blinks 3 times
-        draw_number_wrapped(10 * player_get_score(), 3, 3);
+        char buf[10];
+        snprintf(buf, sizeof(buf), "%d", 10*player_get_score());
+        draw_text_wrapped(buf, 3, 3);
         disp_update();
         usleep(400000); // 0.4 sec
         disp_clear();
@@ -259,54 +263,52 @@ void endgame(){
     }
 }
 
-static void draw_number_wrapped(unsigned num, int x, int y){
-    const int initial_x = x;
+static void draw_text_wrapped(const char *str, int x, int y) {
+    int orig_x = x;
 
-    if (num == 0){
-        draw_digit(0, x, y);
-        return;
-    }
+    for (const char *p = str; *p != '\0'; ++p) {
+        char c = *p;
 
-    // Primero calculamos cuántos dígitos tiene (necesario para imprimir en orden)
-    unsigned digits[10]; // hasta 10 cifras (sobra para unsigned)
-    unsigned count = 0;
-    while(num > 0) {
-        digits[count++] = num % 10;
-        num /= 10;
-    }
-
-    // Imprimir de izquierda a derecha (invertimos el orden)
-    for(int i = count - 1; i >= 0; --i){
-        if (x + DIGIT_W > WORLD_WIDTH){
-            x = initial_x;
-            y += DIGIT_H + 1;
-            if (y + DIGIT_H > WORLD_HEIGHT)
-                return; // no hay más espacio en el display
+        // Space
+        if (c == ' ') {
+            x += CHAR_WIDTH + CHAR_SPACING;
         }
-        draw_digit(digits[i], x, y);
-        x += DIGIT_W + DIGIT_SPACING;
-    }
-}
+        // Digit
+        else if (c >= '0' && c <= '9') {
+            const char (*glyph)[4] = NUM_FONT[c - '0'];
+            for (int i = 0; i < CHAR_HEIGHT; ++i) {
+                for (int j = 0; j < CHAR_WIDTH; ++j) {
+                    if (glyph[i][j] == '*'){
+                        dcoord_t coord = { .x = x+j, .y = y+i };
+                        disp_write(coord, D_ON);
+                    }
+                }
+            }
+            x += CHAR_WIDTH + CHAR_SPACING;
+        }
+        // Letter (upper case)
+        else if ((c=toupper(c)) >= 'A' && c <= 'Z') {
+            const char (*glyph)[4] = LETTER_FONT[c - 'A'];
+            for (int i = 0; i < CHAR_HEIGHT; ++i) {
+                for (int j = 0; j < CHAR_WIDTH; ++j) {
+                    if (glyph[i][j] == '*'){
+                        dcoord_t coord = { .x = x+j, .y = y+i };
+                        disp_write(coord, D_ON);
+                    }
+                }
+            }
+            x += CHAR_WIDTH + CHAR_SPACING;
+        }
 
-static void draw_digit(unsigned digit, int x, int y){
-    const char NUM_FONT[10][5][4] = {
-        { " * ", "* *", "* *", "* *", " * " }, // 0
-        { "  *", " **", "* *", "  *", "  *" }, // 1
-        { "***", "  *", " * ", "*  ", "***" }, // 2
-        { "***", "  *", " * ", "  *", "***" }, // 3
-        { "* *", "* *", "***", "  *", "  *" }, // 4
-        { "***", "*  ", "***", "  *", "***" }, // 5
-        { "***", "*  ", "***", "* *", "***" }, // 6
-        { "***", "  *", "  *", " * ", " * " }, // 7
-        { "***", "* *", "***", "* *", "***" }, // 8
-        { "***", "* *", "***", "  *", "***" }, // 9
-    };
+        // Salto de línea si no entra el siguiente carácter
+        if (x + CHAR_WIDTH > WORLD_WIDTH) {
+            x = orig_x;
+            y += CHAR_HEIGHT + LINE_SPACING;
+        }
 
-    if(digit > 9) return;
-    for(int i = 0; i < 5; ++i) {
-        for(int j = 0; j < 3; ++j) {
-            dcoord_t coord = { .x = x + j, .y = y + i };
-            disp_write(coord, NUM_FONT[digit][i][j] == '*' ? D_ON : D_OFF);
+        // Cortar si nos pasamos del alto del display
+        if (y + CHAR_HEIGHT > WORLD_HEIGHT) {
+            break;
         }
     }
 }
