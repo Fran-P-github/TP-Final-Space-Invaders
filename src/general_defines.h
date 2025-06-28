@@ -35,6 +35,7 @@
 
 #if PLATFORM == ALLEGRO
 
+#define FRAME_RATE 30
 #define WORLD_WIDTH 960
 #define WORLD_HEIGHT 540
 
@@ -68,6 +69,7 @@
 
 #elif PLATFORM == RPI
 
+#define FRAME_RATE 1
 #define WORLD_WIDTH 16
 #define WORLD_HEIGHT 16
 

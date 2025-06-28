@@ -31,7 +31,7 @@ typedef struct{
 } alien_t;
 
 typedef struct{
-    int x, y;
+    double x, y;
     int lives;
     int score;
 } player_t;

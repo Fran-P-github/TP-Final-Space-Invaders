@@ -135,7 +135,7 @@ game_state_t front_init(){
     default_font = al_create_builtin_font();
     init_error(default_font, "Font");
 
-    timer = al_create_timer(1.0 / 30.0); // 30 FPS
+    timer = al_create_timer(1.0 / FRAME_RATE); // 30 FPS
     init_error(timer, "Timer");
 
     al_set_new_display_option(ALLEGRO_SAMPLE_BUFFERS, 1, ALLEGRO_SUGGEST);
@@ -215,38 +215,37 @@ game_state_t game_update(){
     al_start_timer(timer);
 
     while(!done){
-        
-        al_wait_for_event(queue, &event);
+        // Procesamiento de eventos        
+        while(al_get_next_event(queue, &event)){
+            switch(event.type){
+                case ALLEGRO_EVENT_TIMER:
+                    aliens_update();
+                    shots_update();
+                    redraw = true;
+                    ++frame;
+                    break;
 
-        switch(event.type){
-            case ALLEGRO_EVENT_TIMER:
-                aliens_update();
-                shots_update();
-                redraw = true;
-                ++frame;
-                break;
+                case ALLEGRO_EVENT_KEY_DOWN:
+                    key[event.keyboard.keycode] = 1;
+                    if (key[ALLEGRO_KEY_ESCAPE])
+                        done = true;
+                    if (key[ALLEGRO_KEY_F]){
+                        fullscreen = !fullscreen;
+                        al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
+                    }
+                    break;
+                case ALLEGRO_EVENT_KEY_UP:
+                    key[event.keyboard.keycode] = 0;
+                    break;
 
-            case ALLEGRO_EVENT_KEY_DOWN:
-                key[event.keyboard.keycode] = 1;
-                break;
-            case ALLEGRO_EVENT_KEY_UP:
-                key[event.keyboard.keycode] = 0;
-                break;
+                case ALLEGRO_EVENT_DISPLAY_RESIZE:
+                    al_acknowledge_resize(disp);
+                    break;
 
-            case ALLEGRO_EVENT_DISPLAY_RESIZE:
-                al_acknowledge_resize(disp);
-                break;
-
-            case ALLEGRO_EVENT_DISPLAY_CLOSE:
-                done = true;
-                break;
-        }
-
-        if (key[ALLEGRO_KEY_ESCAPE])
-            done = true;
-        if (key[ALLEGRO_KEY_F]){
-            fullscreen = !fullscreen;
-            al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
+                case ALLEGRO_EVENT_DISPLAY_CLOSE:
+                    done = true;
+                    break;
+            }
         }
         // Al pulsar la tecla X el jugador dispara (se aprovecha el "laziness" de C)
         if(key[ALLEGRO_KEY_X] && player_try_shoot())

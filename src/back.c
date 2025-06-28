@@ -23,16 +23,23 @@
  ******************************************************************************/
 
 #if PLATFORM == ALLEGRO
-#define ALIENS_DX ( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
-#define ALIENS_DY ( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
 
-#define PLAYER_DX ( PLAYER_W / 2 )
+#define ALIENS_X_VELOCITY 100//( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
+#define ALIENS_Y_VELOCITY 100//( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
+#define ALIENS_DX (ALIENS_X_VELOCITY / FRAME_RATE)
+#define ALIENS_DY (ALIENS_Y_VELOCITY / FRAME_RATE)
+
+#define PLAYER_VELOCITY 50//( PLAYER_W / 2 )
+#define PLAYER_DX ((double)(PLAYER_VELOCITY / FRAME_RATE))
 
 //#define SHOT_DY ( SHOT_W / 2 )
-#define SHOT_DY_ALIEN 1
-#define SHOT_DY_PLAYER 10
+#define SHOT_VELOCITY_ALIEN 200
+#define SHOT_VELOCITY_PLAYER 200
+#define SHOT_DY_ALIEN (SHOT_VELOCITY_ALIEN / FRAME_RATE)
+#define SHOT_DY_PLAYER (SHOT_VELOCITY_PLAYER / FRAME_RATE)
 
 #elif PLATFORM == RPI
+
 #define ALIENS_DX 1
 #define ALIENS_DY 1
 
@@ -73,7 +80,7 @@ static void player_shot_update();
 static void alien_shot_update();
 
 // Move player
-static void player_move(int x, int y);
+static void player_move(double x, double y);
 
 // Move alien and wrappers
 static void aliens_move(int x, int y);
@@ -105,7 +112,7 @@ static player_t player;
 static shield_t shields[SHIELDS_CANT];
 
 static alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
-static double aliens_move_interval = 0.01; // Seconds. Time in between aliens movements
+static double aliens_move_interval = 0.5; // Seconds. Time in between aliens movements
 
 // Player and Aliens can have only one active shot at a time
 static shot_t player_shot;
@@ -143,7 +150,7 @@ void player_init(){
     player.score = 0;
 }
 
-#define FIRST_ALIEN_X_COORDINATE        ( (WORLD_WIDTH - ALL_ALIENS_WIDTH) / 2 )
+#define FIRST_ALIEN_X_COORDINATE  ( (WORLD_WIDTH - ALL_ALIENS_WIDTH) / 2 )
 void aliens_init(){
     unsigned i, j;
     int x = FIRST_ALIEN_X_COORDINATE;
@@ -219,12 +226,8 @@ bool alien_try_shoot(unsigned c){
  ******************************************************************************/
 
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2){
-    if(ax1 > bx2) return false;
-    if(ax2 < bx1) return false;
-    if(ay1 > by2) return false;
-    if(ay2 < by1) return false;
-
-    return true;
+    bool condition = (ax1 < bx2) && (ax2 > bx1) && (ay1 < by2) && (ay2 > by1);
+    return condition;
 }
 
 static void shield_init(unsigned k, int x, int y){
@@ -239,7 +242,7 @@ static void shield_init(unsigned k, int x, int y){
     }
 }
 
-static void player_move(int x, int y){
+static void player_move(double x, double y){
     player.x += x;
     player.y += y;
 }
@@ -394,7 +397,7 @@ static void player_shot_update(){
     }
 
     // Window limit
-    if(player_shot.y+SHOT_H <= 0) // esta en el origen
+    if(player_shot.y <= 0) // esta en el origen
         player_shot.is_used = false;
 }
 
