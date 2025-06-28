@@ -171,7 +171,7 @@ game_state_t game_update(){
 #define ARROW_X 4         // Columna izquierda
 #define ARROW_SPACING 2   // Espaciado vertical entre opciones
 #define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
-game_state_t pause(){
+game_state_t game_pause(){
     disp_clear();
     disp_update();
 
