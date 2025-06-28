@@ -31,7 +31,8 @@
  ******************************************************************************/
 
 #define MSJ_ERR_INIT "Problema al inicializar: "
-#define AUDIO_SAMPLES 16 
+#define AUDIO_SAMPLES 16
+//#define FRAME_LOCK_NUM 2
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -205,9 +206,7 @@ static void init_error(bool state, const char* name){
 
 game_state_t game_update(){
     ALLEGRO_EVENT event;
-    bool redraw = false;
-    bool done = false;
-    bool fullscreen = false;
+    bool redraw = false, done = false, fullscreen = false, moveThisFrame = true;
     unsigned long long frame = 0;
     
     al_stop_sample(&menuSongID);
@@ -223,6 +222,7 @@ game_state_t game_update(){
                     shots_update();
                     redraw = true;
                     ++frame;
+                    moveThisFrame = false;
                     break;
 
                 case ALLEGRO_EVENT_KEY_DOWN:
@@ -251,10 +251,14 @@ game_state_t game_update(){
         if(key[ALLEGRO_KEY_X] && player_try_shoot())
             al_play_sample(playerShotSound, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
         // El jugador se mueve con las flechas (falta agregar para mantener presionado)
-        if(key[ALLEGRO_KEY_RIGHT])
+        if(key[ALLEGRO_KEY_RIGHT] && !moveThisFrame){ //&& frame%FRAME_LOCK_NUM == 0){
             player_move_right();
-        if(key[ALLEGRO_KEY_LEFT])
+            moveThisFrame = true;
+        }
+        if(key[ALLEGRO_KEY_LEFT] && !moveThisFrame){ //&& frame%FRAME_LOCK_NUM == 0){
             player_move_left();
+            moveThisFrame = true;
+        }
 
         // Reproduce el sonido cuando los aliens se mueven.
         if(aliensMoved)

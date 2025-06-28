@@ -24,13 +24,13 @@
 
 #if PLATFORM == ALLEGRO
 
-#define ALIENS_X_VELOCITY 100//( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
-#define ALIENS_Y_VELOCITY 100//( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
+#define ALIENS_X_VELOCITY 500//( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
+#define ALIENS_Y_VELOCITY 500//( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
 #define ALIENS_DX (ALIENS_X_VELOCITY / FRAME_RATE)
 #define ALIENS_DY (ALIENS_Y_VELOCITY / FRAME_RATE)
 
-#define PLAYER_VELOCITY 50//( PLAYER_W / 2 )
-#define PLAYER_DX ((double)(PLAYER_VELOCITY / FRAME_RATE))
+#define PLAYER_VELOCITY 200//( PLAYER_W / 2 )
+#define PLAYER_DX (PLAYER_VELOCITY / FRAME_RATE)
 
 //#define SHOT_DY ( SHOT_W / 2 )
 #define SHOT_VELOCITY_ALIEN 200
@@ -80,7 +80,7 @@ static void player_shot_update();
 static void alien_shot_update();
 
 // Move player
-static void player_move(double x, double y);
+static void player_move(int x, int y);
 
 // Move alien and wrappers
 static void aliens_move(int x, int y);
@@ -112,7 +112,7 @@ static player_t player;
 static shield_t shields[SHIELDS_CANT];
 
 static alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
-static double aliens_move_interval = 0.5; // Seconds. Time in between aliens movements
+static double aliens_move_interval = 0.3; // Seconds. Time in between aliens movements
 
 // Player and Aliens can have only one active shot at a time
 static shot_t player_shot;
@@ -242,7 +242,7 @@ static void shield_init(unsigned k, int x, int y){
     }
 }
 
-static void player_move(double x, double y){
+static void player_move(int x, int y){
     player.x += x;
     player.y += y;
 }
