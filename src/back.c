@@ -150,7 +150,7 @@ void aliens_init(){
             aliens[i][j].x = x;
             aliens[i][j].y = y;
             aliens[i][j].is_alive = true;
-            aliens[i][j].points = 2;
+            aliens[i][j].points = ALIENS_POINTS;
 
             x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
         }

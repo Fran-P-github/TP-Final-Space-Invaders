@@ -73,6 +73,7 @@ int main(){
             state = game_update();
             break;
           case PAUSE:
+            state = pause();
             break;
           case CLOSED:
             break;

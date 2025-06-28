@@ -37,8 +37,9 @@ static void draw_player_shot();
 static void draw_alien_shot();
 static void draw_shield(unsigned shield);
 
-static void update_joystick();
-
+static void wait_button_release();
+static bool update_joystick();
+static bool check_pause(joyinfo_t joystick);
 static movement_t movement_read(int joystick_x_coordinate);
 
 // Back variables
@@ -124,7 +125,9 @@ game_state_t game_update(){
     unsigned long long frame = 0;
 
     while(!done){
-        update_joystick();
+        if(update_joystick()){
+            return PAUSE;
+        }
 
         static clock_t frame_start = 0;
         double frame_elapsed = (double)(clock() - frame_start) / CLOCKS_PER_SEC;
@@ -164,12 +167,83 @@ game_state_t game_update(){
     return CLOSED;
 }
 
+#define MENU_OPTIONS 3
+#define ARROW_X 4         // Columna izquierda
+#define ARROW_SPACING 2   // Espaciado vertical entre opciones
+#define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
+game_state_t pause(){
+    disp_clear();
+    disp_update();
+
+    // Wait for button release
+    wait_button_release();
+
+    int selected = 0;
+
+    while (true) {
+        joyinfo_t js = joy_read();
+        movement_t pos;
+        static movement_t prev_pos = NO_MOVE;
+
+        if (js.x < -50) pos = MOVE_LEFT_FAST;
+        else if (js.x > 50) pos = MOVE_RIGHT_FAST;
+        else pos = NO_MOVE;
+        if(pos != prev_pos){
+            if(pos == MOVE_RIGHT_FAST) selected++;
+            if(pos == MOVE_LEFT_FAST) selected--;
+
+            if(selected<0) selected = 0;
+            if(selected>=MENU_OPTIONS) selected = MENU_OPTIONS-1;
+        }
+        prev_pos = pos;
+
+        // Draw options
+        for (int i = 0; i < MENU_OPTIONS; ++i) {
+            dcoord_t coord = { .x = ARROW_X, .y = (i+1)*ARROW_SPACING };
+            disp_write(coord, i == selected ? D_ON : D_OFF);
+        }
+        disp_update();
+        printf("%d\n", selected);
+
+        // Selección con botón
+        if (js.sw == J_PRESS) {
+            wait_button_release();
+            #include<stdio.h>
+            switch(selected){
+                case 0:
+                    return GAME;
+                    break;
+                case 1:
+                    return MENU;
+                    break;
+                case 2:
+                    return CLOSED;
+                    break;
+            }
+        }
+    }
+    return GAME;
+}
+
 void endgame(){
 
 }
 
-static void update_joystick(){
+static void wait_button_release(){
+    while(joy_read().sw == J_PRESS);
+
+    // Debouncing
+    clock_t clk = clock();
+    while((double)(clock() - clk)/CLOCKS_PER_SEC <= 0.01);
+}
+
+// Returns: true when going into PAUSE. false otherwise
+static bool update_joystick(){
         joyinfo_t joystick = joy_read();
+
+        if(check_pause(joystick)){
+            return true;
+        }
 
         if(joystick.sw == J_PRESS){
             player_try_shoot();
@@ -204,6 +278,28 @@ static void update_joystick(){
             }
         }
         prev_movement = movement;
+
+        return false;
+}
+
+static bool check_pause(joyinfo_t joystick){
+    static clock_t pause_time_start = 0;
+    static bool was_pressed = false;
+
+    if(joystick.sw == J_PRESS) {
+        if(!was_pressed) {
+            pause_time_start = clock();  // primer frame de la pulsación
+        }
+        double pause_elapsed = (double)(clock() - pause_time_start) / CLOCKS_PER_SEC;
+        if(pause_elapsed >= BUTTON_PAUSE_TIME) {
+            was_pressed = false;
+            return true;  // Se pausó el juego
+        }
+        was_pressed = true;
+    } else {
+        was_pressed = false;
+    }
+    return false;
 }
 
 static movement_t movement_read(int x){

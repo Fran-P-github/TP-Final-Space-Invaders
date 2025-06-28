@@ -21,6 +21,7 @@
  ******************************************************************************/
 
 #define PLAYER_INITIAL_LIVES 3
+#define ALIENS_POINTS 5
 #define SHIELDS_CANT 3
 #define SHIELD_BLOCK_LIVES 2
 

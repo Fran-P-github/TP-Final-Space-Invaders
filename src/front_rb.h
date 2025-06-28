@@ -9,6 +9,8 @@ game_state_t menu();
 
 game_state_t game_update();
 
+game_state_t pause();
+
 void endgame();
 
 #endif // _FRONT_RB_H_
