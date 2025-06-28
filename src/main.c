@@ -73,6 +73,8 @@ int main(){
           case GAME:
             state = game_update();
             break;
+          case GAME_CRAZY:
+            break;
           case PAUSE:
             state = game_pause();
             break;

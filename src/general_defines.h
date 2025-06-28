@@ -99,6 +99,10 @@
 
 #endif
 
+#define TO_STRING(x) #x
+#define AUDIO_ROUTE(s) "../assets/Audio/"TO_STRING(s)
+#define BITMAP_ROUTE(s) "../assets/Bitmap/"TO_STRING(s)
+
 // Audio files (Son los mismos independientemente de la plataforma)
 #define AUDIO_PLAYER_SHOT "../assets/Audio/shoot.wav" 
 #define AUDIO_PLAYER_DEATH "../assets/Audio/explosion.wav" 
@@ -111,7 +115,7 @@
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-typedef enum {CLOSED = 0, MENU, GAME, PAUSE} game_state_t;
+typedef enum {CLOSED = 0, MENU, GAME, GAME_CRAZY, PAUSE} game_state_t;
 
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
