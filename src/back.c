@@ -23,6 +23,9 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
+#define ALIENS_MOVE_MIN_INTERVAL 0.05
+#define ALIENS_MOVE_MAX_INTERVAL 0.5
+
 #if PLATFORM == ALLEGRO
 
 #define MOTHERSHIP_X_VELOCITY 250
@@ -130,7 +133,10 @@ static void aliens_move_left();
 static void aliens_move_down();
 
 static void aliens_update_position();
+static void update_aliens_speed();
 void aliens_shield_collition();
+
+static unsigned total_aliens_alive();
 
 // Returns: how many aliens are alive in column c
 static unsigned aliens_alive_in_column(unsigned c);
@@ -148,12 +154,14 @@ static unsigned aliens_alive_in_row(unsigned r);
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+static int level = 1; // Current level
+
 static player_t player;
 
 static shield_t shields[SHIELDS_CANT];
 
 static alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
-static double aliens_move_interval = 0.3; // Seconds. Time in between aliens movements
+static double aliens_move_interval; // Seconds. Time in between aliens movements
 
 // Player and Aliens can have only one active shot at a time
 static shot_t player_shot = {.is_used = true};
@@ -166,6 +174,8 @@ static mothership_t mothership;
                         GLOBAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
+
+int get_current_level(){ return level; }
 
 int mothership_get_x(){ return mothership.x; }
 int mothership_get_y(){ return mothership.y; }
@@ -247,6 +257,7 @@ void player_move_left(){
 // Returns: true if aliens win (reach the bottom of the screen)
 bool aliens_update(){
     aliens_update_position();
+    update_aliens_speed();
     aliens_shield_collition();
 
     unsigned i;
@@ -391,6 +402,17 @@ static void aliens_move_down(){
     aliens_move(0, ALIENS_DY);
 }
 
+static unsigned total_aliens_alive(){
+    unsigned count = 0;
+    for(unsigned i = 0; i < ALIENS_ROWS; ++i){
+        for(unsigned j = 0; j < ALIENS_COLUMNS; ++j){
+            if(aliens[i][j].is_alive)
+                ++count;
+        }
+    }
+    return count;
+}
+
 static unsigned aliens_alive_in_column(unsigned c){
     if(c >= ALIENS_COLUMNS) return 0;
     unsigned i;
@@ -409,6 +431,25 @@ static unsigned aliens_alive_in_row(unsigned r){
     }
     return rta;
 }
+
+static void update_aliens_speed(){
+
+    unsigned total = ALIENS_ROWS * ALIENS_COLUMNS;
+    unsigned alive = total_aliens_alive();
+
+    double alive_ratio = (double)alive / total;
+
+    // Cuanto menos aliens, más rápido. También aumenta con el nivel.
+    aliens_move_interval = ALIENS_MOVE_MAX_INTERVAL * alive_ratio;
+
+    // Aplicar escalado con el nivel (aumenta la velocidad base)
+    aliens_move_interval /= (1 + 0.2 * (level - 1)); // 20% más rápido por nivel
+
+    // Limitar al mínimo
+    if(aliens_move_interval < ALIENS_MOVE_MIN_INTERVAL)
+        aliens_move_interval = ALIENS_MOVE_MIN_INTERVAL;
+}
+
 
 static void aliens_update_position(){
     static clock_t start = 0;

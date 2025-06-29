@@ -28,6 +28,8 @@
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
+int get_current_level();
+
 int player_get_x();
 int player_get_y();
 int player_get_score();
