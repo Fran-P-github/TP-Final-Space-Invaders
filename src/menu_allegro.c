@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "menu_allegro.h"
+#include <stdint.h>
 
 #include <stdarg.h>
 
@@ -35,6 +36,15 @@
  ******************************************************************************/
 
 enum choice {INTRO = 10, QUIT};
+
+typedef struct {
+  int16_t px;   //X position
+  int16_t py;   //Y position
+  int8_t cx;    //X center
+  int8_t cy;    //Y center
+  double r;     //Tilt
+  ALLEGRO_BITMAP* sprite;
+} Ship_t;
 
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
@@ -65,7 +75,7 @@ static void Draw_frame(ALLEGRO_DISPLAY* Display, ALLEGRO_BITMAP* Buffer);
 
 game_state_t menu_allegro(ALLEGRO_DISPLAY* Display, ALLEGRO_TIMER* Timer, ALLEGRO_EVENT_QUEUE* Queue, ALLEGRO_FONT* Dfont, ALLEGRO_BITMAP* Buffer, ALLEGRO_MIXER* Mixer){
   ALLEGRO_BITMAP* Intro_background_frames[300];
-  ALLEGRO_BITMAP* Intro_ship;
+  //ALLEGRO_BITMAP* Intro_ship;
   ALLEGRO_BITMAP* Intro_logo;
   ALLEGRO_EVENT Menu_event;
   ALLEGRO_EVENT Dummy;
@@ -74,6 +84,8 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY* Display, ALLEGRO_TIMER* Timer, ALLEGR
   ALLEGRO_SAMPLE* Intro_part2;
   ALLEGRO_SAMPLE_INSTANCE* Sample_instance;
   ALLEGRO_SAMPLE_INSTANCE* Sample_instance2;
+
+  Ship_t Intro_ship;
 
   Sample_instance = al_create_sample_instance(NULL);
   if (must_setup(Sample_instance, "Sample Instance") == CLOSED) return CLOSED;
@@ -86,14 +98,10 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY* Display, ALLEGRO_TIMER* Timer, ALLEGR
   al_set_blender(ALLEGRO_ADD, ALLEGRO_ALPHA, ALLEGRO_INVERSE_ALPHA);
 
   char select = INTRO;
-  char rotation = 0;
   bool redraw = false;
   bool fullscreen = false;
   char intro_background_path[64];
-  short int i,j,x_ship,a_ship;
-  float r_ship;
-
-  //if (intro_setup(Intro_background_frames, &Logo_sound, &Intro_part1, &Intro_part2) == CLOSED) return CLOSED;
+  short int i,j;
 
   for (i = 1; i <= 300 && select != QUIT; i++) {
       sprintf(intro_background_path, "../assets/Bitmap/Intro_background/frames/frame_%03d.png", i);
@@ -106,8 +114,8 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY* Display, ALLEGRO_TIMER* Timer, ALLEGR
   
   Intro_logo = al_load_bitmap(BITMAP_ROUTE(Intro/Intro_logo.png));
   ERRCHECK(Intro_logo, "Intro logo");
-  Intro_ship = al_load_bitmap(BITMAP_ROUTE(Intro/Intro_ship.png));
-  ERRCHECK(Intro_ship, "Intro Ship");
+  Intro_ship.sprite = al_load_bitmap(BITMAP_ROUTE(Intro/Intro_ship.png));
+  ERRCHECK(Intro_ship.sprite, "Intro Ship");
   Logo_sound = al_load_sample(AUDIO_ROUTE(coin.wav));
   ERRCHECK(Logo_sound, "Coin Sound");
   Intro_part1 = al_load_sample(AUDIO_ROUTE(Intro_part1.wav));
@@ -115,9 +123,13 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY* Display, ALLEGRO_TIMER* Timer, ALLEGR
   Intro_part2 = al_load_sample(AUDIO_ROUTE(Intro_part2.wav));
   ERRCHECK(Intro_part1, "Intro 2nd part sound");
 
+  Intro_ship.cx = al_get_bitmap_width(Intro_ship.sprite)/2;
+  Intro_ship.cy = al_get_bitmap_height(Intro_ship.sprite)/2;
+  Intro_ship.r = 0.0;
+
   al_set_sample(Sample_instance2, Intro_part2);
 
-  Intro_anim(Dfont, Logo_sound, Intro_part1, Buffer, Display, Sample_instance, Intro_ship);
+  Intro_anim(Dfont, Logo_sound, Intro_part1, Buffer, Display, Sample_instance, Intro_ship.sprite);
 
   al_play_sample_instance(Sample_instance2);
 
@@ -125,9 +137,6 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY* Display, ALLEGRO_TIMER* Timer, ALLEGR
 
   i = 0;
   j=255;
-  x_ship=0;
-  r_ship=0.0;
-  a_ship = 40;
 
   al_start_timer(Timer);
   while (al_get_next_event(Queue,&Dummy));
@@ -141,27 +150,11 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY* Display, ALLEGRO_TIMER* Timer, ALLEGR
       BUFFER;
       CLEAR;
       al_draw_bitmap(Intro_background_frames[i++],0,0,0);
-      al_draw_line(WORLD_WIDTH/2+x_ship, WORLD_HEIGHT, WORLD_WIDTH/2+x_ship, 3*WORLD_HEIGHT/4, al_map_rgb(255,255,255),20.0);
-      al_draw_scaled_rotated_bitmap(Intro_ship,al_get_bitmap_width(Intro_ship)/2,al_get_bitmap_height(Intro_ship)/2,WORLD_WIDTH/2+x_ship,3*WORLD_HEIGHT/4,0.75,0.45,r_ship,0);
+      al_draw_line(WORLD_WIDTH/2, WORLD_HEIGHT, WORLD_WIDTH/2, 3*WORLD_HEIGHT/4, al_map_rgb(255,255,255),20.0);
+      al_draw_scaled_rotated_bitmap(Intro_ship.sprite,Intro_ship.cx,Intro_ship.cy,WORLD_WIDTH/2,2*WORLD_HEIGHT/4,0.75,0.45,Intro_ship.r,0);
       al_draw_scaled_rotated_bitmap(Intro_logo,al_get_bitmap_width(Intro_logo)/2, al_get_bitmap_height(Intro_logo)/2, WORLD_WIDTH/2, WORLD_HEIGHT/4,1,1,0,0);
       al_draw_textf(Dfont,al_map_rgb(255,255,255),WORLD_WIDTH/2,WORLD_HEIGHT/2,ALLEGRO_ALIGN_CENTER,"*Press any key to continue*");
       al_draw_textf(Dfont,al_map_rgb(255,255,255),WORLD_WIDTH/2,WORLD_HEIGHT/2+12,ALLEGRO_ALIGN_CENTER,"(No hace nada aun xd)");
-      if (rotation){
-        x_ship += a_ship/8;
-        if (a_ship > 20) r_ship += 0.0005 * a_ship--;
-        else /*if (a_ship > 3)*/ r_ship -= 0.0005 * a_ship--;
-        //else r_ship = 0;
-      }
-      else {
-        x_ship -= a_ship/8;
-        if (a_ship > 20) r_ship -= 0.0005 * a_ship--;
-        else /*if (a_ship > 3)*/ r_ship += 0.0005 * a_ship--;
-        //else r_ship = 0;
-      }
-      if (a_ship <= 0){
-        rotation = !rotation;
-        a_ship = 40;
-      }
 
       if (j > 0) j -= 10;
       if (j < 0) j = 0;
@@ -191,7 +184,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY* Display, ALLEGRO_TIMER* Timer, ALLEGR
     }
 
 }
-  kill_all(Intro_background_frames, Logo_sound, Intro_part1, Intro_part2, Sample_instance, Sample_instance2, Intro_ship, Intro_logo);
+  kill_all(Intro_background_frames, Logo_sound, Intro_part1, Intro_part2, Sample_instance, Sample_instance2, Intro_ship.sprite, Intro_logo);
   al_stop_timer(Timer);
   return GAME;
 
