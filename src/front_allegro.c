@@ -35,7 +35,6 @@
 // Floats para el volumen de los efectos de sonido
 #define VOLUME_PLAYER_SHOT .1
 #define VOLUME_ALIENS_MOVED .1
-//#define FRAME_LOCK_NUM 2
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -206,7 +205,7 @@ game_state_t game_update(){
     ALLEGRO_EVENT event;
     bool redraw = false, done = false, fullscreen = false, moveThisFrame = true;
     unsigned long long frame = 0;
-        
+            
     al_start_timer(timer);
 
     while(!done){
@@ -243,18 +242,15 @@ game_state_t game_update(){
             }
         }
         // Se utiliza X para disparar
-        //printf("PLayer shot used: %d\n", player_shot_is_used());
         if(key[ALLEGRO_KEY_X] && player_try_shoot()){
-            // Se corta el sample si ya estaba reproduciendose
-            //al_stop_sample(&playerShotSoundID);
             playSound(playerShotSound, VOLUME_PLAYER_SHOT, &playerShotSoundID);
         }
         // Se utilizan las flechas para mover al jugador
-        if(key[ALLEGRO_KEY_RIGHT] && !moveThisFrame){ 
+        else if(key[ALLEGRO_KEY_RIGHT] && !moveThisFrame){ 
             player_move_right();
             moveThisFrame = true;
         }
-        if(key[ALLEGRO_KEY_LEFT] && !moveThisFrame){ 
+        else if(key[ALLEGRO_KEY_LEFT] && !moveThisFrame){ 
             player_move_left();
             moveThisFrame = true;
         }
