@@ -27,7 +27,7 @@
 
 #define MENU_OPTIONS 3
 #define ARROW_X 2
-#define ARROW_Y 6
+#define ARROW_Y 3
 #define ARROW_SPACING 5   // Espaciado horizontal entre opciones
 #define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
 
@@ -64,6 +64,8 @@ static void draw_text_wrapped(const char* str, int x, int y);
 static void level_end_animation(level_state_t level_state);
 
 game_state_t front_init(){
+    back_init();
+
     joy_init();
 
     disp_init();
@@ -125,13 +127,13 @@ game_state_t menu(){
     }
 }
 
-game_state_t game_update(){
-    int current_level = 0;
+game_state_t game_update(unsigned level){
+    level_init(ALIENS_ROWS-1+level/2, ALIENS_COLUMNS-1+level/3, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
+
     bool redraw = false;
     level_state_t level_state = LEVEL_NOT_DONE;
     unsigned long long frame = 0;
 
-    level_init(1, 0); // TODO poner un numero que venga de algun lado
     while(level_state == LEVEL_NOT_DONE){
         if(update_joystick()){
             return PAUSE;
@@ -144,7 +146,7 @@ game_state_t game_update(){
         if(frame_elapsed >= frame_time){
             ++frame;
             frame_start = clock();
-            level_state = back_update(current_level);
+            level_state = back_update(level);
             redraw = true;
         }
 
@@ -153,7 +155,10 @@ game_state_t game_update(){
             disp_clear();
             unsigned i, j;
             draw_player_shot();
-            alien_try_shoot(1);
+            unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
+            if(alien_column_to_shoot >= 0){
+                alien_try_shoot(alien_column_to_shoot);
+            }
             draw_alien_shot();
             for (i=0; i<SHIELDS_CANT; ++i){
                 draw_shield(i);
@@ -176,7 +181,11 @@ game_state_t game_update(){
 
     level_end_animation(level_state);
 
-    return CLOSED;
+    if(level_state == PLAYER_WINS){
+        return GAME;
+    }else{
+        return CLOSED;
+    }
 }
 
 static void level_end_animation(level_state_t level_state){
@@ -192,7 +201,7 @@ static void level_end_animation(level_state_t level_state){
     }
     draw_text_wrapped(buf, x_offset, 2);
     disp_update();
-    sleep(2);
+    sleep(1);
     wait_button_press();
     wait_button_release();
 }
@@ -215,18 +224,27 @@ game_state_t game_pause(){
     const char menu[3][4] = {
         " * ",
         "***",
-        "* *"
+        "***"
     };
     const char exit[3][4] = {
         "* *",
         " * ",
         "* *"
     };
+    const char lives[3][4] = {
+        "* *",
+        "***",
+        " * "
+    };
 
     disp_clear();
-    draw3x3(resume, 1, 8);
-    draw3x3(menu, 6, 8);
-    draw3x3(exit, 11, 8);
+    draw3x3(resume, 1, ARROW_Y+2);
+    draw3x3(menu, 6, ARROW_Y+2);
+    draw3x3(exit, 11, ARROW_Y+2);
+    draw3x3(lives, 4, 12);
+    char buf[4];
+    snprintf(buf, sizeof(buf), "%d", player_get_lives());
+    draw_text_wrapped(buf, 8, 11);
     disp_update();
 
     // Wait for button release
@@ -283,7 +301,7 @@ void endgame(){
     for(unsigned i=0; i<3; ++i){ // Score blinks 3 times
         char buf[10];
         snprintf(buf, sizeof(buf), "%d", 10*player_get_score());
-        draw_text_wrapped(buf, 3, 3);
+        draw_text_wrapped(buf, 0, 3);
         disp_update();
         usleep(400000); // 0.4 sec
         disp_clear();

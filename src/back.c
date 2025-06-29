@@ -186,6 +186,7 @@ bool mothership_is_active(){ return mothership.is_active; }
 
 int player_get_x(){ return player.x; }
 int player_get_y(){ return player.y; }
+int player_get_lives(){ return player.lives; }
 int player_get_score(){ return player.score; }
 int player_shot_get_x(){ return player_shot.x; }
 int player_shot_get_y(){ return player_shot.y; }

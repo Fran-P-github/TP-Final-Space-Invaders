@@ -41,6 +41,7 @@ void level_init(unsigned int aliens_rows, unsigned int aliens_cols, unsigned ali
 
 int player_get_x();
 int player_get_y();
+int player_get_lives();
 int player_get_score();
 int player_shot_get_x();
 int player_shot_get_y();
