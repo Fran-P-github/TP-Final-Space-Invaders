@@ -28,7 +28,10 @@
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-int get_current_level();
+typedef enum{ LEVEL_NOT_DONE=0, PLAYER_WINS, ALIENS_WIN } level_state_t;
+
+// First level is level 0
+level_state_t back_update(unsigned int current_level);
 
 int player_get_x();
 int player_get_y();
@@ -52,17 +55,14 @@ int shield_get_x(unsigned shield, unsigned block_y, unsigned block_x);
 int shield_get_y(unsigned shield, unsigned block_y, unsigned block_x);
 int shield_get_lives(unsigned shield, unsigned block_y, unsigned block_x);
 
-void mothership_update();
 bool mothership_is_active();
 
 void aliens_init();
-bool aliens_update(); // Returns: true if aliens reach player height, false otherwise
 
 void player_init();
 void player_move_right();
 void player_move_left();
 
-void shots_update();
 bool player_try_shoot();
 bool alien_try_shoot(unsigned column);
 

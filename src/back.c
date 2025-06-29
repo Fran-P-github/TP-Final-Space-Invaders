@@ -109,6 +109,10 @@ typedef struct{
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+static bool aliens_update();
+static void mothership_update();
+static void shots_update();
+
 // Inits shield in given coordinates
 static void shield_init(unsigned shield, int x, int y);
 
@@ -154,8 +158,6 @@ static unsigned aliens_alive_in_row(unsigned r);
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static int level = 1; // Current level
-
 static player_t player;
 
 static shield_t shields[SHIELDS_CANT];
@@ -174,8 +176,6 @@ static mothership_t mothership;
                         GLOBAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
-
-int get_current_level(){ return level; }
 
 int mothership_get_x(){ return mothership.x; }
 int mothership_get_y(){ return mothership.y; }
@@ -254,10 +254,47 @@ void player_move_left(){
     player_move(-PLAYER_DX, 0);
 }
 
+level_state_t back_update(unsigned current_level){
+    shots_update();
+    mothership_update();
+    if(aliens_update(current_level)) return ALIENS_WIN;
+    if(total_aliens_alive() == 0) return PLAYER_WINS;
+
+    return LEVEL_NOT_DONE;
+}
+
+// Returns: true if shot was available when called, false otherwise
+bool player_try_shoot(){
+    if(player_shot.is_used) return false;
+
+    player_shot.is_used = true;
+    player_shot.x = player.x + PLAYER_W/2 - SHOT_W/2;
+    player_shot.y = player.y - SHOT_H;
+    return true;
+}
+
+// c = aliens column trying to shoot
+// Returns: true if shot was available when called, false otherwise
+bool alien_try_shoot(unsigned c){
+    unsigned alive_aliens = aliens_alive_in_column(c);
+    if(alien_shot.is_used || !alive_aliens) return false;
+
+    alien_shot.is_used = true;
+    alien_shot.x = aliens[0][c].x + ALIENS_W/2 - SHOT_W/2;
+    alien_shot.y = aliens[alive_aliens-1][c].y + ALIENS_H;
+    return true;
+}
+
+/*******************************************************************************
+ *******************************************************************************
+                        LOCAL FUNCTION DEFINITIONS
+ *******************************************************************************
+ ******************************************************************************/
+
 // Returns: true if aliens win (reach the bottom of the screen)
-bool aliens_update(){
+static bool aliens_update(unsigned current_level){
     aliens_update_position();
-    update_aliens_speed();
+    update_aliens_speed(current_level);
     aliens_shield_collition();
 
     unsigned i;
@@ -268,12 +305,12 @@ bool aliens_update(){
     return false;
 }
 
-void shots_update(){
+static void shots_update(){
     player_shot_update();
     alien_shot_update();
 }
 
-void mothership_update(){
+static void mothership_update(){
     static clock_t start = 0;
     double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
     if(!mothership.is_active && !should_spawn_mothership(elapsed)) return; // Mothership inactive and not activated yet
@@ -307,34 +344,6 @@ void mothership_update(){
         mothership.x += MOTHERSHIP_DX;
     }
 }
-
-// Returns: true if shot was available when called, false otherwise
-bool player_try_shoot(){
-    if(player_shot.is_used) return false;
-
-    player_shot.is_used = true;
-    player_shot.x = player.x + PLAYER_W/2 - SHOT_W/2;
-    player_shot.y = player.y - SHOT_H;
-    return true;
-}
-
-// c = aliens column trying to shoot
-// Returns: true if shot was available when called, false otherwise
-bool alien_try_shoot(unsigned c){
-    unsigned alive_aliens = aliens_alive_in_column(c);
-    if(alien_shot.is_used || !alive_aliens) return false;
-
-    alien_shot.is_used = true;
-    alien_shot.x = aliens[0][c].x + ALIENS_W/2 - SHOT_W/2;
-    alien_shot.y = aliens[alive_aliens-1][c].y + ALIENS_H;
-    return true;
-}
-
-/*******************************************************************************
- *******************************************************************************
-                        LOCAL FUNCTION DEFINITIONS
- *******************************************************************************
- ******************************************************************************/
 
 static int rand_between(int lo, int hi){
     return lo + rand() % (hi - lo + 1);
@@ -432,7 +441,8 @@ static unsigned aliens_alive_in_row(unsigned r){
     return rta;
 }
 
-static void update_aliens_speed(){
+// First level is level 0
+static void update_aliens_speed(unsigned level){
 
     unsigned total = ALIENS_ROWS * ALIENS_COLUMNS;
     unsigned alive = total_aliens_alive();
@@ -443,7 +453,7 @@ static void update_aliens_speed(){
     aliens_move_interval = ALIENS_MOVE_MAX_INTERVAL * alive_ratio;
 
     // Aplicar escalado con el nivel (aumenta la velocidad base)
-    aliens_move_interval /= (1 + 0.2 * (level - 1)); // 20% más rápido por nivel
+    aliens_move_interval /= (1 + 0.2 * level); // 20% más rápido por nivel
 
     // Limitar al mínimo
     if(aliens_move_interval < ALIENS_MOVE_MIN_INTERVAL)

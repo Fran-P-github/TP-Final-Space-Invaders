@@ -214,9 +214,7 @@ game_state_t game_update(){
         while(al_get_next_event(queue, &event)){
             switch(event.type){
                 case ALLEGRO_EVENT_TIMER:
-                    aliens_update();
-                    shots_update();
-                    mothership_update();
+                    back_update(0);
                     redraw = true;
                     ++frame;
                     moveThisFrame = false;
