@@ -14,7 +14,6 @@
  ******************************************************************************/
 
 #include"general_defines.h"
-#include"back.h"
 #if PLATFORM == ALLEGRO
 #include"front_allegro.h"
 #elif PLATFORM == RPI
@@ -58,20 +57,18 @@
  ******************************************************************************/
 
 int main(){
-    shields_init();
-    player_init();
-    aliens_init();
-
     game_state_t state = front_init();
 
-    state = GAME;
+    state = GAME; // Testing. Despues cambiar a MENU
+    unsigned int level = 0;
+
     while(state != CLOSED){
         switch (state){
           case MENU:
             state = menu();
             break;
           case GAME:
-            state = game_update();
+            state = game_update(level++);
             break;
           case GAME_CRAZY:
             break;

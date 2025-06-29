@@ -59,8 +59,6 @@
 
 #endif
 
-#define ALL_ALIENS_WIDTH ( ALIENS_COLUMNS*ALIENS_W + (ALIENS_COLUMNS-1)*ALIENS_HORIZONTAL_SEPARATION )
-
 // VARIABLE GLOBAL Y PUBLICA
 
 bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los aliens
@@ -109,14 +107,16 @@ typedef struct{
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static void aliens_init_NUEVA(unsigned aliens_cols_removed, unsigned aliens_rows_removed);
+static void aliens_init(unsigned aliens_rows, unsigned aliens_cols);
+static void player_init();
+static void shields_init();
+static void shield_init(unsigned shield, int x, int y); // Inits shield in given coordinates
 
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
 static void shots_update();
 
-// Inits shield in given coordinates
-static void shield_init(unsigned shield, int x, int y);
+
 
 static int rand_between(int lo, int hi);
 
@@ -206,31 +206,14 @@ player_t* get_player(){ return &player; }
 alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS]{ return &aliens; }
 double* get_aliens_move_interval(){ return &aliens_move_interval; }
 
-void level_init(unsigned aliens_cols_removed, unsigned aliens_rows_removed){
-    aliens_init_NUEVA(aliens_cols_removed, aliens_rows_removed);
+void level_init(unsigned aliens_rows, unsigned aliens_cols){
+    aliens_init(aliens_rows, aliens_cols);
+    shields_init();
+    player_init();
 }
 
-#define INITIAL_SHIELD_Y_COORDINATE     (WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H)
-void shields_init(){
-    unsigned i;
-    for(i=0; i<SHIELDS_CANT; ++i){
-        int x = (i+1) * WORLD_WIDTH/(SHIELDS_CANT+1) - SHIELD_W*SHIELD_BLOCK_W/2;
-        int y = INITIAL_SHIELD_Y_COORDINATE;
-        shield_init(i, x, y);
-    }
-}
-
-#define INITIAL_PLAYER_X_COORDINATE     ( (WORLD_WIDTH - PLAYER_W) / 2 )
-void player_init(){
-    player.x = INITIAL_PLAYER_X_COORDINATE;
-    player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
-    player.lives = PLAYER_INITIAL_LIVES;
-    player_shot.is_used = false;
-    player.score = 0;
-}
-
-#define FIRST_ALIEN_X_COORDINATE  ( (WORLD_WIDTH - ALL_ALIENS_WIDTH) / 2 )
-static void aliens_init_NUEVA(unsigned cols_rem, unsigned rows_rem){ // TODO: sacar la otra y dejar esta, pero ahora no quiero porque es global y hay que cambiar muchas cosas
+#define FIRST_ALIEN_X_COORDINATE  ( (WORLD_WIDTH - (cols*ALIENS_W + (cols-1)*ALIENS_HORIZONTAL_SEPARATION)) / 2 )
+static void aliens_init(unsigned rows, unsigned cols){
     unsigned i, j;
     int x = FIRST_ALIEN_X_COORDINATE;
     int y = ALIENS_MARGIN;
@@ -238,26 +221,7 @@ static void aliens_init_NUEVA(unsigned cols_rem, unsigned rows_rem){ // TODO: sa
         for(j=0; j<ALIENS_COLUMNS; ++j){
             aliens[i][j].x = x;
             aliens[i][j].y = y;
-            aliens[i][j].is_alive = i<ALIENS_ROWS-rows_rem && j<ALIENS_COLUMNS-cols_rem;
-            aliens[i][j].points = ALIENS_POINTS;
-
-            x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
-        }
-        y += ALIENS_H + ALIENS_VERTICAL_SEPARATION;
-        x = FIRST_ALIEN_X_COORDINATE;
-    }
-    alien_shot.is_used = false;
-}
-
-void aliens_init(){
-    unsigned i, j;
-    int x = FIRST_ALIEN_X_COORDINATE;
-    int y = ALIENS_MARGIN;
-    for(i=0; i<ALIENS_ROWS; ++i){
-        for(j=0; j<ALIENS_COLUMNS; ++j){
-            aliens[i][j].x = x;
-            aliens[i][j].y = y;
-            aliens[i][j].is_alive = true;
+            aliens[i][j].is_alive = ( i < rows && j < cols );
             aliens[i][j].points = ALIENS_POINTS;
 
             x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
@@ -400,6 +364,25 @@ static bool should_spawn_mothership(double elapsed_time){
     double r = (double)rand() / RAND_MAX;
 
     return r < probability;
+}
+
+#define INITIAL_PLAYER_X_COORDINATE     ( (WORLD_WIDTH - PLAYER_W) / 2 )
+static void player_init(){
+    player.x = INITIAL_PLAYER_X_COORDINATE;
+    player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
+    player.lives = PLAYER_INITIAL_LIVES;
+    player_shot.is_used = false;
+    player.score = 0;
+}
+
+#define INITIAL_SHIELD_Y_COORDINATE     (WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H)
+static void shields_init(){
+    unsigned i;
+    for(i=0; i<SHIELDS_CANT; ++i){
+        int x = (i+1) * WORLD_WIDTH/(SHIELDS_CANT+1) - SHIELD_W*SHIELD_BLOCK_W/2;
+        int y = INITIAL_SHIELD_Y_COORDINATE;
+        shield_init(i, x, y);
+    }
 }
 
 static void shield_init(unsigned k, int x, int y){

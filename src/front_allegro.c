@@ -252,7 +252,9 @@ static void init_error(bool state, const char* name){
     }
 }
 
-game_state_t game_update(){
+game_state_t game_update(unsigned level){
+    level_init(ALIENS_ROWS-3+level/3, ALIENS_COLUMNS-3+level/2);
+
     ALLEGRO_EVENT event;
     bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;
     unsigned long long frame = 0;
@@ -265,7 +267,7 @@ game_state_t game_update(){
         //if(al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME)){
         switch(event.type){
             case ALLEGRO_EVENT_TIMER:
-                back_update(0);
+                back_update(level);
                 redraw = true;
                 ++frame;
                 moveThisFrame = false;
