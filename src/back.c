@@ -210,6 +210,7 @@ alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS]{ return &aliens; }
 double* get_aliens_move_interval(){ return &aliens_move_interval; }
 
 void back_init(){
+    srand(time(NULL));
     player_init();
 }
 
