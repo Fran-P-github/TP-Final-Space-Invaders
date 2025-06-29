@@ -52,10 +52,16 @@ static void draw_player_shot();
 static void draw_alien_shot();
 static void draw_shield(unsigned shield);
 
+static void wait_button_press();
 static void wait_button_release();
 static bool update_joystick();
 static bool check_pause(joyinfo_t joystick);
 static movement_t movement_read(int joystick_x_coordinate);
+
+static void draw3x3(const char icon[3][4], unsigned x, unsigned y);
+static void draw_text_wrapped(const char* str, int x, int y);
+
+static void level_end_animation(level_state_t level_state);
 
 game_state_t front_init(){
     joy_init();
@@ -120,11 +126,12 @@ game_state_t menu(){
 }
 
 game_state_t game_update(){
+    int current_level = 0;
     bool redraw = false;
-    bool done = false;
+    level_state_t level_state = LEVEL_NOT_DONE;
     unsigned long long frame = 0;
 
-    while(!done){
+    while(level_state == LEVEL_NOT_DONE){
         if(update_joystick()){
             return PAUSE;
         }
@@ -136,9 +143,7 @@ game_state_t game_update(){
         if(frame_elapsed >= frame_time){
             ++frame;
             frame_start = clock();
-            done = aliens_update(); // aliens_update() returns true when aliens reach player height
-            shots_update();
-            mothership_update();
+            level_state = back_update(current_level);
             redraw = true;
         }
 
@@ -168,7 +173,26 @@ game_state_t game_update(){
         }
     }
 
+    level_end_animation(level_state);
+
     return CLOSED;
+}
+
+static void level_end_animation(level_state_t level_state){
+    disp_clear();
+    char buf[11];
+    int x_offset;
+    if(level_state == PLAYER_WINS){
+        snprintf(buf, sizeof(buf), "YOUWIN");
+        x_offset = 3;
+    }else{
+        snprintf(buf, sizeof(buf), "GAMEOVER");
+        x_offset = 1;
+    }
+    draw_text_wrapped(buf, x_offset, 2);
+    disp_update();
+    wait_button_press();
+    wait_button_release();
 }
 
 static void draw3x3(const char icon[3][4], unsigned x, unsigned y){
@@ -179,8 +203,6 @@ static void draw3x3(const char icon[3][4], unsigned x, unsigned y){
         }
     }
 }
-
-static void draw_text_wrapped(const char* str, int x, int y);
 
 game_state_t game_pause(){
     const char resume[3][4] = {
@@ -316,6 +338,10 @@ static void draw_text_wrapped(const char *str, int x, int y) {
             break;
         }
     }
+}
+
+static void wait_button_press(){
+    while(joy_read().sw == J_NOPRESS);
 }
 
 static void wait_button_release(){
