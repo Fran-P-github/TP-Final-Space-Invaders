@@ -69,7 +69,7 @@ bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los ali
 
 typedef struct{
     int x, y;
-    bool is_alive;
+    int lives;
     int points; // Point given to player when killed
 } alien_t;
 
@@ -107,10 +107,10 @@ typedef struct{
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static void aliens_init(unsigned aliens_rows, unsigned aliens_cols);
+static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives);
 static void player_init();
-static void shields_init();
-static void shield_init(unsigned shield, int x, int y); // Inits shield in given coordinates
+static void shields_init(unsigned lives);
+static void shield_init(unsigned shield, int x, int y, unsigned lives); // Inits shield in given coordinates
 
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
@@ -190,7 +190,7 @@ bool player_shot_is_used(){ return player_shot.is_used; }
 
 int aliens_get_x(unsigned i, unsigned j){ return aliens[i][j].x; }
 int aliens_get_y(unsigned i, unsigned j){ return aliens[i][j].y; }
-bool aliens_is_alive(unsigned i, unsigned j){ return aliens[i][j].is_alive; }
+bool aliens_is_alive(unsigned i, unsigned j){ return aliens[i][j].lives; }
 double aliens_get_move_interval(){ return aliens_move_interval; }
 void aliens_set_move_interval(double interval){ aliens_move_interval = interval; }
 int alien_shot_get_x(){ return alien_shot.x; }
@@ -206,30 +206,13 @@ player_t* get_player(){ return &player; }
 alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS]{ return &aliens; }
 double* get_aliens_move_interval(){ return &aliens_move_interval; }
 
-void level_init(unsigned aliens_rows, unsigned aliens_cols){
-    aliens_init(aliens_rows, aliens_cols);
-    shields_init();
+void back_init(){
     player_init();
 }
 
-#define FIRST_ALIEN_X_COORDINATE  ( (WORLD_WIDTH - (cols*ALIENS_W + (cols-1)*ALIENS_HORIZONTAL_SEPARATION)) / 2 )
-static void aliens_init(unsigned rows, unsigned cols){
-    unsigned i, j;
-    int x = FIRST_ALIEN_X_COORDINATE;
-    int y = ALIENS_MARGIN;
-    for(i=0; i<ALIENS_ROWS; ++i){
-        for(j=0; j<ALIENS_COLUMNS; ++j){
-            aliens[i][j].x = x;
-            aliens[i][j].y = y;
-            aliens[i][j].is_alive = ( i < rows && j < cols );
-            aliens[i][j].points = ALIENS_POINTS;
-
-            x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
-        }
-        y += ALIENS_H + ALIENS_VERTICAL_SEPARATION;
-        x = FIRST_ALIEN_X_COORDINATE;
-    }
-    alien_shot.is_used = false;
+void level_init(unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives, unsigned shield_block_lives){
+    aliens_init(aliens_rows, aliens_cols, aliens_lives);
+    shields_init(shield_block_lives);
 }
 
 void player_move_right(){
@@ -244,9 +227,14 @@ void player_move_left(){
 level_state_t back_update(unsigned current_level){
     shots_update();
     mothership_update();
-    if(aliens_update(current_level)) return ALIENS_WIN;
-    if(total_aliens_alive() == 0) return PLAYER_WINS;
 
+    if(aliens_update(current_level)){
+         return ALIENS_WIN;
+    }
+    if(total_aliens_alive() == 0){
+        player.lives++;
+        return PLAYER_WINS;
+    }
     return LEVEL_NOT_DONE;
 }
 
@@ -366,6 +354,27 @@ static bool should_spawn_mothership(double elapsed_time){
     return r < probability;
 }
 
+#define FIRST_ALIEN_X_COORDINATE  ( (WORLD_WIDTH - (cols*ALIENS_W + (cols-1)*ALIENS_HORIZONTAL_SEPARATION)) / 2 )
+static void aliens_init(unsigned rows, unsigned cols, unsigned lives){
+    if(!lives) lives = 1;
+    unsigned i, j;
+    int x = FIRST_ALIEN_X_COORDINATE;
+    int y = ALIENS_MARGIN;
+    for(i=0; i<ALIENS_ROWS; ++i){
+        for(j=0; j<ALIENS_COLUMNS; ++j){
+            aliens[i][j].x = x;
+            aliens[i][j].y = y;
+            aliens[i][j].lives = ( i < rows && j < cols ) ? lives : 0;
+            aliens[i][j].points = ALIENS_POINTS;
+
+            x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
+        }
+        y += ALIENS_H + ALIENS_VERTICAL_SEPARATION;
+        x = FIRST_ALIEN_X_COORDINATE;
+    }
+    alien_shot.is_used = false;
+}
+
 #define INITIAL_PLAYER_X_COORDINATE     ( (WORLD_WIDTH - PLAYER_W) / 2 )
 static void player_init(){
     player.x = INITIAL_PLAYER_X_COORDINATE;
@@ -376,23 +385,23 @@ static void player_init(){
 }
 
 #define INITIAL_SHIELD_Y_COORDINATE     (WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H)
-static void shields_init(){
+static void shields_init(unsigned lives){
     unsigned i;
     for(i=0; i<SHIELDS_CANT; ++i){
         int x = (i+1) * WORLD_WIDTH/(SHIELDS_CANT+1) - SHIELD_W*SHIELD_BLOCK_W/2;
         int y = INITIAL_SHIELD_Y_COORDINATE;
-        shield_init(i, x, y);
+        shield_init(i, x, y, lives);
     }
 }
 
-static void shield_init(unsigned k, int x, int y){
+static void shield_init(unsigned k, int x, int y, unsigned lives){
     char form[SHIELD_H][SHIELD_W] = SHIELD_FORM;
     unsigned i, j;
     for(i=0; i<SHIELD_H; ++i){
         for(j=0; j<SHIELD_W; ++j){
             shields[k][i][j].x = x + j * SHIELD_BLOCK_W;
             shields[k][i][j].y = y + i * SHIELD_BLOCK_H;
-            shields[k][i][j].lives = (form[i][j] == '*') ? SHIELD_BLOCK_LIVES : 0;
+            shields[k][i][j].lives = (form[i][j] == '*') ? lives : 0;
         }
     }
 }
@@ -426,7 +435,7 @@ unsigned total_aliens_alive(){
     unsigned count = 0;
     for(unsigned i = 0; i < ALIENS_ROWS; ++i){
         for(unsigned j = 0; j < ALIENS_COLUMNS; ++j){
-            if(aliens[i][j].is_alive)
+            if(aliens[i][j].lives)
                 ++count;
         }
     }
@@ -437,7 +446,7 @@ static unsigned aliens_alive_in_column(unsigned c){
     if(c >= ALIENS_COLUMNS) return 0;
     unsigned i;
     for(i=ALIENS_ROWS-1; i<ALIENS_ROWS; --i){
-        if(aliens[i][c].is_alive) return i+1;
+        if(aliens[i][c].lives) return i+1;
     }
     return 0;
 }
@@ -447,7 +456,7 @@ static unsigned aliens_alive_in_row(unsigned r){
     unsigned rta = 0;
     unsigned i;
     for(i=0; i<ALIENS_COLUMNS; ++i){
-        if(aliens[r][i].is_alive) ++rta;
+        if(aliens[r][i].lives) ++rta;
     }
     return rta;
 }
@@ -521,7 +530,7 @@ void aliens_shield_collition(){
 
                 for(alien_row=0; alien_row<ALIENS_ROWS; ++alien_row){
                     for(alien_column=0; alien_column<ALIENS_COLUMNS; ++alien_column){
-                        if(!aliens[alien_row][alien_column].is_alive)
+                        if(!aliens[alien_row][alien_column].lives)
                             continue;
 
                         if(collide(
@@ -563,9 +572,9 @@ static void player_shot_update(){
     // Alien collition
     for(i=0; i<ALIENS_ROWS && player_shot.is_used; ++i){
         for(j=0; j<ALIENS_COLUMNS; ++j){
-            if(aliens[i][j].is_alive && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W-1, player_shot.y+SHOT_H-1, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x+ALIENS_W-1, aliens[i][j].y+ALIENS_H-1)){
+            if(aliens[i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x+SHOT_W-1, player_shot.y+SHOT_H-1, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x+ALIENS_W-1, aliens[i][j].y+ALIENS_H-1)){
                 player_shot.is_used = false;
-                aliens[i][j].is_alive = false;
+                aliens[i][j].lives--;
                 player.score += aliens[i][j].points;
                 break;
             }

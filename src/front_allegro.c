@@ -104,6 +104,8 @@ static unsigned char key[ALLEGRO_KEY_MAX];
  ******************************************************************************/
 
 game_state_t front_init(){
+    back_init();
+
     init_error(al_init(), "Allegro");
     init_error(al_init_primitives_addon(), "Allegro Primitives");
     init_error(al_install_keyboard(), "Keyboard");
@@ -253,7 +255,7 @@ static void init_error(bool state, const char* name){
 }
 
 game_state_t game_update(unsigned level){
-    level_init(ALIENS_ROWS-3+level/3, ALIENS_COLUMNS-3+level/2);
+    level_init(ALIENS_ROWS-3+level/3, ALIENS_COLUMNS-3+level/2, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
 
     ALLEGRO_EVENT event;
     bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;

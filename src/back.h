@@ -30,11 +30,14 @@
 
 typedef enum{ LEVEL_NOT_DONE=0, PLAYER_WINS, ALIENS_WIN } level_state_t;
 
+void back_init();
+
 // First level is level 0
 level_state_t back_update(unsigned int current_level);
 
 // aliens_rows/columns: number of aliens to spawn. ALIENS_ROWS/COLUMNS assumed if a grater number is given
-void level_init(unsigned int aliens_rows, unsigned int aliens_cols);
+// For aliens_lives, 1 is assumed if 0 is given
+void level_init(unsigned int aliens_rows, unsigned int aliens_cols, unsigned aliens_lives, unsigned shield_block_lives);
 
 int player_get_x();
 int player_get_y();
