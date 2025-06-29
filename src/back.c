@@ -137,7 +137,7 @@ static void aliens_move_left();
 static void aliens_move_down();
 
 static void aliens_update_position();
-static void update_aliens_speed();
+static void update_aliens_speed(unsigned current_level);
 void aliens_shield_collition();
 
 static unsigned total_aliens_alive();
