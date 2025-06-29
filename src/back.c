@@ -109,6 +109,8 @@ typedef struct{
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+static void aliens_init_NUEVA(unsigned aliens_cols_removed, unsigned aliens_rows_removed);
+
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
 static void shots_update();
@@ -206,6 +208,10 @@ player_t* get_player(){ return &player; }
 alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS]{ return &aliens; }
 double* get_aliens_move_interval(){ return &aliens_move_interval; }
 
+void level_init(unsigned aliens_cols_removed, unsigned aliens_rows_removed){
+    aliens_init_NUEVA(aliens_cols_removed, aliens_rows_removed);
+}
+
 #define INITIAL_SHIELD_Y_COORDINATE     WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H
 void shields_init(){
     unsigned i;
@@ -226,6 +232,25 @@ void player_init(){
 }
 
 #define FIRST_ALIEN_X_COORDINATE  ( (WORLD_WIDTH - ALL_ALIENS_WIDTH) / 2 )
+static void aliens_init_NUEVA(unsigned cols_rem, unsigned rows_rem){ // TODO: sacar la otra y dejar esta, pero ahora no quiero porque es global y hay que cambiar muchas cosas
+    unsigned i, j;
+    int x = FIRST_ALIEN_X_COORDINATE;
+    int y = ALIENS_MARGIN;
+    for(i=0; i<ALIENS_ROWS; ++i){
+        for(j=0; j<ALIENS_COLUMNS; ++j){
+            aliens[i][j].x = x;
+            aliens[i][j].y = y;
+            aliens[i][j].is_alive = i<ALIENS_ROWS-rows_rem && j<ALIENS_COLUMNS-cols_rem;
+            aliens[i][j].points = ALIENS_POINTS;
+
+            x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
+        }
+        y += ALIENS_H + ALIENS_VERTICAL_SEPARATION;
+        x = FIRST_ALIEN_X_COORDINATE;
+    }
+    alien_shot.is_used = false;
+}
+
 void aliens_init(){
     unsigned i, j;
     int x = FIRST_ALIEN_X_COORDINATE;

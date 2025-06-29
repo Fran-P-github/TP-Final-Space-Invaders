@@ -131,6 +131,7 @@ game_state_t game_update(){
     level_state_t level_state = LEVEL_NOT_DONE;
     unsigned long long frame = 0;
 
+    level_init(1, 0); // TODO poner un numero que venga de algun lado
     while(level_state == LEVEL_NOT_DONE){
         if(update_joystick()){
             return PAUSE;
@@ -191,6 +192,7 @@ static void level_end_animation(level_state_t level_state){
     }
     draw_text_wrapped(buf, x_offset, 2);
     disp_update();
+    sleep(2);
     wait_button_press();
     wait_button_release();
 }
