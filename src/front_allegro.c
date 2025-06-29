@@ -257,17 +257,18 @@ game_state_t game_update(unsigned level){
 
     ALLEGRO_EVENT event;
     bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;
+    level_state_t level_state = LEVEL_NOT_DONE;
     unsigned long long frame = 0;
 
     al_start_timer(timer);
 
-    while(!done){
+    while(!done && level_state==LEVEL_NOT_DONE){
         // Procesamiento de eventos
         al_wait_for_event(queue, &event);
         //if(al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME)){
         switch(event.type){
             case ALLEGRO_EVENT_TIMER:
-                back_update(level);
+                level_state = back_update(level);
                 redraw = true;
                 ++frame;
                 moveThisFrame = false;
@@ -352,7 +353,12 @@ game_state_t game_update(unsigned level){
             al_flip_display();
         }
     }
-    return CLOSED;
+
+    if(level_state == PLAYER_WINS){
+        return GAME;
+    }else{
+        return CLOSED;
+    }
 }
 
 static void draw_mothership(){
