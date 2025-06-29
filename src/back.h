@@ -33,6 +33,9 @@ typedef enum{ LEVEL_NOT_DONE=0, PLAYER_WINS, ALIENS_WIN } level_state_t;
 // First level is level 0
 level_state_t back_update(unsigned int current_level);
 
+// How many columns and rows to go under the maximum
+void level_init(unsigned int aliens_cols_removed, unsigned int aliens_rows_removed);
+
 int player_get_x();
 int player_get_y();
 int player_get_score();
