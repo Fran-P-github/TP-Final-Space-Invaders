@@ -241,7 +241,7 @@ level_state_t back_update(unsigned current_level){
     shots_update();
     mothership_update();
 
-    if(aliens_update(current_level)){
+    if(aliens_update(current_level) || player.lives <= 0){
          return ALIENS_WIN;
     }
     if(total_aliens_alive() == 0){
