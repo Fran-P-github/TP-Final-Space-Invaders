@@ -65,6 +65,7 @@ int main(){
     while(state != CLOSED){
         switch (state){
           case MENU:
+            level = 0;
             state = menu();
             break;
           case GAME:

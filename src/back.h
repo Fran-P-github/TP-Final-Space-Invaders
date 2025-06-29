@@ -39,6 +39,8 @@ level_state_t back_update(unsigned int current_level);
 // For aliens_lives, 1 is assumed if 0 is given
 void level_init(unsigned int aliens_rows, unsigned int aliens_cols, unsigned aliens_lives, unsigned shield_block_lives);
 
+void player_reset_on_new_level();
+void player_reset_on_new_game();
 int player_get_x();
 int player_get_y();
 int player_get_lives();

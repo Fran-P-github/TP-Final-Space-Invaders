@@ -109,6 +109,7 @@ typedef struct{
 
 static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives);
 static void player_init();
+static void player_reset_lives();
 static void shields_init(unsigned lives);
 static void shield_init(unsigned shield, int x, int y, unsigned lives); // Inits shield in given coordinates
 
@@ -227,6 +228,17 @@ int get_best_alien_column_to_shoot(){
     col = get_alien_column_above_shield();
     if(col >= 0) return col;
     return -1;
+}
+
+#define INITIAL_PLAYER_X_COORDINATE     ( (WORLD_WIDTH - PLAYER_W) / 2 )
+void player_reset_on_new_level(){
+    player.x = INITIAL_PLAYER_X_COORDINATE;
+    player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
+    player_shot.is_used = false;
+}
+
+void player_reset_on_new_game(){
+    player_reset_lives();
 }
 
 void player_move_right(){
@@ -389,13 +401,11 @@ static void aliens_init(unsigned rows, unsigned cols, unsigned lives){
     alien_shot.is_used = false;
 }
 
-#define INITIAL_PLAYER_X_COORDINATE     ( (WORLD_WIDTH - PLAYER_W) / 2 )
+static void player_reset_lives(){ player.lives = PLAYER_INITIAL_LIVES; }
+
 static void player_init(){
-    player.x = INITIAL_PLAYER_X_COORDINATE;
-    player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
-    player.lives = PLAYER_INITIAL_LIVES;
-    player_shot.is_used = false;
-    player.score = 0;
+    player_reset_on_new_game();
+    player_reset_on_new_level();
 }
 
 #define INITIAL_SHIELD_Y_COORDINATE     (WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H)

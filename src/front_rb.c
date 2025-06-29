@@ -129,6 +129,8 @@ game_state_t menu(){
 
 game_state_t game_update(unsigned level){
     level_init(ALIENS_ROWS-1+level/2, ALIENS_COLUMNS-1+level/3, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
+    player_reset_on_new_level();
+    if(level==0) player_reset_on_new_game();
 
     bool redraw = false;
     level_state_t level_state = LEVEL_NOT_DONE;
