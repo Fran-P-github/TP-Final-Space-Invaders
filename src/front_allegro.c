@@ -330,7 +330,10 @@ game_state_t game_update(unsigned level){
             al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "width: %d height: %d", al_get_display_width (disp), al_get_display_height(disp));
             unsigned i, j;
             draw_player_shot();
-            alien_try_shoot(3);
+            unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
+            if(alien_column_to_shoot >= 0){
+                alien_try_shoot(alien_column_to_shoot);
+            }
             draw_alien_shot();
             for (int x = 0; x < SHIELDS_CANT; x++){
                 draw_shield(x);

@@ -142,6 +142,9 @@ static void aliens_update_position();
 static void update_aliens_speed(unsigned current_level);
 void aliens_shield_collition();
 
+static int get_alien_column_above_player();
+static int get_alien_column_above_shield();
+
 // Returns: how many aliens are alive in column c
 static unsigned aliens_alive_in_column(unsigned c);
 
@@ -213,6 +216,15 @@ void back_init(){
 void level_init(unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives, unsigned shield_block_lives){
     aliens_init(aliens_rows, aliens_cols, aliens_lives);
     shields_init(shield_block_lives);
+}
+
+int get_best_alien_column_to_shoot(){
+    int col;
+    col = get_alien_column_above_player();
+    if(col >= 0) return col;
+    col = get_alien_column_above_shield();
+    if(col >= 0) return col;
+    return -1;
 }
 
 void player_move_right(){
@@ -431,6 +443,59 @@ static void aliens_move_down(){
     aliens_move(0, ALIENS_DY);
 }
 
+static int get_alien_column_above_player(){
+    for(unsigned j = 0; j < ALIENS_COLUMNS; ++j){
+        for(unsigned i = 0; i < ALIENS_ROWS; ++i){
+            if(!aliens[i][j].lives) continue;
+
+            int ax1 = aliens[i][j].x;
+            int ax2 = ax1 + ALIENS_W - 1;
+            int px1 = player.x;
+            int px2 = px1 + PLAYER_W - 1;
+
+            // Si hay intersección horizontal entre alien y jugador
+            if(!(ax2 < px1 || ax1 > px2)){
+                return j;
+            }
+
+            break; // solo revisás un alien por columna, el primero vivo
+        }
+    }
+
+    return -1; // Ningún alien está justo encima
+}
+
+static int get_alien_column_above_shield(){
+    for(unsigned j = 0; j < ALIENS_COLUMNS; ++j){
+        for(unsigned i = 0; i < ALIENS_ROWS; ++i){
+            if(!aliens[i][j].lives) continue;
+
+            int ax1 = aliens[i][j].x;
+            int ax2 = ax1 + ALIENS_W - 1;
+
+            for(unsigned s = 0; s < SHIELDS_CANT; ++s){
+                for(unsigned y = 0; y < SHIELD_H; ++y){
+                    for(unsigned x = 0; x < SHIELD_W; ++x){
+                        if(!shields[s][y][x].lives) continue;
+
+                        int sx1 = shields[s][y][x].x;
+                        int sx2 = sx1 + SHIELD_BLOCK_W - 1;
+
+                        // Si hay superposición horizontal
+                        if(!(ax2 < sx1 || ax1 > sx2)){
+                            return j; // Columna de alien sobre escudo
+                        }
+                    }
+                }
+            }
+
+            break; // Basta con revisar el primer alien vivo de la columna
+        }
+    }
+
+    return -1; // No hay ninguna columna sobre escudos
+}
+
 unsigned total_aliens_alive(){
     unsigned count = 0;
     for(unsigned i = 0; i < ALIENS_ROWS; ++i){
@@ -631,4 +696,8 @@ static void alien_shot_update(){
             }
         }
     }
+
+    // Window limit
+    if(alien_shot.y+SHOT_H-1 > WORLD_HEIGHT) // Out of bounds
+        alien_shot.is_used = false;
 }

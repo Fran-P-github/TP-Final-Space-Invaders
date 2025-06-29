@@ -48,6 +48,7 @@ bool player_shot_is_used();
 
 int mothership_get_x();
 int mothership_get_y();
+
 int aliens_get_x(unsigned i, unsigned j);
 int aliens_get_y(unsigned i, unsigned j);
 bool aliens_is_alive(unsigned i, unsigned j);
@@ -56,6 +57,7 @@ int alien_shot_get_y();
 bool alien_shot_is_used();
 double aliens_get_move_interval();
 void aliens_set_move_interval(double interval);
+int get_best_alien_column_to_shoot(); // Returns column above player, or column above some shield block if no aliens are above player, or -1 if aliens wait to shoot
 unsigned total_aliens_alive();
 
 int shield_get_x(unsigned shield, unsigned block_y, unsigned block_x);
