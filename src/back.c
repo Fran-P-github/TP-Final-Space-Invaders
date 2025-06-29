@@ -137,7 +137,7 @@ static void aliens_move_left();
 static void aliens_move_down();
 
 static void aliens_update_position();
-static void update_aliens_speed();
+static void update_aliens_speed(unsigned level);
 void aliens_shield_collition();
 
 static unsigned total_aliens_alive();
@@ -166,7 +166,7 @@ static alien_t aliens[ALIENS_ROWS][ALIENS_COLUMNS];
 static double aliens_move_interval; // Seconds. Time in between aliens movements
 
 // Player and Aliens can have only one active shot at a time
-static shot_t player_shot = {.is_used = true};
+static shot_t player_shot;
 static shot_t alien_shot;
 
 static mothership_t mothership;
@@ -206,7 +206,7 @@ player_t* get_player(){ return &player; }
 alien_t (*get_aliens(void)) [ALIENS_ROWS][ALIENS_COLUMNS]{ return &aliens; }
 double* get_aliens_move_interval(){ return &aliens_move_interval; }
 
-#define INITIAL_SHIELD_Y_COORDINATE     WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H
+#define INITIAL_SHIELD_Y_COORDINATE (WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H*SHIELD_BLOCK_H)
 void shields_init(){
     unsigned i;
     for(i=0; i<SHIELDS_CANT; ++i){

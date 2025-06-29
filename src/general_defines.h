@@ -28,7 +28,6 @@
 
 #define RPI 0
 #define ALLEGRO 2
-//#define PLATFORM ALLEGRO
 #ifndef PLATFORM
 #error no PLATFORM defined
 #endif
@@ -49,7 +48,7 @@
 
 #define ALIENS_ROWS 6
 #define ALIENS_COLUMNS 4
-#define ALIENS_HORIZONTAL_SEPARATION 6
+#define ALIENS_HORIZONTAL_SEPARATION 12
 #define ALIENS_VERTICAL_SEPARATION 12
 #define ALIENS_W 32
 #define ALIENS_H 32
@@ -58,7 +57,6 @@
 #define SHOT_W 4
 #define SHOT_H 14
 
-#define SHIELDS_CANT 3
 #define SHIELD_BLOCK_LIVES 2
 #define SHIELD_BLOCK_W 12
 #define SHIELD_BLOCK_H 12
@@ -69,7 +67,7 @@
 {' ', '*', '*', '*', '*', '*', ' '}, \
 {'*', '*', '*', '*', '*', '*', '*'}, \
 {'*', '*', ' ', ' ', ' ', '*', '*'}  }
-#define SHIELD_TO_PLAYER_MARGIN 14
+#define SHIELD_TO_PLAYER_MARGIN 40
 
 #elif PLATFORM == RPI
 
