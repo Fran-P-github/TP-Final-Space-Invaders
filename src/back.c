@@ -109,7 +109,7 @@ typedef struct{
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static bool aliens_update();
+static bool aliens_update(unsigned current_level);
 static void mothership_update();
 static void shots_update();
 
