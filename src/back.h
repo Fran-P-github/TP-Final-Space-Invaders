@@ -53,6 +53,7 @@ int alien_shot_get_y();
 bool alien_shot_is_used();
 double aliens_get_move_interval();
 void aliens_set_move_interval(double interval);
+unsigned total_aliens_alive();
 
 int shield_get_x(unsigned shield, unsigned block_y, unsigned block_x);
 int shield_get_y(unsigned shield, unsigned block_y, unsigned block_x);

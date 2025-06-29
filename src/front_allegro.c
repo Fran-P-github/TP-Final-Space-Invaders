@@ -33,9 +33,11 @@
 
 #define MSJ_ERR_INIT "Problema al inicializar: "
 #define AUDIO_SAMPLES 16
+//#define MAX_EVENT_WAIT_TIME 0.01
 // Floats para el volumen de los efectos de sonido
 #define VOLUME_PLAYER_SHOT .1
 #define VOLUME_ALIENS_MOVED .1
+#define VOLUME_UFO .1
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -90,6 +92,7 @@ static ALLEGRO_SAMPLE* alienMovedSound = NULL;
 static ALLEGRO_SAMPLE* ufoSound = NULL;
 static ALLEGRO_SAMPLE_INSTANCE* playerShotSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE* alienMovedSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE* ufoSample = NULL;
 
 //keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
@@ -132,13 +135,16 @@ game_state_t front_init(){
     // Se crean instancias de samples para el disparo del jugador y para el movimiento de los aliens
     playerShotSample = al_create_sample_instance(playerShotSound);
     alienMovedSample = al_create_sample_instance(alienMovedSound);
+    ufoSample = al_create_sample_instance(ufoSound);
 
     al_attach_sample_instance_to_mixer(playerShotSample, mixer);
     al_attach_sample_instance_to_mixer(alienMovedSample, mixer);
+    al_attach_sample_instance_to_mixer(ufoSample, mixer);
 
     // Se setean los valores predeterminados para cada audio.
     initAudioInstance(playerShotSample, VOLUME_PLAYER_SHOT, ALLEGRO_PLAYMODE_ONCE);
     initAudioInstance(alienMovedSample, VOLUME_ALIENS_MOVED, ALLEGRO_PLAYMODE_ONCE);
+    initAudioInstance(ufoSample, VOLUME_UFO, ALLEGRO_PLAYMODE_LOOP);
 
     al_set_new_display_flags (ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
 
@@ -198,9 +204,10 @@ static void kill_all(){
     al_destroy_mixer(mixer);
     // Se matan los procesos relacionados al audio.
     kill_all_instances(
-        2,                  // Cantidad de instancias a destruir.
+        3,                  // Cantidad de instancias a destruir.
         playerShotSample,
-        alienMovedSample
+        alienMovedSample,
+        ufoSample
     );
     kill_all_samples(
         5,                  // Cantidad de samples a destruir.
@@ -247,47 +254,50 @@ static void init_error(bool state, const char* name){
 
 game_state_t game_update(){
     ALLEGRO_EVENT event;
-    bool redraw = false, done = false, fullscreen = false, moveThisFrame = true;
+    bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;
     unsigned long long frame = 0;
 
     al_start_timer(timer);
 
     while(!done){
-        // Procesamiento de eventos        
-        while(al_get_next_event(queue, &event)){
-            switch(event.type){
-                case ALLEGRO_EVENT_TIMER:
-                    back_update(0);
-                    redraw = true;
-                    ++frame;
-                    moveThisFrame = false;
-                    break;
+        // Procesamiento de eventos
+        al_wait_for_event(queue, &event);
+        //if(al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME)){
+        switch(event.type){
+            case ALLEGRO_EVENT_TIMER:
+                back_update(0);
+                redraw = true;
+                ++frame;
+                moveThisFrame = false;
+                break;
 
-                case ALLEGRO_EVENT_KEY_DOWN:
-                    key[event.keyboard.keycode] = 1;
-                    if (key[ALLEGRO_KEY_ESCAPE])
-                        done = true;
-                    if (key[ALLEGRO_KEY_F]){
-                        fullscreen = !fullscreen;
-                        al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
-                    }
-                    // Se utiliza X para disparar.
-                    if(key[ALLEGRO_KEY_X] && player_try_shoot())
-                        al_play_sample_instance(playerShotSample);
-                    break;
-                case ALLEGRO_EVENT_KEY_UP:
-                    key[event.keyboard.keycode] = 0;
-                    break;
-
-                case ALLEGRO_EVENT_DISPLAY_RESIZE:
-                    al_acknowledge_resize(disp);
-                    break;
-
-                case ALLEGRO_EVENT_DISPLAY_CLOSE:
+            case ALLEGRO_EVENT_KEY_DOWN:
+                key[event.keyboard.keycode] = 1;
+                if (key[ALLEGRO_KEY_ESCAPE])
                     done = true;
-                    break;
-            }
+                if (key[ALLEGRO_KEY_F]){
+                    fullscreen = !fullscreen;
+                    al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
+                }
+                // Se utiliza X para disparar.
+                if(key[ALLEGRO_KEY_X] && player_try_shoot()){
+                    al_play_sample_instance(playerShotSample);
+                    shotMade = true;
+                }
+                break;
+            case ALLEGRO_EVENT_KEY_UP:
+                key[event.keyboard.keycode] = 0;
+                break;
+
+            case ALLEGRO_EVENT_DISPLAY_RESIZE:
+                al_acknowledge_resize(disp);
+                break;
+
+            case ALLEGRO_EVENT_DISPLAY_CLOSE:
+                done = true;
+                break;
         }
+        //}
         // Se utilizan las flechas para mover al jugador
         if(key[ALLEGRO_KEY_RIGHT] && !moveThisFrame){ 
             player_move_right();
@@ -298,9 +308,15 @@ game_state_t game_update(){
             moveThisFrame = true;
         }
 
-        // Reproduce el sonido cuando los aliens se mueven.
-        if(aliensMoved)
+        // Reproduce el sonido cuando los aliens se mueven (si siguen vivos) se aprovecha el "laziness" de c.
+        if(total_aliens_alive() && aliensMoved)
         al_play_sample_instance(alienMovedSample);
+
+        // Para el sonido del disparo cuando se hace muy seguido
+        if(!player_shot_is_used() && shotMade){
+            al_stop_sample_instance(playerShotSample);
+            shotMade = false;
+        }
         
         if(redraw){
             redraw = false;
@@ -323,7 +339,11 @@ game_state_t game_update(){
                 }
             }
             if(mothership_is_active()){
+                al_play_sample_instance(ufoSample);
                 draw_mothership();
+            }
+            else{
+                al_stop_sample_instance(ufoSample);
             }
             al_set_target_backbuffer(disp);
             al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width (disp), al_get_display_height(disp), 0);                           // flags

@@ -23,8 +23,8 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
-#define ALIENS_MOVE_MIN_INTERVAL 0.05
-#define ALIENS_MOVE_MAX_INTERVAL 0.5
+#define ALIENS_MOVE_MIN_INTERVAL 0.01
+#define ALIENS_MOVE_MAX_INTERVAL 0.05
 
 #if PLATFORM == ALLEGRO
 
@@ -141,8 +141,6 @@ static void aliens_move_down();
 static void aliens_update_position();
 static void update_aliens_speed(unsigned current_level);
 void aliens_shield_collition();
-
-static unsigned total_aliens_alive();
 
 // Returns: how many aliens are alive in column c
 static unsigned aliens_alive_in_column(unsigned c);
@@ -441,7 +439,7 @@ static void aliens_move_down(){
     aliens_move(0, ALIENS_DY);
 }
 
-static unsigned total_aliens_alive(){
+unsigned total_aliens_alive(){
     unsigned count = 0;
     for(unsigned i = 0; i < ALIENS_ROWS; ++i){
         for(unsigned j = 0; j < ALIENS_COLUMNS; ++j){
@@ -498,7 +496,6 @@ static void aliens_update_position(){
     aliensMoved = elapsed >= aliens_move_interval; 
     if(elapsed >= aliens_move_interval){
         start = clock();
-
         unsigned i;
         switch(movement){
             case MOVEMENT_RIGHT:
