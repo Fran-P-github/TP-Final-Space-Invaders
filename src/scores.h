@@ -3,7 +3,14 @@
 
 #include <stdbool.h>
 
+#if PLATFORM == RPI
+#define MAX_SCORES 5
+#elif PLATFORM == ALLEGRO
+#define MAX_SCORES 20
+#else
 #define MAX_SCORES 10
+#endif
+
 #define NAME_LEN 3
 
 typedef struct {

@@ -1,3 +1,5 @@
+// TODO: ver como arreglar la forma de ver el tiempo que pasa para algo en la rpi. Creo que eso hace que no ande tan bien el control del jugador
+
 #include<time.h>
 #include<unistd.h>
 #include<string.h>
@@ -70,6 +72,11 @@ static void draw3x3(const char icon[3][4], unsigned x, unsigned y);
 static void draw_text_wrapped(const char* str, int x, int y);
 static void blink_string(char buf[], unsigned size, unsigned x, unsigned y);
 
+// Returns true when reaching logo end
+static bool logo_menu_display();
+
+static bool leaderboard_menu_display();
+
 static void level_end_animation(level_state_t level_state);
 static void get_player_name(char name[4], unsigned x, unsigned y);
 
@@ -86,51 +93,25 @@ game_state_t front_init(){
 }
 
 game_state_t menu(){
-    const char space[LETTER_HEIGHT][LETTERS_WIDTH] = {
-        "        ***  ****   ***   ***  *****                    ",
-        "       *     *   * *   * *     *                        ",
-        "        ***  ****  ***** *     ***                      ",
-        "           * *     *   * *     *                        ",
-        "        ***  *     *   *  ***  *****                    "
-    };
-    const char invaders[LETTER_HEIGHT][LETTERS_WIDTH] = {
-        "***** *   * *   *  ***  ****  ***** ****   ***         ",
-        "  *   **  * *   * *   * *   * *     *   * *            ",
-        "  *   * * *  * *  ***** *   * ***   ****   ***         ",
-        "  *   *  **  * *  *   * *   * *     * *       *        ",
-        "***** *   *   *   *   * ****  ***** *  *   ***         "
-    };
-    static unsigned column = 0;
-
+    static bool show_logo = true; // Show leaderboard when false
     static clock_t start = 0;
     double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
-    if(elapsed >= LETTERS_WAIT_TIME){
-        start = clock();
 
-        unsigned i, j;
-        // SPACE
-        for(i=0; i<LETTER_HEIGHT; ++i){
-            for(j=0; j<WORLD_WIDTH; ++j){
-                dcoord_t coord = { .x=j, .y=i+LETTER_MARGIN };
-                disp_write(coord, space[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
-            }
+    if(show_logo){
+        if(logo_menu_display() && elapsed >= 8){
+            show_logo = false;
+            disp_clear();
         }
-
-        // INVADERS
-        for(i=0; i<LETTER_HEIGHT; ++i){
-            for(j=0; j<WORLD_WIDTH; ++j){
-                dcoord_t coord = { .x=j, .y=i+LETTER_HEIGHT+2*LETTER_MARGIN };
-                disp_write(coord, invaders[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
-            }
+    }else{ // Show leaderboard
+        if(leaderboard_menu_display()){
+            show_logo = true;
+            start = clock();
+            disp_clear();
         }
-
-        disp_update();
-        ++column;
     }
 
     jswitch_t button = joy_read().sw;
     if(button == J_PRESS){
-        column = 0;
         return GAME;
     }else{
         return MENU;
@@ -198,6 +179,86 @@ game_state_t game_update(unsigned level){
     }else{
         return CLOSED;
     }
+}
+
+static bool leaderboard_menu_display(){
+    static bool show_score = false; // Show TOP number when false
+    highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
+    static unsigned current_score = 0;
+    static unsigned cont_this_score = 0;
+    const unsigned displays_per_score = 2;
+
+    static clock_t start = 0;
+    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    if(elapsed >= 0.2){ // No son 0.2 segundos, es porque algo anda mal con esta forma de ver el tiempo en la rpi
+        cont_this_score++;
+        show_score = !show_score;
+        start = clock();
+        if(cont_this_score == 2*displays_per_score){
+            if(++current_score == MAX_SCORES){
+                current_score = 0;
+                return true;
+            }
+            cont_this_score  = 0;
+            show_score = false;
+        }
+    }
+
+    char buf[5];
+    if(show_score) snprintf(buf, sizeof(buf), "%4d", top_scores[current_score].score);
+    else snprintf(buf, sizeof(buf), "TOP%d", current_score+1);
+    draw_text_wrapped(buf, 0, 3);
+    snprintf(buf, sizeof(buf), "%s", top_scores[current_score].name);
+    draw_text_wrapped(buf, 3, 10);
+    disp_update();
+
+    return false;
+}
+
+static bool logo_menu_display(){
+    const char space[LETTER_HEIGHT][LETTERS_WIDTH] = {
+        "        ***  ****   ***   ***  *****                    ",
+        "       *     *   * *   * *     *                        ",
+        "        ***  ****  ***** *     ***                      ",
+        "           * *     *   * *     *                        ",
+        "        ***  *     *   *  ***  *****                    "
+    };
+    const char invaders[LETTER_HEIGHT][LETTERS_WIDTH] = {
+        "***** *   * *   *  ***  ****  ***** ****   ***         ",
+        "  *   **  * *   * *   * *   * *     *   * *            ",
+        "  *   * * *  * *  ***** *   * ***   ****   ***         ",
+        "  *   *  **  * *  *   * *   * *     * *       *        ",
+        "***** *   *   *   *   * ****  ***** *  *   ***         "
+    };
+    static unsigned column = LETTERS_WIDTH - 4;
+
+    static clock_t start = 0;
+    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    if(elapsed >= LETTERS_WAIT_TIME){
+        start = clock();
+
+        unsigned i, j;
+        // SPACE
+        for(i=0; i<LETTER_HEIGHT; ++i){
+            for(j=0; j<WORLD_WIDTH; ++j){
+                dcoord_t coord = { .x=j, .y=i+LETTER_MARGIN };
+                disp_write(coord, space[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
+            }
+        }
+
+        // INVADERS
+        for(i=0; i<LETTER_HEIGHT; ++i){
+            for(j=0; j<WORLD_WIDTH; ++j){
+                dcoord_t coord = { .x=j, .y=i+LETTER_HEIGHT+2*LETTER_MARGIN };
+                disp_write(coord, invaders[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
+            }
+        }
+
+        disp_update();
+        ++column;
+    }
+
+    return !(column % LETTERS_WIDTH);
 }
 
 static void level_end_animation(level_state_t level_state){
@@ -312,7 +373,7 @@ void endgame(){
     disp_clear();
 
     char score[10];
-    snprintf(score, sizeof(score), "%d", 10*player_get_score());
+    snprintf(score, sizeof(score), "%d", player_get_score());
     disp_clear();
     blink_string(score, strlen(score), 0, 3);
 
@@ -324,7 +385,7 @@ void endgame(){
     blink_string(name, sizeof(name)-1, 2, 5);
 
     highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
-    if( try_insert_score(top_scores, name, 10*player_get_score()) ){
+    if( try_insert_score(top_scores, name, player_get_score()) ){
         disp_clear();
         blink_string("NEW BEST", sizeof("NEW BEST")-1, 0, 3);
     }
@@ -391,6 +452,12 @@ static void draw_text_wrapped(const char *str, int x, int y) {
 
         // Space
         if (c == ' ') {
+            for (int i = 0; i < CHAR_HEIGHT; ++i) {
+                for (int j = 0; j < CHAR_WIDTH; ++j) {
+                    dcoord_t coord = { .x = x+j, .y = y+i };
+                    disp_write(coord, D_OFF);
+                }
+            }
             x += CHAR_WIDTH + CHAR_SPACING;
         }
         // Digit
