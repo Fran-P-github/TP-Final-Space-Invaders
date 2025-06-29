@@ -1,3 +1,5 @@
+#include "font_3x5.h"
+
 const char NUM_FONT[10][5][4] = {
     { " * ", "* *", "* *", "* *", " * " }, // 0
     { "  *", " **", "* *", "  *", "  *" }, // 1
@@ -11,7 +13,7 @@ const char NUM_FONT[10][5][4] = {
     { "***", "* *", "***", "  *", "***" }, // 9
 };
 
-const char LETTER_FONT[26][5][4] = {
+const char LETTER_FONT[LETTERS_CANT][5][4] = {
     // A
     {
         " * ",
