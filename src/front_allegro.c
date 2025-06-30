@@ -106,9 +106,11 @@ static unsigned char key[ALLEGRO_KEY_MAX];
 game_state_t front_init(){
     back_init();
 
+
     init_error(al_init(), "Allegro");
     init_error(al_init_primitives_addon(), "Allegro Primitives");
     init_error(al_install_keyboard(), "Keyboard");
+    init_error(al_install_mouse(), "Mouse");
     init_error(al_init_video_addon(),"Allegro Videos");
     init_error(al_install_audio(), "Allegro Audio");
     init_error(al_init_acodec_addon(), "Allegro Audio Codec");

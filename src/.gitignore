@@ -1,1 +1,6 @@
 out
+SpaceInvaders
+menu_allegro.o
+back.o
+front_allegro.o
+main.o
