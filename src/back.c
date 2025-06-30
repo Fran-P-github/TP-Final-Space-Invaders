@@ -12,7 +12,6 @@
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
-
 #include<time.h>
 #include<stdbool.h>
 #include<stdlib.h>
@@ -24,7 +23,7 @@
  ******************************************************************************/
 
 #define ALIENS_MOVE_MIN_INTERVAL 0.01
-#define ALIENS_MOVE_MAX_INTERVAL 0.05
+#define ALIENS_MOVE_MAX_INTERVAL 0.3
 
 #if PLATFORM == ALLEGRO
 
@@ -305,11 +304,16 @@ static bool aliens_update(unsigned current_level){
     }
     movement_t last_movement;
     static movement_t prev_last_movement = NO_MOVEMENT;
-    if((last_movement = aliens_update_position(row_to_move)) != NO_MOVEMENT) row_to_move = (row_to_move - 1)>=ALIENS_ROWS ? ALIENS_ROWS-1 : (row_to_move - 1);
-    while(!aliens_alive_in_row(row_to_move)) row_to_move = (row_to_move - 1)>=ALIENS_ROWS ? ALIENS_ROWS-1 : (row_to_move - 1);
+    if((last_movement = aliens_update_position(row_to_move)) != NO_MOVEMENT)
+        row_to_move = (row_to_move-1)>=ALIENS_ROWS ? (ALIENS_ROWS-1) : (row_to_move - 1);
+    // Get next row with alive aliens
+    while(!aliens_alive_in_row(row_to_move)){
+        row_to_move = (row_to_move - 1)>=ALIENS_ROWS ? ALIENS_ROWS-1 : (row_to_move - 1);
+    }
     if(last_movement != NO_MOVEMENT){
-        if(last_movement == MOVEMENT_DOWN && prev_last_movement != MOVEMENT_DOWN)
+        if(last_movement == MOVEMENT_DOWN && prev_last_movement != MOVEMENT_DOWN){
             row_to_move = ALIENS_ROWS-1;
+        }
         prev_last_movement = last_movement;
     }
 
@@ -398,7 +402,7 @@ static bool should_spawn_mothership(double elapsed_time){
     return r < probability;
 }
 
-#define FIRST_ALIEN_X_COORDINATE  ( (WORLD_WIDTH - (cols*ALIENS_W + (cols-1)*ALIENS_HORIZONTAL_SEPARATION)) / 2 )
+#define FIRST_ALIEN_X_COORDINATE  ( (WORLD_WIDTH - (cols*ALIENS_W + (cols-1)*ALIENS_HORIZONTAL_SEPARATION)) / 2)//+250) //+250 para que empieze mas a la derecha y testear mas facil
 static void aliens_init(unsigned rows, unsigned cols, unsigned lives){
     if(!lives) lives = 1;
     unsigned i, j;
@@ -454,14 +458,11 @@ static void player_move(int x, int y){
 }
 
 static void aliens_move(int x, int y, unsigned row){
-    //unsigned i, j;
     unsigned j;
-    //for(i=0; i<ALIENS_ROWS; ++i){
-        for(j=0; j<ALIENS_COLUMNS; ++j){
-            aliens[row][j].x += x;
-            aliens[row][j].y += y;
-        }
-    //}
+    for(j=0; j<ALIENS_COLUMNS; ++j){
+        aliens[row][j].x += x;
+        aliens[row][j].y += y;
+    }
 }
 
 static void aliens_move_right(unsigned row){
