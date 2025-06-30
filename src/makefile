@@ -5,7 +5,7 @@ FLAGS := -Wall
 OBJS := main.o front_$(PLATFORM).o back.o menu_$(PLATFORM).o
 
 ifeq ($(PLATFORM), allegro)
-ALFLAGS := $(shell pkg-config allegro-5 allegro_font-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_image-5 allegro_video-5 --libs --cflags)
+ALFLAGS := $(shell pkg-config allegro-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_image-5 allegro_video-5 --libs --cflags)
 DEFINE := ALLEGRO
 else
 ifeq ($(PLATFORM), rb)

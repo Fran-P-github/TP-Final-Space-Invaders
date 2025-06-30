@@ -107,6 +107,7 @@
 
 #define AUDIO_ROUTE(s) "../assets/Audio/"s
 #define BITMAP_ROUTE(s) "../assets/Bitmap/"s
+#define FONT_ROUTE(s) "../assets/Font/"s
 
 // Audio files (Son los mismos independientemente de la plataforma)
 #define AUDIO_PLAYER_SHOT "../assets/Audio/shoot.wav"

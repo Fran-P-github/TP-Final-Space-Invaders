@@ -18,6 +18,7 @@
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_video.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
@@ -124,6 +125,8 @@ game_state_t front_init(){
     init_error(al_init(), "Allegro");
     init_error(al_init_primitives_addon(), "Allegro Primitives");
     init_error(al_install_keyboard(), "Keyboard");
+    init_error(al_init_font_addon(), "Allegro Fonts");
+    init_error(al_init_ttf_addon(), "Allegro TTFs");
     init_error(al_install_mouse(), "Mouse");
     init_error(al_init_video_addon(),"Allegro Videos");
     init_error(al_install_audio(), "Allegro Audio");
