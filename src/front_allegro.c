@@ -34,10 +34,10 @@
 
 #define MSJ_ERR_INIT "Problema al inicializar: "
 #define AUDIO_SAMPLES 16
-//#define MAX_EVENT_WAIT_TIME 0.01
+#define MAX_EVENT_WAIT_TIME 0.001
 // Floats para el volumen de los efectos de sonido
 #define VOLUME_PLAYER_SHOT .1
-#define VOLUME_ALIENS_MOVED .1
+#define VOLUME_ALIENS_MOVED .3
 #define VOLUME_UFO .1
 
 /*******************************************************************************
@@ -284,43 +284,42 @@ game_state_t game_update(unsigned level){
 
     while(!done && level_state==LEVEL_NOT_DONE){
         // Procesamiento de eventos
-        al_wait_for_event(queue, &event);
-        //if(al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME)){
-        switch(event.type){
-            case ALLEGRO_EVENT_TIMER:
-                level_state = back_update(level);
-                redraw = true;
-                ++frame;
-                moveThisFrame = false;
-                break;
+        if(al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME)){
+            switch(event.type){
+                case ALLEGRO_EVENT_TIMER:
+                    level_state = back_update(level);
+                    redraw = true;
+                    ++frame;
+                    moveThisFrame = false;
+                    break;
 
-            case ALLEGRO_EVENT_KEY_DOWN:
-                key[event.keyboard.keycode] = 1;
-                if (key[ALLEGRO_KEY_ESCAPE])
+                case ALLEGRO_EVENT_KEY_DOWN:
+                    key[event.keyboard.keycode] = 1;
+                    if (key[ALLEGRO_KEY_ESCAPE])
+                        done = true;
+                    if (key[ALLEGRO_KEY_F]){
+                        fullscreen = !fullscreen;
+                        al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
+                    }
+                    // Se utiliza X para disparar.
+                    if(key[ALLEGRO_KEY_X] && player_try_shoot()){
+                        al_play_sample_instance(playerShotSample);
+                        shotMade = true;
+                    }
+                    break;
+                case ALLEGRO_EVENT_KEY_UP:
+                    key[event.keyboard.keycode] = 0;
+                    break;
+
+                case ALLEGRO_EVENT_DISPLAY_RESIZE:
+                    al_acknowledge_resize(disp);
+                    break;
+
+                case ALLEGRO_EVENT_DISPLAY_CLOSE:
                     done = true;
-                if (key[ALLEGRO_KEY_F]){
-                    fullscreen = !fullscreen;
-                    al_toggle_display_flag(disp,ALLEGRO_FULLSCREEN_WINDOW,fullscreen);
-                }
-                // Se utiliza X para disparar.
-                if(key[ALLEGRO_KEY_X] && player_try_shoot()){
-                    al_play_sample_instance(playerShotSample);
-                    shotMade = true;
-                }
-                break;
-            case ALLEGRO_EVENT_KEY_UP:
-                key[event.keyboard.keycode] = 0;
-                break;
-
-            case ALLEGRO_EVENT_DISPLAY_RESIZE:
-                al_acknowledge_resize(disp);
-                break;
-
-            case ALLEGRO_EVENT_DISPLAY_CLOSE:
-                done = true;
-                break;
+                    break;
+            }
         }
-        //}
         // Se utilizan las flechas para mover al jugador
         if(key[ALLEGRO_KEY_RIGHT] && !moveThisFrame){ 
             player_move_right();
