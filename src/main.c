@@ -59,7 +59,7 @@
 int main(){
     game_state_t state = front_init();
 
-    state = GAME; // Testing. Despues cambiar a MENU
+    state = MENU; // Testing. Despues cambiar a MENU
     unsigned int level = 0;
 
     while(state != CLOSED){

@@ -66,6 +66,13 @@ typedef struct {
   ALLEGRO_BITMAP *sprite;
 } ship_t;
 
+typedef struct{
+	short int x0;
+	short int y0;
+	short int x1;
+	short int x2;
+}button_t;
+
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
  ******************************************************************************/
@@ -159,7 +166,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   font_toreks = al_load_ttf_font(FONT_ROUTE("toreks-font/Toreks_regular.ttf"), 12, 0);
   ERRCHECK(font_toreks, "Toreks Font");
-  font_supercharge = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_italic.otf"), 24, 0);
+  font_supercharge = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 24, 0);
   ERRCHECK(font_supercharge, "Supercharge Font");
   font_cartesian = al_load_ttf_font(FONT_ROUTE("cartesian-font/Cartesian_regular.ttf"), 8, 0);
   ERRCHECK(font_cartesian, "Cartesian Font");
@@ -214,8 +221,8 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
         CURSOR_UPDATE;
         DRAW_BACKGROUND;
         DRAW_LOGO;
-        draw_rectangle_gradient(WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5, 150, 35, GRADIENT_CENTER, al_map_rgba(255, 210, 65, 127), al_map_rgba(125, 0, 190, 255), 24);
-        al_draw_textf(font_supercharge, al_map_rgb(255, 255, 255), WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5 - 12, ALLEGRO_ALIGN_CENTER, "Dive inTo spAce");
+        draw_rectangle_gradient(WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5, 150, 35, GRADIENT_CENTER, al_map_rgba(255, 210, 65, 127), al_map_rgba(125, 0, 190, 255), 32);
+        al_draw_textf(font_supercharge, al_map_rgb(0, 0, 0), WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5 - 12, ALLEGRO_ALIGN_CENTER, "Dive inTo spAce");
         DRAW_SHIP_CURSOR;
         break;
       case ALLEGRO_EVENT_KEY_DOWN:
