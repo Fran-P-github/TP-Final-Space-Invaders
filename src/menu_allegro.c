@@ -29,18 +29,22 @@
 #define ERRCHECK(obj, txt) \
   if ( must_setup(obj, txt) == CLOSED ) return CLOSED
 
-#define ANIMATION_LOOP_1                                                                                                                                                                                                                                    \
-  trail_accel(intro_ship.trail, mouse.x, mouse.y, mouse_x, mouse_y, screen_width, screen_height);                                                                                                                                                           \
-  cursor_accel(&mouse, &mouse_x, &mouse_y, &Accel_x, &Accel_y);                                                                                                                                                                                             \
-                                                                                                                                                                                                                                                            \
-  al_draw_bitmap(intro_background_frames[counter_1++], 0, 0, 0);                                                                                                                                                                                            \
-  al_draw_filled_polygon(intro_ship.trail, 10, al_map_rgba(255, 255, 255, 200));                                                                                                                                                                            \
-  al_draw_scaled_rotated_bitmap(intro_ship.sprite, al_get_bitmap_width(intro_ship.sprite) / 2, al_get_bitmap_height(intro_ship.sprite) / 2, mouse.x * WORLD_WIDTH / screen_width, mouse.y * WORLD_HEIGHT / screen_height, 0.5, 0.15 + Accel_y, Accel_x, 0); \
-  al_draw_scaled_rotated_bitmap(intro_logo, al_get_bitmap_width(intro_logo) / 2, al_get_bitmap_height(intro_logo) / 2, WORLD_WIDTH / 2, WORLD_HEIGHT / 4, 1, 1, 0, 0);                                                                                      \
-                                                                                                                                                                                                                                                            \
-  if ( counter_2 > 0 ) counter_2 -= 10;                                                                                                                                                                                                                     \
-  if ( counter_2 < 0 ) counter_2 = 0;                                                                                                                                                                                                                       \
+#define DRAW_BACKGROUND                                          \
+  al_draw_bitmap(intro_background_frames[counter_1++], 0, 0, 0); \
+  if ( counter_2 > 0 ) counter_2 -= 10;                          \
+  if ( counter_2 < 0 ) counter_2 = 0;                            \
   if ( counter_1 == 300 ) counter_1 = 0
+
+#define DRAW_SHIP_CURSOR                                                                                                                                                                        \
+  al_draw_scaled_rotated_bitmap(intro_ship.sprite, intro_ship.cx, intro_ship.cy, mouse.x *WORLD_WIDTH / screen_width, mouse.y * WORLD_HEIGHT / screen_height, 0.5, 0.15 + Accel_y, Accel_x, 0); \
+  al_draw_filled_polygon(intro_ship.trail, 10, al_map_rgba(255, 255, 255, 200))
+
+#define DRAW_LOGO \
+  al_draw_scaled_rotated_bitmap(intro_logo, al_get_bitmap_width(intro_logo) / 2, al_get_bitmap_height(intro_logo) / 2, WORLD_WIDTH / 2, WORLD_HEIGHT / 4, 1, 1, 0, 0)
+
+#define CURSOR_UPDATE                                                                             \
+  trail_accel(intro_ship.trail, mouse.x, mouse.y, mouse_x, mouse_y, screen_width, screen_height); \
+  cursor_accel(&mouse, &mouse_x, &mouse_y, &Accel_x, &Accel_y)
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -48,6 +52,10 @@
 
 enum choice { INTRO = 10,
               QUIT };
+
+typedef enum gradient_mode { GRADIENT_CENTER = 20,
+                             GRADIENT_TOP_TO_BOTTOM,
+                             GRADIENT_LEFT_TO_RIGHT } gradient_mode_t;
 
 typedef struct {
   int px;           // X position
@@ -71,6 +79,7 @@ static void intro_anim(ALLEGRO_FONT *dfont, ALLEGRO_SAMPLE *s_logo, ALLEGRO_SAMP
 static void draw_frame(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *buffer);
 static void cursor_accel(ALLEGRO_MOUSE_STATE *mouse, short int *mouse_old_x, short int *mouse_old_y, float *accel_x, float *Accel_y);
 static void trail_accel(float *polygon, int new_x, int new_y, int old_x, int old_y, int width, int height);
+static void draw_rectangle_gradient(int center_x, int center_y, int radius_x, int radius_y, gradient_mode_t mode, ALLEGRO_COLOR color_1, ALLEGRO_COLOR color_2, int steps);
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -92,6 +101,9 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   ALLEGRO_BITMAP *intro_background_frames[300];
   ALLEGRO_BITMAP *intro_logo;
+  ALLEGRO_FONT *font_toreks;
+  ALLEGRO_FONT *font_supercharge;
+  ALLEGRO_FONT *font_cartesian;
   ALLEGRO_EVENT menu_event;
   ALLEGRO_EVENT dummy;
   ALLEGRO_SAMPLE *logo_sound;
@@ -108,8 +120,8 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   /*************************DEFINITIONS**************************/
 
   ship_t intro_ship = {0, 0, 0, 0, {0}, NULL};
-  char select = INTRO;
   bool redraw = false;
+  char select = INTRO;
   bool fullscreen = al_get_display_flags(display) & ALLEGRO_FULLSCREEN_WINDOW;
   float Accel_x = 0, Accel_y = 0;
 
@@ -137,12 +149,20 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   ERRCHECK(intro_logo, "intro logo");
   intro_ship.sprite = al_load_bitmap(BITMAP_ROUTE("intro/intro_ship.png"));
   ERRCHECK(intro_ship.sprite, "intro ship");
+
   logo_sound = al_load_sample(AUDIO_ROUTE("coin.wav"));
   ERRCHECK(logo_sound, "Coin Sound");
   intro_part1 = al_load_sample(AUDIO_ROUTE("intro_part1.wav"));
   ERRCHECK(intro_part1, "intro 1st part sound");
   intro_part2 = al_load_sample(AUDIO_ROUTE("intro_part2.wav"));
   ERRCHECK(intro_part1, "intro 2nd part sound");
+
+  font_toreks = al_load_ttf_font(FONT_ROUTE("toreks-font/Toreks_regular.ttf"), 12, 0);
+  ERRCHECK(font_toreks, "Toreks Font");
+  font_supercharge = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_italic.otf"), 24, 0);
+  ERRCHECK(font_supercharge, "Supercharge Font");
+  font_cartesian = al_load_ttf_font(FONT_ROUTE("cartesian-font/Cartesian_regular.ttf"), 8, 0);
+  ERRCHECK(font_cartesian, "Cartesian Font");
 
   intro_ship.cx = al_get_bitmap_width(intro_ship.sprite) / 2;
   intro_ship.cy = al_get_bitmap_height(intro_ship.sprite) / 2;
@@ -182,40 +202,50 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   while ( select != QUIT ) {
     al_wait_for_event(queue, &menu_event);
+    switch ( select ) {
+    case INTRO:
 
-    switch ( menu_event.type ) {
-    case ALLEGRO_EVENT_TIMER:
-      BUFFER;
-      CLEAR;
-      redraw = true;
-      al_get_mouse_state(&mouse);
-      ANIMATION_LOOP_1;
-      break;
-    case ALLEGRO_EVENT_KEY_DOWN:
-      switch ( menu_event.keyboard.keycode ) {
-      case ALLEGRO_KEY_F:
-        fullscreen = !fullscreen;
-        al_toggle_display_flag(display, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
+      switch ( menu_event.type ) {
+      case ALLEGRO_EVENT_TIMER:
+        BUFFER;
+        CLEAR;
+        redraw = true;
+        al_get_mouse_state(&mouse);
+        CURSOR_UPDATE;
+        DRAW_BACKGROUND;
+        DRAW_LOGO;
+        draw_rectangle_gradient(WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5, 150, 35, GRADIENT_CENTER, al_map_rgba(255, 210, 65, 127), al_map_rgba(125, 0, 190, 255), 24);
+        al_draw_textf(font_supercharge, al_map_rgb(255, 255, 255), WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5 - 12, ALLEGRO_ALIGN_CENTER, "Dive inTo spAce");
+        DRAW_SHIP_CURSOR;
         break;
-      case ALLEGRO_KEY_ESCAPE:
+      case ALLEGRO_EVENT_KEY_DOWN:
+        switch ( menu_event.keyboard.keycode ) {
+        case ALLEGRO_KEY_F:
+          fullscreen = !fullscreen;
+          al_toggle_display_flag(display, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
+          break;
+        case ALLEGRO_KEY_ESCAPE:
+          select = QUIT;
+          break;
+        }
+        break;
+      case ALLEGRO_EVENT_DISPLAY_RESIZE:
+        al_acknowledge_resize(display);
+        screen_width = al_get_display_width(display);
+        screen_height = al_get_display_height(display);
+        break;
+      case ALLEGRO_EVENT_DISPLAY_CLOSE:
         select = QUIT;
         break;
       }
-      break;
-    case ALLEGRO_EVENT_DISPLAY_RESIZE:
-      al_acknowledge_resize(display);
-      screen_width = al_get_display_width(display);
-      screen_height = al_get_display_height(display);
-      break;
-    case ALLEGRO_EVENT_DISPLAY_CLOSE:
-      select = QUIT;
-      break;
-    }
 
-    if ( redraw ) {
-      al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(255, 255, 255, counter_2));
-      DRAW;
-      redraw = false;
+      if ( redraw ) {
+        al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(255, 255, 255, counter_2));
+        DRAW;
+        redraw = false;
+      }
+
+      break;
     }
   }
 
@@ -261,21 +291,8 @@ void intro_anim(ALLEGRO_FONT *default_font, ALLEGRO_SAMPLE *s_logo, ALLEGRO_SAMP
   short int height = al_get_bitmap_height(ship);
   float s;
 
-  al_set_blender(ALLEGRO_ADD, ALLEGRO_ALPHA, ALLEGRO_INVERSE_ALPHA);
-
   float trail[20] = {
-      WORLD_WIDTH / 2 - 4, WORLD_HEIGHT, WORLD_WIDTH / 2 - 8, WORLD_HEIGHT, WORLD_WIDTH / 2 - 16, WORLD_HEIGHT, WORLD_WIDTH / 2 - 20, WORLD_HEIGHT, WORLD_WIDTH / 2 - 48, WORLD_HEIGHT,
-
-      WORLD_WIDTH / 2 + 48,
-      WORLD_HEIGHT,
-      WORLD_WIDTH / 2 + 20,
-      WORLD_HEIGHT,
-      WORLD_WIDTH / 2 + 16,
-      WORLD_HEIGHT,
-      WORLD_WIDTH / 2 + 8,
-      WORLD_HEIGHT,
-      WORLD_WIDTH / 2 + 4,
-      WORLD_HEIGHT};
+      WORLD_WIDTH / 2 - 4, WORLD_HEIGHT, WORLD_WIDTH / 2 - 8, WORLD_HEIGHT, WORLD_WIDTH / 2 - 16, WORLD_HEIGHT, WORLD_WIDTH / 2 - 20, WORLD_HEIGHT, WORLD_WIDTH / 2 - 48, WORLD_HEIGHT, WORLD_WIDTH / 2 + 48, WORLD_HEIGHT, WORLD_WIDTH / 2 + 20, WORLD_HEIGHT, WORLD_WIDTH / 2 + 16, WORLD_HEIGHT, WORLD_WIDTH / 2 + 8, WORLD_HEIGHT, WORLD_WIDTH / 2 + 4, WORLD_HEIGHT};
 
   al_set_sample(sample_instance, sample_intro_1);
 
@@ -420,3 +437,47 @@ void trail_accel(float *polygon, int new_x, int new_y, int old_x, int old_y, int
 }
 
 /**************************************************************/
+
+/******************DRAW_RECTANGLE_GRADIENT*********************/
+
+void draw_rectangle_gradient(int center_x, int center_y, int radius_x, int radius_y, gradient_mode_t mode, ALLEGRO_COLOR color_1, ALLEGRO_COLOR color_2, int steps) {
+  if ( steps <= 0 || (mode != GRADIENT_CENTER && mode != GRADIENT_LEFT_TO_RIGHT && mode != GRADIENT_TOP_TO_BOTTOM) ) return;
+  ALLEGRO_COLOR gradient;
+  int counter_1, gradient_x_step = radius_x / steps, gradient_y_step = radius_y / steps;
+  float r_step = (color_1.r - color_2.r) / steps;
+  float g_step = (color_1.g - color_2.g) / steps;
+  float b_step = (color_1.b - color_2.b) / steps;
+  float a_step = (color_1.a - color_2.a) / steps;
+
+  switch ( mode ) {
+  case GRADIENT_CENTER:
+    for ( counter_1 = steps; counter_1 > 0; counter_1-- ) {
+      gradient.r = color_2.r + r_step * counter_1;
+      gradient.g = color_2.g + g_step * counter_1;
+      gradient.b = color_2.b + b_step * counter_1;
+      gradient.a = color_2.a + a_step * counter_1;
+      al_draw_filled_rectangle(center_x - gradient_x_step * counter_1, center_y - gradient_y_step * counter_1, center_x + gradient_x_step * counter_1, center_y + gradient_y_step * counter_1, gradient);
+    }
+    break;
+
+  case GRADIENT_TOP_TO_BOTTOM:
+    for ( counter_1 = steps; counter_1 > 0; counter_1-- ) {
+      gradient.r = color_1.r - r_step * counter_1;
+      gradient.g = color_1.g - g_step * counter_1;
+      gradient.b = color_1.b - b_step * counter_1;
+      gradient.a = color_1.a - a_step * counter_1;
+      al_draw_filled_rectangle(center_x - radius_x, center_y - radius_y, center_x + radius_x, center_y - radius_y + 2 * gradient_y_step * counter_1, gradient);
+    }
+    break;
+
+  case GRADIENT_LEFT_TO_RIGHT:
+    for ( counter_1 = steps; counter_1 > 0; counter_1-- ) {
+      gradient.r = color_1.r - r_step * counter_1;
+      gradient.g = color_1.g - g_step * counter_1;
+      gradient.b = color_1.b - b_step * counter_1;
+      gradient.a = color_1.a - a_step * counter_1;
+      al_draw_filled_rectangle(center_x - radius_x, center_y - radius_y, center_x - radius_x + 2 * gradient_x_step * counter_1, center_y + radius_y, gradient);
+    }
+    break;
+  }
+}
