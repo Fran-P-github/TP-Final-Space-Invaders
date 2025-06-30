@@ -68,6 +68,7 @@ static void init_error(bool state, const char* name);
 static void kill_all();
 static void kill_all_instances(int len, ...);
 static void kill_all_samples(int len, ...);
+static void kill_all_bitmaps(int len, ...);
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -182,7 +183,7 @@ game_state_t front_init(){
 }
 
 game_state_t menu(){
-    return menu_allegro(disp, timer, queue, default_font, buffer, mixer);
+    return menu_allegro(disp, timer, queue, default_font, buffer, mixer, &kill_all_bitmaps, &kill_all_instances, &kill_all_samples);
 }
 
 game_state_t game_pause(){
@@ -241,6 +242,16 @@ static void kill_all_instances(int len, ...){
     int i;
     for(i = 0; i < len; i++){
         al_destroy_sample_instance(va_arg(instance_list, ALLEGRO_SAMPLE_INSTANCE*));
+    }
+}
+
+// Funcion para matar todas los bitmaps creados.
+static void kill_all_bitmaps(int len, ...){
+    va_list bitmap_list;
+    va_start(bitmap_list, len);
+    int i;
+    for(i = 0; i < len; i++){
+        al_destroy_bitmap(va_arg(bitmap_list, ALLEGRO_BITMAP*));
     }
 }
 

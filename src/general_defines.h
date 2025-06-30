@@ -25,7 +25,6 @@
 #define SHIELDS_CANT 3
 #define SHIELD_BLOCK_LIVES 2
 
-
 #define RPI 0
 #define ALLEGRO 2
 #ifndef PLATFORM
@@ -62,11 +61,11 @@
 #define SHIELD_BLOCK_H 12
 #define SHIELD_W 7
 #define SHIELD_H 4
-#define SHIELD_FORM { \
-{' ', '*', '*', '*', '*', '*', ' '}, \
-{' ', '*', '*', '*', '*', '*', ' '}, \
-{'*', '*', '*', '*', '*', '*', '*'}, \
-{'*', '*', ' ', ' ', ' ', '*', '*'}  }
+#define SHIELD_FORM {                    \
+    {' ', '*', '*', '*', '*', '*', ' '}, \
+    {' ', '*', '*', '*', '*', '*', ' '}, \
+    {'*', '*', '*', '*', '*', '*', '*'}, \
+    {'*', '*', ' ', ' ', ' ', '*', '*'}}
 #define SHIELD_TO_PLAYER_MARGIN 40
 
 #elif PLATFORM == RPI
@@ -99,21 +98,21 @@
 #define SHIELD_W 3
 #define SHIELD_H 2
 #define SHIELD_FORM { \
-{' ', '*', ' '}, \
-{'*', '*', '*'}, }
+    {' ', '*', ' '},  \
+    {'*', '*', '*'},  \
+}
 #define SHIELD_TO_PLAYER_MARGIN 1
 
 #endif
 
-#define TO_STRING(x) #x
-#define AUDIO_ROUTE(s) "../assets/Audio/"TO_STRING(s)
-#define BITMAP_ROUTE(s) "../assets/Bitmap/"TO_STRING(s)
+#define AUDIO_ROUTE(s) "../assets/Audio/"s
+#define BITMAP_ROUTE(s) "../assets/Bitmap/"s
 
 // Audio files (Son los mismos independientemente de la plataforma)
-#define AUDIO_PLAYER_SHOT "../assets/Audio/shoot.wav" 
-#define AUDIO_PLAYER_DEATH "../assets/Audio/explosion.wav" 
-#define AUDIO_INVADER_DEATH "../assets/Audio/invaderkilled.wav" 
-#define AUDIO_INVADER_MOVED "../assets/Audio/invadermoved.wav" 
+#define AUDIO_PLAYER_SHOT "../assets/Audio/shoot.wav"
+#define AUDIO_PLAYER_DEATH "../assets/Audio/explosion.wav"
+#define AUDIO_INVADER_DEATH "../assets/Audio/invaderkilled.wav"
+#define AUDIO_INVADER_MOVED "../assets/Audio/invadermoved.wav"
 #define AUDIO_UFO "../assets/Audio/ufo.wav"
 #define AUDIO_MENU_SONG "../assets/Audio/menuSong.wav"
 
@@ -121,7 +120,11 @@
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-typedef enum {CLOSED = 0, MENU, GAME, GAME_CRAZY, PAUSE} game_state_t;
+typedef enum { CLOSED = 0,
+               MENU,
+               GAME,
+               GAME_CRAZY,
+               PAUSE } game_state_t;
 
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
