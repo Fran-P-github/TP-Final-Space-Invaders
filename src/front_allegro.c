@@ -44,6 +44,15 @@
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
  
+typedef struct {
+
+    ALLEGRO_BITMAP* _sheet;
+
+    ALLEGRO_BITMAP* ship;
+    ALLEGRO_BITMAP* aliens[3];
+
+}sprites_t;
+
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
  ******************************************************************************/
@@ -60,6 +69,9 @@ static void draw_player();
 static void draw_player_shot();
 static void draw_alien_shot();
 static void draw_shield(unsigned shield);
+static ALLEGRO_BITMAP* sprite_grab(int x, int y, int w, int h);
+static void sprites_init();
+static void sprites_deinit();
 
 // Funcion wrapper para inicializar un efecto de sonido
 static void initAudioInstance(ALLEGRO_SAMPLE_INSTANCE* instance, float volume, ALLEGRO_PLAYMODE playmode);
@@ -85,6 +97,7 @@ static ALLEGRO_EVENT_QUEUE* queue;
 static ALLEGRO_FONT* default_font;
 static ALLEGRO_BITMAP* buffer;
 static ALLEGRO_MIXER* mixer;
+static sprites_t sprites;
 
 // Punteros a los samples para el audio
 static ALLEGRO_SAMPLE* playerShotSound = NULL;
@@ -121,6 +134,8 @@ game_state_t front_init(){
 
     al_reserve_samples(AUDIO_SAMPLES);
     init_error(al_init_image_addon(), "Allegro Image Addon");
+
+    sprites_init();
 
     // Se cargan los archivos de audio
     playerShotSound = al_load_sample(AUDIO_PLAYER_SHOT);
@@ -226,6 +241,7 @@ static void kill_all(){
         ufoSound
     );
     al_uninstall_audio();
+    sprites_deinit();
 }
 
 // Funcion para matar todos los audio samples cargados.
@@ -388,7 +404,8 @@ static void draw_mothership(){
 }
 
 static void draw_alien(unsigned i, unsigned j){
-    al_draw_filled_rectangle(aliens_get_x(i,j), aliens_get_y(i,j), aliens_get_x(i,j)+ALIENS_W, aliens_get_y(i,j)+ALIENS_H, al_map_rgb(255, 0, 0));
+//    al_draw_filled_rectangle(aliens_get_x(i,j), aliens_get_y(i,j), aliens_get_x(i,j)+ALIENS_W, aliens_get_y(i,j)+ALIENS_H, al_map_rgb(255, 0, 0));
+    al_draw_bitmap(sprites.aliens[0], aliens_get_x(i,j), aliens_get_y(i,j), 0);
 }
 
 static void draw_player(){
@@ -415,4 +432,23 @@ static void draw_shield(unsigned shield){
     }
 }
 
+static ALLEGRO_BITMAP* sprite_grab(int x, int y, int w, int h){
+    ALLEGRO_BITMAP* sprite = al_create_sub_bitmap(sprites._sheet, x, y, w, h);
+    init_error(sprite, "sprite grab");
+    return sprite;
+}
+
+static void sprites_init(){
+    sprites._sheet = al_load_bitmap(SPRITESHEET2);
+    init_error(sprites._sheet, "spritesheet");
+
+    sprites.aliens[0] = sprite_grab(25-1, 24, 37+2, 26);
+}
+
+static void sprites_deinit(){
+
+    al_destroy_bitmap(sprites.aliens[0]);
+
+    al_destroy_bitmap(sprites._sheet);
+}
 // MENU ALLEGRO

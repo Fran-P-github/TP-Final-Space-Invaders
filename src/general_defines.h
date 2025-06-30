@@ -116,6 +116,7 @@
 #define AUDIO_INVADER_MOVED "../assets/Audio/invadermoved.wav"
 #define AUDIO_UFO "../assets/Audio/ufo.wav"
 #define AUDIO_MENU_SONG "../assets/Audio/menuSong.wav"
+#define SPRITESHEET2 "../sprites/spritesheet2.png"
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
