@@ -1,3 +1,5 @@
+// TODO: ver como arreglar la forma de ver el tiempo que pasa para algo en la rpi. Creo que eso hace que no ande tan bien el control del jugador
+
 #include<time.h>
 #include<unistd.h>
 #include<string.h>
@@ -7,6 +9,7 @@
 #include "general_defines.h"
 #include "back.h"
 #include "font_3x5.h"
+#include "scores.h"
 // Matriz de leds y joystick
 #include "../libs/joydisp/disdrv.h"
 #include "../libs/joydisp/joydrv.h"
@@ -37,12 +40,18 @@
 #define LINE_SPACING 1
 
 typedef enum{
-    MOVE_RIGHT_SLOW=0,
+    NO_MOVE_X=0,
+    MOVE_RIGHT_SLOW,
     MOVE_RIGHT_FAST,
     MOVE_LEFT_SLOW,
-    MOVE_LEFT_FAST,
-    NO_MOVE
-} movement_t;
+    MOVE_LEFT_FAST
+} movement_x_t;
+
+typedef enum{
+    NO_MOVE_Y=0,
+    MOVE_UP,
+    MOVE_DOWN
+} movement_y_t;
 
 static void draw_rectangle(int x1, int y1, int x2, int y2);
 static void draw_mothership();
@@ -56,12 +65,20 @@ static void wait_button_press();
 static void wait_button_release();
 static bool update_joystick();
 static bool check_pause(joyinfo_t joystick);
-static movement_t movement_read(int joystick_x_coordinate);
+static movement_x_t movement_read_x(int joystick_x_coordinate);
+static movement_y_t movement_read_y(int joystick_y_coordinate);
 
 static void draw3x3(const char icon[3][4], unsigned x, unsigned y);
 static void draw_text_wrapped(const char* str, int x, int y);
+static void blink_string(char buf[], unsigned size, unsigned x, unsigned y);
+
+// Returns true when reaching logo end
+static bool logo_menu_display();
+
+static bool leaderboard_menu_display();
 
 static void level_end_animation(level_state_t level_state);
+static void get_player_name(char name[4], unsigned x, unsigned y);
 
 game_state_t front_init(){
     back_init();
@@ -76,51 +93,25 @@ game_state_t front_init(){
 }
 
 game_state_t menu(){
-    const char space[LETTER_HEIGHT][LETTERS_WIDTH] = {
-        "        ***  ****   ***   ***  *****                    ",
-        "       *     *   * *   * *     *                        ",
-        "        ***  ****  ***** *     ***                      ",
-        "           * *     *   * *     *                        ",
-        "        ***  *     *   *  ***  *****                    "
-    };
-    const char invaders[LETTER_HEIGHT][LETTERS_WIDTH] = {
-        "***** *   * *   *  ***  ****  ***** ****   ***         ",
-        "  *   **  * *   * *   * *   * *     *   * *            ",
-        "  *   * * *  * *  ***** *   * ***   ****   ***         ",
-        "  *   *  **  * *  *   * *   * *     * *       *        ",
-        "***** *   *   *   *   * ****  ***** *  *   ***         "
-    };
-    static unsigned column = 0;
-
+    static bool show_logo = true; // Show leaderboard when false
     static clock_t start = 0;
     double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
-    if(elapsed >= LETTERS_WAIT_TIME){
-        start = clock();
 
-        unsigned i, j;
-        // SPACE
-        for(i=0; i<LETTER_HEIGHT; ++i){
-            for(j=0; j<WORLD_WIDTH; ++j){
-                dcoord_t coord = { .x=j, .y=i+LETTER_MARGIN };
-                disp_write(coord, space[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
-            }
+    if(show_logo){
+        if(logo_menu_display() && elapsed >= 8){
+            show_logo = false;
+            disp_clear();
         }
-
-        // INVADERS
-        for(i=0; i<LETTER_HEIGHT; ++i){
-            for(j=0; j<WORLD_WIDTH; ++j){
-                dcoord_t coord = { .x=j, .y=i+LETTER_HEIGHT+2*LETTER_MARGIN };
-                disp_write(coord, invaders[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
-            }
+    }else{ // Show leaderboard
+        if(leaderboard_menu_display()){
+            show_logo = true;
+            start = clock();
+            disp_clear();
         }
-
-        disp_update();
-        ++column;
     }
 
     jswitch_t button = joy_read().sw;
     if(button == J_PRESS){
-        column = 0;
         return GAME;
     }else{
         return MENU;
@@ -190,6 +181,86 @@ game_state_t game_update(unsigned level){
     }
 }
 
+static bool leaderboard_menu_display(){
+    static bool show_score = false; // Show TOP number when false
+    highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
+    static unsigned current_score = 0;
+    static unsigned cont_this_score = 0;
+    const unsigned displays_per_score = 2;
+
+    static clock_t start = 0;
+    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    if(elapsed >= 0.2){ // No son 0.2 segundos, es porque algo anda mal con esta forma de ver el tiempo en la rpi
+        cont_this_score++;
+        show_score = !show_score;
+        start = clock();
+        if(cont_this_score == 2*displays_per_score){
+            if(++current_score == MAX_SCORES){
+                current_score = 0;
+                return true;
+            }
+            cont_this_score  = 0;
+            show_score = false;
+        }
+    }
+
+    char buf[5];
+    if(show_score) snprintf(buf, sizeof(buf), "%4d", top_scores[current_score].score);
+    else snprintf(buf, sizeof(buf), "TOP%d", current_score+1);
+    draw_text_wrapped(buf, 0, 3);
+    snprintf(buf, sizeof(buf), "%s", top_scores[current_score].name);
+    draw_text_wrapped(buf, 3, 10);
+    disp_update();
+
+    return false;
+}
+
+static bool logo_menu_display(){
+    const char space[LETTER_HEIGHT][LETTERS_WIDTH] = {
+        "        ***  ****   ***   ***  *****                    ",
+        "       *     *   * *   * *     *                        ",
+        "        ***  ****  ***** *     ***                      ",
+        "           * *     *   * *     *                        ",
+        "        ***  *     *   *  ***  *****                    "
+    };
+    const char invaders[LETTER_HEIGHT][LETTERS_WIDTH] = {
+        "***** *   * *   *  ***  ****  ***** ****   ***         ",
+        "  *   **  * *   * *   * *   * *     *   * *            ",
+        "  *   * * *  * *  ***** *   * ***   ****   ***         ",
+        "  *   *  **  * *  *   * *   * *     * *       *        ",
+        "***** *   *   *   *   * ****  ***** *  *   ***         "
+    };
+    static unsigned column = LETTERS_WIDTH - 4;
+
+    static clock_t start = 0;
+    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    if(elapsed >= LETTERS_WAIT_TIME){
+        start = clock();
+
+        unsigned i, j;
+        // SPACE
+        for(i=0; i<LETTER_HEIGHT; ++i){
+            for(j=0; j<WORLD_WIDTH; ++j){
+                dcoord_t coord = { .x=j, .y=i+LETTER_MARGIN };
+                disp_write(coord, space[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
+            }
+        }
+
+        // INVADERS
+        for(i=0; i<LETTER_HEIGHT; ++i){
+            for(j=0; j<WORLD_WIDTH; ++j){
+                dcoord_t coord = { .x=j, .y=i+LETTER_HEIGHT+2*LETTER_MARGIN };
+                disp_write(coord, invaders[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
+            }
+        }
+
+        disp_update();
+        ++column;
+    }
+
+    return !(column % LETTERS_WIDTH);
+}
+
 static void level_end_animation(level_state_t level_state){
     disp_clear();
     char buf[11];
@@ -256,12 +327,12 @@ game_state_t game_pause(){
 
     while (true) {
         joyinfo_t js = joy_read();
-        movement_t pos;
-        static movement_t prev_pos = NO_MOVE;
+        movement_x_t pos;
+        static movement_x_t prev_pos = NO_MOVE_X;
 
         if (js.x < -50) pos = MOVE_LEFT_FAST;
         else if (js.x > 50) pos = MOVE_RIGHT_FAST;
-        else pos = NO_MOVE;
+        else pos = NO_MOVE_X;
         if(pos != prev_pos){
             if(pos == MOVE_RIGHT_FAST) selected++;
             if(pos == MOVE_LEFT_FAST) selected--;
@@ -300,15 +371,76 @@ game_state_t game_pause(){
 
 void endgame(){
     disp_clear();
+
+    char score[10];
+    snprintf(score, sizeof(score), "%d", player_get_score());
+    disp_clear();
+    blink_string(score, strlen(score), 0, 3);
+
+    draw_text_wrapped("NAME", 0, 3);
+    disp_update();
+    char name[NAME_LEN+1]; // 3 letters
+    get_player_name(name, 2, 10);
+    disp_clear();
+    blink_string(name, sizeof(name)-1, 2, 5);
+
+    highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
+    if( try_insert_score(top_scores, name, player_get_score()) ){
+        disp_clear();
+        blink_string("NEW BEST", sizeof("NEW BEST")-1, 0, 3);
+    }
+    save_scores(top_scores);
+}
+
+static void blink_string(char buf[], unsigned size, unsigned x, unsigned y){
     for(unsigned i=0; i<3; ++i){ // Score blinks 3 times
-        char buf[10];
-        snprintf(buf, sizeof(buf), "%d", 10*player_get_score());
-        draw_text_wrapped(buf, 0, 3);
+        usleep(300000); // 0.3 sec
+        draw_text_wrapped(buf, x, y);
         disp_update();
         usleep(400000); // 0.4 sec
         disp_clear();
         disp_update();
-        usleep(300000); // 0.3 sec
+    }
+}
+
+static void get_player_name(char name[4], unsigned x, unsigned y){
+    static const char letters[LETTERS_CANT+1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    unsigned index = 0;
+    unsigned current_letter = 0;
+    movement_y_t prev_movement = NO_MOVE_Y;
+
+    name[0] = name[1] = name[2] = name[3] = '\0'; // Limpiar
+
+    while(index < 3){
+        joyinfo_t js = joy_read();
+        movement_y_t movement = movement_read_y(js.y);
+
+        // Detectar flanco (cambio de movimiento)
+        if(movement != prev_movement){
+            if(movement == MOVE_UP){
+                current_letter = (current_letter + 1) % LETTERS_CANT;
+            } else if(movement == MOVE_DOWN){
+                current_letter = (current_letter + LETTERS_CANT - 1) % LETTERS_CANT;
+            }
+            prev_movement = movement;
+        }
+
+        name[index] = letters[current_letter];
+        draw_text_wrapped(name, x, y);
+        disp_update();
+
+        // Confirmar letra al soltar el botón después de presionarlo
+        static bool was_pressed = false;
+        if(js.sw == J_PRESS){
+            was_pressed = true;
+        }else if(was_pressed && js.sw == J_NOPRESS){
+            name[index++] = letters[current_letter];
+            current_letter = 0;
+            was_pressed = false;
+        }
+
+        usleep(10000); // 10 ms debounce
     }
 }
 
@@ -320,6 +452,12 @@ static void draw_text_wrapped(const char *str, int x, int y) {
 
         // Space
         if (c == ' ') {
+            for (int i = 0; i < CHAR_HEIGHT; ++i) {
+                for (int j = 0; j < CHAR_WIDTH; ++j) {
+                    dcoord_t coord = { .x = x+j, .y = y+i };
+                    disp_write(coord, D_OFF);
+                }
+            }
             x += CHAR_WIDTH + CHAR_SPACING;
         }
         // Digit
@@ -327,10 +465,8 @@ static void draw_text_wrapped(const char *str, int x, int y) {
             const char (*glyph)[4] = NUM_FONT[c - '0'];
             for (int i = 0; i < CHAR_HEIGHT; ++i) {
                 for (int j = 0; j < CHAR_WIDTH; ++j) {
-                    if (glyph[i][j] == '*'){
-                        dcoord_t coord = { .x = x+j, .y = y+i };
-                        disp_write(coord, D_ON);
-                    }
+                    dcoord_t coord = { .x = x+j, .y = y+i };
+                    disp_write(coord, glyph[i][j]=='*' ?  D_ON : D_OFF);
                 }
             }
             x += CHAR_WIDTH + CHAR_SPACING;
@@ -340,10 +476,8 @@ static void draw_text_wrapped(const char *str, int x, int y) {
             const char (*glyph)[4] = LETTER_FONT[c - 'A'];
             for (int i = 0; i < CHAR_HEIGHT; ++i) {
                 for (int j = 0; j < CHAR_WIDTH; ++j) {
-                    if (glyph[i][j] == '*'){
-                        dcoord_t coord = { .x = x+j, .y = y+i };
-                        disp_write(coord, D_ON);
-                    }
+                    dcoord_t coord = { .x = x+j, .y = y+i };
+                    disp_write(coord, glyph[i][j]=='*' ?  D_ON : D_OFF);
                 }
             }
             x += CHAR_WIDTH + CHAR_SPACING;
@@ -385,8 +519,8 @@ static bool update_joystick(){
             player_try_shoot();
         }
 
-        movement_t movement = movement_read(joystick.x);
-        static movement_t prev_movement = NO_MOVE;
+        movement_x_t movement = movement_read_x(joystick.x);
+        static movement_x_t prev_movement = NO_MOVE_X;
         static clock_t player_time_start = 0;
         double player_elapsed = (double)(clock() - player_time_start) / CLOCKS_PER_SEC;
         double player_wait_time =   movement == MOVE_LEFT_FAST || movement == MOVE_RIGHT_FAST ? FAST_MOVEMENT_WAIT_TIME :
@@ -409,7 +543,7 @@ static bool update_joystick(){
                 case MOVE_LEFT_FAST:
                         player_move_left();
                     break;
-                case NO_MOVE:
+                case NO_MOVE_X:
                     break;
             }
         }
@@ -438,8 +572,8 @@ static bool check_pause(joyinfo_t joystick){
     return false;
 }
 
-static movement_t movement_read(int x){
-    movement_t movement;
+static movement_x_t movement_read_x(int x){
+    movement_x_t movement;
 
     if(x > JOY_THRESHOLD_FAST){
         movement = MOVE_RIGHT_FAST;
@@ -454,7 +588,23 @@ static movement_t movement_read(int x){
         movement = MOVE_LEFT_SLOW;
     }
     else{
-        movement = NO_MOVE;
+        movement = NO_MOVE_X;
+    }
+
+    return movement;
+}
+
+static movement_y_t movement_read_y(int y){
+    movement_y_t movement;
+
+    if(y > JOY_THRESHOLD_FAST){
+        movement = MOVE_UP;
+    }
+    else if(y < -JOY_THRESHOLD_FAST){
+        movement = MOVE_DOWN;
+    }
+    else{
+        movement = NO_MOVE_Y;
     }
 
     return movement;
