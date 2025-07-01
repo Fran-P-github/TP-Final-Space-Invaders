@@ -152,6 +152,9 @@ static unsigned aliens_alive_in_column(unsigned c);
 // Returns: how many aliens are alive in row r
 static unsigned aliens_alive_in_row(unsigned r);
 
+// Returns: lowest index for row with alive aliens
+static int get_top_alien_row();
+
 //static int get_lowest_alien_row();
 
 // Returns: index of the lowest alien alive in the column, or -1 if no aliens are alive
@@ -475,6 +478,14 @@ static void aliens_move_down(unsigned row){
     aliens_move(0, ALIENS_DY, row);
 }
 
+static int get_top_alien_row(){
+    unsigned i;
+    for(i=0; i<ALIENS_ROWS; ++i){
+        if(aliens_alive_in_row(i)) return i;
+    }
+    return -1;
+}
+
 /*static int get_lowest_alien_row(){
     int result = -1;
     for(unsigned i = 0; i < ALIENS_ROWS; ++i){
@@ -622,7 +633,7 @@ static movement_t aliens_update_position(unsigned row){
                 break;
             case MOVEMENT_DOWN:
                 aliens_move_down(row);
-                if(row == 0){
+                if(row == get_top_alien_row()){
                     if(movement_post_down == MOVEMENT_RIGHT){
                         movement = MOVEMENT_RIGHT;
                         movement_post_down = MOVEMENT_LEFT;
