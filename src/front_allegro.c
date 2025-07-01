@@ -40,6 +40,15 @@
 #define VOLUME_ALIENS_MOVED .3
 #define VOLUME_UFO .1
 
+// Sprites
+#define SPRITE_SCALE_FACTOR 1.3
+#define SPRITE_ORIGIN_X 20
+#define SPRITE_ORIGIN_Y 15
+#define SPRITE_WIDTH 64
+#define SPRITE_HEIGHT 64
+#define SPRITE_ALIENS_NUM 6
+#define SPRITE_SPACING SPRITE_WIDTH*1.325 //MAGIC NUMBER THAT WORKS! (kinda)
+
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
@@ -49,7 +58,7 @@ typedef struct {
     ALLEGRO_BITMAP* _sheet;
 
     ALLEGRO_BITMAP* ship;
-    ALLEGRO_BITMAP* aliens[3];
+    ALLEGRO_BITMAP* aliens[6];
 
 }sprites_t;
 
@@ -64,7 +73,7 @@ extern const bool aliensMoved;
  ******************************************************************************/
 
 static void draw_mothership();
-static void draw_alien(unsigned i, unsigned j);
+static void draw_alien(unsigned i, unsigned j, unsigned alien);
 static void draw_player();
 static void draw_player_shot();
 static void draw_alien_shot();
@@ -299,7 +308,8 @@ static void init_error(bool state, const char* name){
 }
 
 game_state_t game_update(unsigned level){
-    level_init(ALIENS_ROWS-3+level/3, ALIENS_COLUMNS-3+level/2, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
+    //level_init(ALIENS_ROWS-3+level/3, ALIENS_COLUMNS-3+level/2, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
+    level_init(ALIENS_ROWS+level/3, ALIENS_COLUMNS+level/2, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
     player_reset_on_new_level();
     if(level==0) player_reset_on_new_game();
 
@@ -384,10 +394,14 @@ game_state_t game_update(unsigned level){
                 draw_shield(x);
             }
             draw_player();
+            int alienSprite = SPRITE_ALIENS_NUM;
             for(i=0; i<ALIENS_ROWS; ++i){
+                if(alienSprite>0){
+                    alienSprite--;
+                }
                 for(j=0; j<ALIENS_COLUMNS; ++j){
                     if(aliens_is_alive(i,j)){
-                        draw_alien(i, j);
+                        draw_alien(i, j, alienSprite);
                     }
                 }
             }
@@ -415,9 +429,18 @@ static void draw_mothership(){
     al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x()+MOTHERSHIP_W-1, mothership_get_y()+MOTHERSHIP_H-1, al_map_rgb(128, 0, 255));
 }
 
-static void draw_alien(unsigned i, unsigned j){
-//    al_draw_filled_rectangle(aliens_get_x(i,j), aliens_get_y(i,j), aliens_get_x(i,j)+ALIENS_W, aliens_get_y(i,j)+ALIENS_H, al_map_rgb(255, 0, 0));
-    al_draw_bitmap(sprites.aliens[0], aliens_get_x(i,j), aliens_get_y(i,j), 0);
+static void draw_alien(unsigned i, unsigned j, unsigned alien){
+    int alien_x = aliens_get_x(i, j);
+    int alien_y = aliens_get_y(i, j);
+    al_draw_rectangle(alien_x, alien_y, alien_x+ALIENS_W, alien_y+ALIENS_H, al_map_rgb(255,0,0), 1.);
+    al_draw_scaled_bitmap(
+        sprites.aliens[alien],
+        0, 0, SPRITE_WIDTH, SPRITE_HEIGHT,
+        alien_x, alien_y,
+        ALIENS_W*SPRITE_SCALE_FACTOR,
+        ALIENS_H*SPRITE_SCALE_FACTOR, 
+        0
+    );
 }
 
 static void draw_player(){
@@ -453,8 +476,8 @@ static ALLEGRO_BITMAP* sprite_grab(int x, int y, int w, int h){
 static void sprites_init(){
     sprites._sheet = al_load_bitmap(SPRITESHEET2);
     init_error(sprites._sheet, "spritesheet");
-
-    sprites.aliens[0] = sprite_grab(25-1, 24, 37+2, 26);
+    for(int i = 0; i < SPRITE_ALIENS_NUM; i++)
+    sprites.aliens[i] = sprite_grab(SPRITE_ORIGIN_X+SPRITE_SPACING*i, SPRITE_ORIGIN_Y, SPRITE_WIDTH, SPRITE_HEIGHT);
 }
 
 static void sprites_deinit(){

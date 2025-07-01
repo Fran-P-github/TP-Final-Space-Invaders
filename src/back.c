@@ -23,8 +23,8 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
-#define ALIENS_MOVE_MIN_INTERVAL 0.01
-#define ALIENS_MOVE_MAX_INTERVAL 0.3
+#define ALIENS_MOVE_MIN_INTERVAL 0.3
+#define ALIENS_MOVE_MAX_INTERVAL 1
 
 #if PLATFORM == ALLEGRO
 

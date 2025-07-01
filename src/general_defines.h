@@ -45,7 +45,7 @@
 #define PLAYER_H 20
 #define PLAYER_MARGIN 10 // Que tan separado debe estar de margenes laterales e inferior
 
-#define ALIENS_ROWS 8
+#define ALIENS_ROWS 6
 #define ALIENS_COLUMNS 10
 #define ALIENS_HORIZONTAL_SEPARATION 12
 #define ALIENS_VERTICAL_SEPARATION 12
