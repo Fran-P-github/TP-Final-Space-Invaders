@@ -22,36 +22,54 @@
 
 #define MSJ_ERR_INIT "Error with setup: "
 
-#define DRAW draw_frame(display, buffer)
-#define BUFFER al_set_target_bitmap(buffer)
-#define CLEAR al_clear_to_color(al_map_rgb(0, 0, 0))
+#define DRAW draw_frame(display, buffer);
+#define BUFFER al_set_target_bitmap(buffer);
+#define CLEAR al_clear_to_color(al_map_rgb(0, 0, 0));
 
 #define ERRCHECK(obj, txt) \
-  if ( must_setup(obj, txt) == CLOSED ) return CLOSED
+  if ( must_setup(obj, txt) == CLOSED ) return CLOSED;
 
 #define DRAW_BACKGROUND                                          \
   al_draw_bitmap(intro_background_frames[counter_1++], 0, 0, 0); \
-  if ( counter_2 > 0 ) counter_2 -= 10;                          \
-  if ( counter_2 < 0 ) counter_2 = 0;                            \
-  if ( counter_1 == 300 ) counter_1 = 0
+  if ( counter_1 == 300 ) counter_1 = 0;
+
+#define DRAW_FLASH                                                                                    \
+  if ( counter_2 ) {                                                                                  \
+    al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(255, 255, 255, counter_2)); \
+    if ( counter_2 > 0 ) counter_2 -= 10;                                                             \
+    if ( counter_2 < 0 ) counter_2 = 0;                                                               \
+  }
 
 #define DRAW_SHIP_CURSOR                                                                                                                                                                        \
   al_draw_scaled_rotated_bitmap(intro_ship.sprite, intro_ship.cx, intro_ship.cy, mouse.x *WORLD_WIDTH / screen_width, mouse.y * WORLD_HEIGHT / screen_height, 0.5, 0.15 + Accel_y, Accel_x, 0); \
-  al_draw_filled_polygon(intro_ship.trail, 10, al_map_rgba(255, 255, 255, 200))
+  al_draw_filled_polygon(intro_ship.trail, 10, al_map_rgba(255, 255, 255, 200));
 
 #define DRAW_LOGO \
-  al_draw_scaled_rotated_bitmap(intro_logo, al_get_bitmap_width(intro_logo) / 2, al_get_bitmap_height(intro_logo) / 2, WORLD_WIDTH / 2, WORLD_HEIGHT / 4, 1, 1, 0, 0)
+  al_draw_scaled_rotated_bitmap(intro_logo, al_get_bitmap_width(intro_logo) / 2, al_get_bitmap_height(intro_logo) / 2, WORLD_WIDTH / 2, WORLD_HEIGHT / 4, 1, 1, 0, 0);
 
 #define CURSOR_UPDATE                                                                             \
   trail_accel(intro_ship.trail, mouse.x, mouse.y, mouse_x, mouse_y, screen_width, screen_height); \
-  cursor_accel(&mouse, &mouse_x, &mouse_y, &Accel_x, &Accel_y)
+  cursor_accel(&mouse, &mouse_x, &mouse_y, &Accel_x, &Accel_y);
+
+#define START_BUTTON                                                                                                                                                                             \
+  if ( !mouse_hover(&mouse, &button_start, screen_width, screen_height) ) {                                                                                                                      \
+    draw_rectangle_gradient(button_start.cx, button_start.cy, button_start.radius_x, button_start.radius_y, GRADIENT_CENTER, al_map_rgba(255, 210, 65, 127), al_map_rgba(125, 0, 190, 255), 32); \
+    al_draw_textf(font_supercharge, al_map_rgb(0, 0, 0), button_start.cx, button_start.cy - 12, ALLEGRO_ALIGN_CENTER, "Dive inTo spAce");                                                        \
+  } else {                                                                                                                                                                                       \
+    draw_rectangle_gradient(button_start.cx, button_start.cy, button_start.radius_x, button_start.radius_y, GRADIENT_CENTER, al_map_rgba(255, 0, 0, 127), al_map_rgba(0, 0, 0, 255), 32);        \
+    al_draw_textf(font_supercharge, al_map_rgb(255, 255, 255), button_start.cx, button_start.cy - 12, ALLEGRO_ALIGN_CENTER, "Dive inTo spAce");                                                  \
+  }
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-enum choice { INTRO = 10,
-              QUIT };
+enum clicks { LEFT_CLICK = 1,
+              RIGHT_CLICK = 2,
+              MIDDLE_CLICK = 4 };
+
+typedef enum choice { INTRO = 10,
+                      QUIT } choice_t;
 
 typedef enum gradient_mode { GRADIENT_CENTER = 20,
                              GRADIENT_TOP_TO_BOTTOM,
@@ -66,12 +84,16 @@ typedef struct {
   ALLEGRO_BITMAP *sprite;
 } ship_t;
 
-typedef struct{
-	short int x0;
-	short int y0;
-	short int x1;
-	short int x2;
-}button_t;
+typedef struct {
+  short int x0;
+  short int y0;
+  short int x1;
+  short int y1;
+  short int cx;
+  short int cy;
+  short int radius_x;
+  short int radius_y;
+} button_t;
 
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
@@ -87,6 +109,8 @@ static void draw_frame(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *buffer);
 static void cursor_accel(ALLEGRO_MOUSE_STATE *mouse, short int *mouse_old_x, short int *mouse_old_y, float *accel_x, float *Accel_y);
 static void trail_accel(float *polygon, int new_x, int new_y, int old_x, int old_y, int width, int height);
 static void draw_rectangle_gradient(int center_x, int center_y, int radius_x, int radius_y, gradient_mode_t mode, ALLEGRO_COLOR color_1, ALLEGRO_COLOR color_2, int steps);
+static button_t create_button(short int center_x, short int center_y, short int radius_x, short int radius_y);
+static bool mouse_hover(ALLEGRO_MOUSE_STATE *mouse, button_t *button, float size_x, float size_y);
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -102,24 +126,33 @@ static void draw_rectangle_gradient(int center_x, int center_y, int radius_x, in
  *******************************************************************************
  ******************************************************************************/
 
-game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_QUEUE *queue, ALLEGRO_FONT *default_font, ALLEGRO_BITMAP *buffer, ALLEGRO_MIXER *mixer, void (*kill_all_bitmaps)(int, ...), void (*kill_all_instances)(int, ...), void (*kill_all_samples)(int, ...)) {
+game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_QUEUE *queue, ALLEGRO_FONT *default_font, ALLEGRO_BITMAP *buffer, ALLEGRO_MIXER *mixer, void (*kill_all_bitmaps)(int, ...), void (*kill_all_instances)(int, ...), void (*kill_all_samples)(int, ...), void (*kill_all_font)(int, ...)) {
 
   /*************************DECLARATIONS************************/
 
   ALLEGRO_BITMAP *intro_background_frames[300];
   ALLEGRO_BITMAP *intro_logo;
+
   ALLEGRO_FONT *font_toreks;
   ALLEGRO_FONT *font_supercharge;
   ALLEGRO_FONT *font_cartesian;
+
   ALLEGRO_EVENT menu_event;
   ALLEGRO_EVENT dummy;
+
   ALLEGRO_SAMPLE *logo_sound;
   ALLEGRO_SAMPLE *intro_part1;
   ALLEGRO_SAMPLE *intro_part2;
+
   ALLEGRO_SAMPLE_INSTANCE *sample_instance;
   ALLEGRO_SAMPLE_INSTANCE *sample_instance2;
+
   ALLEGRO_MOUSE_STATE mouse;
+
+  button_t button_start; // button_back, button_settings, button_quit, button_play;
+
   char intro_background_path[64];
+
   short int counter_1, counter_2, screen_width, screen_height, mouse_x, mouse_y;
 
   /**************************************************************/
@@ -127,9 +160,12 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   /*************************DEFINITIONS**************************/
 
   ship_t intro_ship = {0, 0, 0, 0, {0}, NULL};
+
+  choice_t select = INTRO;
+
   bool redraw = false;
-  char select = INTRO;
   bool fullscreen = al_get_display_flags(display) & ALLEGRO_FULLSCREEN_WINDOW;
+
   float Accel_x = 0, Accel_y = 0;
 
   /**************************************************************/
@@ -212,18 +248,25 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
     switch ( select ) {
     case INTRO:
 
+      button_start = create_button(WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5, 150, 35);
+
       switch ( menu_event.type ) {
       case ALLEGRO_EVENT_TIMER:
         BUFFER;
         CLEAR;
+
         redraw = true;
         al_get_mouse_state(&mouse);
         CURSOR_UPDATE;
+
         DRAW_BACKGROUND;
         DRAW_LOGO;
-        draw_rectangle_gradient(WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5, 150, 35, GRADIENT_CENTER, al_map_rgba(255, 210, 65, 127), al_map_rgba(125, 0, 190, 255), 32);
-        al_draw_textf(font_supercharge, al_map_rgb(0, 0, 0), WORLD_WIDTH / 2, 3 * WORLD_HEIGHT / 5 - 12, ALLEGRO_ALIGN_CENTER, "Dive inTo spAce");
+
+        START_BUTTON;
+
         DRAW_SHIP_CURSOR;
+
+        DRAW_FLASH;
         break;
       case ALLEGRO_EVENT_KEY_DOWN:
         switch ( menu_event.keyboard.keycode ) {
@@ -241,17 +284,22 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
         screen_width = al_get_display_width(display);
         screen_height = al_get_display_height(display);
         break;
+      case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
+        al_get_mouse_state(&mouse);
+        if ( mouse_hover(&mouse, &button_start, screen_width, screen_height) && mouse.buttons & LEFT_CLICK ) select = QUIT;
+        break;
       case ALLEGRO_EVENT_DISPLAY_CLOSE:
         select = QUIT;
         break;
       }
 
       if ( redraw ) {
-        al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(255, 255, 255, counter_2));
         DRAW;
         redraw = false;
       }
 
+      break;
+    default:
       break;
     }
   }
@@ -264,6 +312,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   (*kill_all_bitmaps)(2, intro_ship.sprite, intro_logo);
   (*kill_all_samples)(3, logo_sound, intro_part1, intro_part2);
   (*kill_all_instances)(2, sample_instance, sample_instance2);
+  (*kill_all_font)(3, font_cartesian, font_supercharge, font_toreks);
 
   al_stop_timer(timer);
 
@@ -487,4 +536,15 @@ void draw_rectangle_gradient(int center_x, int center_y, int radius_x, int radiu
     }
     break;
   }
+}
+
+button_t create_button(short int center_x, short int center_y, short int radius_x, short int radius_y) {
+  button_t button = {center_x - radius_x, center_y - radius_y, center_x + radius_x, center_y + radius_y, center_x, center_y, radius_x, radius_y};
+  return button;
+}
+
+bool mouse_hover(ALLEGRO_MOUSE_STATE *mouse, button_t *button, float size_x, float size_y) {
+  float factor_x = WORLD_WIDTH / size_x;
+  float factor_y = WORLD_HEIGHT / size_y;
+  return (mouse->x * factor_x >= button->x0 && mouse->x * factor_x <= button->x1 && mouse->y * factor_y >= button->y0 && mouse->y * factor_y <= button->y1);
 }

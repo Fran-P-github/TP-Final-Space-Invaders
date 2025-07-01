@@ -82,6 +82,7 @@ static void kill_all();
 static void kill_all_instances(int len, ...);
 static void kill_all_samples(int len, ...);
 static void kill_all_bitmaps(int len, ...);
+static void kill_all_font(int len, ...);
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -194,6 +195,7 @@ game_state_t front_init(){
     init_error(queue, "Queue");
 
     al_register_event_source(queue, al_get_keyboard_event_source());
+    al_register_event_source(queue, al_get_mouse_event_source());
     al_register_event_source(queue, al_get_display_event_source(disp));
     al_register_event_source(queue, al_get_timer_event_source(timer));
 
@@ -201,7 +203,7 @@ game_state_t front_init(){
 }
 
 game_state_t menu(){
-    return menu_allegro(disp, timer, queue, default_font, buffer, mixer, &kill_all_bitmaps, &kill_all_instances, &kill_all_samples);
+    return menu_allegro(disp, timer, queue, default_font, buffer, mixer, &kill_all_bitmaps, &kill_all_instances, &kill_all_samples, &kill_all_font);
 }
 
 game_state_t game_pause(){
@@ -271,6 +273,16 @@ static void kill_all_bitmaps(int len, ...){
     int i;
     for(i = 0; i < len; i++){
         al_destroy_bitmap(va_arg(bitmap_list, ALLEGRO_BITMAP*));
+    }
+}
+
+// Funcion para matar todas las fuentes creadas.
+static void kill_all_font(int len, ...){
+    va_list font_list;
+    va_start(font_list, len);
+    int i;
+    for(i = 0; i < len; i++){
+        al_destroy_font(va_arg(font_list, ALLEGRO_FONT*));
     }
 }
 
