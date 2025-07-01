@@ -15,6 +15,7 @@
 #include<time.h>
 #include<stdbool.h>
 #include<stdlib.h>
+#include<stdint.h>
 
 #include"back.h"
 
@@ -108,6 +109,8 @@ typedef struct{
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+static uint64_t get_millis();
+
 static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives);
 static void player_init();
 static void player_reset_lives();
@@ -151,6 +154,9 @@ static unsigned aliens_alive_in_column(unsigned c);
 
 // Returns: how many aliens are alive in row r
 static unsigned aliens_alive_in_row(unsigned r);
+
+// Returns: lowest index for row with alive aliens
+static int get_top_alien_row();
 
 //static int get_lowest_alien_row();
 
@@ -475,6 +481,14 @@ static void aliens_move_down(unsigned row){
     aliens_move(0, ALIENS_DY, row);
 }
 
+static int get_top_alien_row(){
+    unsigned i;
+    for(i=0; i<ALIENS_ROWS; ++i){
+        if(aliens_alive_in_row(i)) return i;
+    }
+    return -1;
+}
+
 /*static int get_lowest_alien_row(){
     int result = -1;
     for(unsigned i = 0; i < ALIENS_ROWS; ++i){
@@ -581,16 +595,38 @@ static void update_aliens_speed(unsigned level){
         aliens_move_interval = ALIENS_MOVE_MIN_INTERVAL;
 }
 
+static uint64_t get_millis(){
+    #if defined(ALLEGRO5)
+        return (uint64_t)(al_get_time() * 1000);
+    #elif defined(__linux__) || defined(__unix__)
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        return (uint64_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+    #elif defined(_WIN32)
+        static LARGE_INTEGER freq;
+        static BOOL initialized = FALSE;
+        if(!initialized){
+            QueryPerformanceFrequency(&freq);
+            initialized = TRUE;
+        }
+        LARGE_INTEGER counter;
+        QueryPerformanceCounter(&counter);
+        return (uint64_t)((counter.QuadPart * 1000) / freq.QuadPart);
+    #else
+        #error "get_millis() not implemented for this platform"
+    #endif
+}
+
 static movement_t aliens_update_position(unsigned row){
     if(row>=ALIENS_ROWS) return false;
-    static clock_t start = 0;
-    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    static uint64_t start = 0;
+    double elapsed = (double)(get_millis() - start) / 1000;
     unsigned i, j;
     static movement_t movement = MOVEMENT_RIGHT;
     static movement_t movement_post_down = MOVEMENT_LEFT;
     aliensMoved = elapsed >= aliens_move_interval; 
     if(elapsed >= aliens_move_interval){
-        start = clock();
+        start = get_millis();
         switch(movement){
             case MOVEMENT_RIGHT:
                 aliens_move_right(row);
@@ -622,7 +658,7 @@ static movement_t aliens_update_position(unsigned row){
                 break;
             case MOVEMENT_DOWN:
                 aliens_move_down(row);
-                if(row == 0){
+                if(row == get_top_alien_row()){
                     if(movement_post_down == MOVEMENT_RIGHT){
                         movement = MOVEMENT_RIGHT;
                         movement_post_down = MOVEMENT_LEFT;
