@@ -62,6 +62,7 @@
 // VARIABLE GLOBAL Y PUBLICA
 
 bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los aliens
+bool aliensframe;
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -626,6 +627,7 @@ static movement_t aliens_update_position(unsigned row){
     static movement_t movement_post_down = MOVEMENT_LEFT;
     aliensMoved = elapsed >= aliens_move_interval; 
     if(elapsed >= aliens_move_interval){
+        aliensframe = !aliensframe;
         start = get_millis();
         switch(movement){
             case MOVEMENT_RIGHT:
