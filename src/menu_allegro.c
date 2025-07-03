@@ -460,6 +460,8 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   /****************************RETURN****************************/
 
+  al_hide_mouse_cursor(display);
+
   if ( select == QUIT ) return CLOSED;
   return GAME;
 }
