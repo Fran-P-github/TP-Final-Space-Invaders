@@ -678,7 +678,6 @@ static movement_t aliens_update_position(unsigned row) {
   if ( elapsed >= aliens_move_interval ) {
     aliensFrame = !aliensFrame;
     start = get_millis();
-    // return NO_MOVEMENT;
     switch ( movement ) {
       case MOVEMENT_RIGHT:
         aliens_move_right(row);

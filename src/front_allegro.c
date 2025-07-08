@@ -40,26 +40,33 @@
 #define VOLUME_ALIENS_MOVED .3
 #define VOLUME_UFO .1
 // Sprites
-// SPRITESHEET 2 ES DE 1160x600
 #define SPRITE_ALIENS_NUM 3
-#define SPRITE_ALIENS_COLORS 6 // HAY 6 COLORES EN LA PRIMER "COLUMNA" DE SPRITES
-#define SPRITE_ALIENS_FRAMES 2
-#define SPRITE_ALIENS_X 4
-#define SPRITE_ALIENS_Y 4
-#define SPRITE_ALIENS_1_2_W 80
-#define SPRITE_ALIENS_3_W 72
-#define SPRITE_ALIENS_H 70
-#define SPRITE_SPACING 4
+
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
+typedef enum {
+    ALIEN_GREEN = 0,
+    ALIEN_PINK,
+    ALIEN_WHITE,
+    ALIEN_GOLD,
+    ALIEN_NEON,
+    ALIEN_GREY,
+    ALIEN_ORANGE,
+    ALIEN_LPINK,
+    ALIEN_YELLOW,
+    ALIEN_SILVER,
+    ALIEN_RETRO,
+    ALIEN_TOTAL_COLORS
+} alien_color;
+
 typedef struct {
   ALLEGRO_BITMAP *_sheet;
   ALLEGRO_BITMAP *ship;
-  ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][SPRITE_ALIENS_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
-  ALLEGRO_BITMAP *aliens_explotion[SPRITE_ALIENS_COLORS];             // 11 colores de explosiones
+  ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
+  ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
 
 } sprites_t;
 
@@ -401,7 +408,7 @@ game_state_t game_update(unsigned level) {
         }
         for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
           if ( aliens_is_alive(i, j) ) {
-            draw_alien(i, j, alienSprite, 0);
+            draw_alien(i, j, alienSprite, ALIEN_RETRO);
           }
         }
       }
@@ -433,13 +440,9 @@ static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color) 
   ALLEGRO_BITMAP *alienSprite = sprites.aliens[sprite][color][aliensFrame];
   int srcWidth = al_get_bitmap_width(alienSprite);
   int srcHeight = al_get_bitmap_height(alienSprite);
-  #include <stdio.h>
-  printf("srcWidth: %d | srcHeight: %d | aliensW: %d | aliensH: %d\n", srcWidth, srcHeight, ALIENS_W, ALIENS_H);
   // Para ver la hitbox
   al_draw_rectangle(alienX, alienY, alienX + ALIENS_W, alienY + ALIENS_H, al_map_rgb(255, 0, 0), 1);
   al_draw_scaled_bitmap(alienSprite, 0, 0, srcWidth, srcHeight, alienX, alienY, ALIENS_W, ALIENS_H, 0);
-//   al_draw_bitmap(alienSprite, alienX+(ALIENS_W-srcWidth)/2, alienY+(ALIENS_H-srcHeight)/2, 0);
-//   al_draw_bitmap(alienSprite, alienX , alienY + (ALIENS_H - srcHeight) / 2, 0);
 }
 
 static void draw_player() {
@@ -475,42 +478,17 @@ static ALLEGRO_BITMAP *sprite_grab(int x, int y, int w, int h) {
 static void sprites_init() {
   sprites._sheet = al_load_bitmap(SPRITESHEET2);
   init_error(sprites._sheet, "spritesheet");
-  /*for ( int j = 0; j < SPRITE_ALIENS_COLORS; j++ ) {
-    int width = SPRITE_ALIENS_1_2_W;
-    int spacingX = 0, spacingY = 0, spriteNum = 0, lastWidth = 0;
-    // A partir de la segunda fila de sprites en adelante
-    if ( j > 0 ) spacingY = SPRITE_SPACING;
-    for ( int i = 0; i < SPRITE_ALIENS_NUM; i++ ) {
-      // Cuando se llega al 3er tipo de alien
-      for ( int frame = 0; frame < SPRITE_ALIENS_FRAMES; frame++, spriteNum++ ) {
-        if ( i >= 2 ) width = SPRITE_ALIENS_3_W;
-        if ( frame > 0 ) spacingX = SPRITE_SPACING;
-        sprites.aliens[i][j][frame] = sprite_grab(
-            SPRITE_ALIENS_X + spriteNum * (lastWidth + spacingX),
-            SPRITE_ALIENS_Y + j * SPRITE_ALIENS_H + spacingY,
-            width,
-            SPRITE_ALIENS_H);
-        printf("al[%d][%d][%d]: (%d, %d, %d, %d), spriteNum: %d\n",
-               i,
-               j,
-               frame,
-               SPRITE_ALIENS_X + spriteNum * (lastWidth + spacingX),
-               SPRITE_ALIENS_Y + j * SPRITE_ALIENS_H + spacingY,
-               width,
-               SPRITE_ALIENS_H,
-               spriteNum);
-        lastWidth = width;
-      }
-    }
-  }*/
 
-  // MANUAL TESTING
-  sprites.aliens[0][0][0] = sprite_grab(4, 4, 80, 70);
-  sprites.aliens[0][0][1] = sprite_grab(88, 4, 80, 70);
-  sprites.aliens[1][0][0] = sprite_grab(172, 4, 80, 70);
-  sprites.aliens[1][0][1] = sprite_grab(256, 4, 80, 70);
-  sprites.aliens[2][0][0] = sprite_grab(340, 4, 72, 70);
-  sprites.aliens[2][0][1] = sprite_grab(416, 4, 72, 70);
+  int xOffset = 0;
+  for(int i = 0; i < ALIEN_TOTAL_COLORS; i++){
+    if(i >= 6) xOffset = 578;
+    sprites.aliens[0][i][0] = sprite_grab(xOffset+20 , 22+(i%6)*74, 48, 32);
+    sprites.aliens[0][i][1] = sprite_grab(xOffset+104, 22+(i%6)*74, 48, 32);
+    sprites.aliens[1][i][0] = sprite_grab(xOffset+188, 22+(i%6)*74, 48, 32);
+    sprites.aliens[1][i][1] = sprite_grab(xOffset+272, 22+(i%6)*74, 48, 32);
+    sprites.aliens[2][i][0] = sprite_grab(xOffset+352, 22+(i%6)*74, 48, 32);
+    sprites.aliens[2][i][1] = sprite_grab(xOffset+428, 22+(i%6)*74, 48, 32);
+  }
 }
 
 static void sprites_deinit() {

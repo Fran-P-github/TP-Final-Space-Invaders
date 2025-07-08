@@ -49,7 +49,7 @@
 #define ALIENS_COLUMNS 10
 #define ALIENS_HORIZONTAL_SEPARATION 24
 #define ALIENS_VERTICAL_SEPARATION 12
-#define ALIENS_W 32
+#define ALIENS_W 40
 #define ALIENS_H 32
 #define ALIENS_MARGIN 20 // Que tan separados del borde superior
 
