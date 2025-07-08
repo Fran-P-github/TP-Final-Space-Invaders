@@ -64,9 +64,11 @@ typedef enum {
 
 typedef struct {
   ALLEGRO_BITMAP *_sheet;
+  ALLEGRO_BITMAP *_sheet_shot;
   ALLEGRO_BITMAP *ship;
   ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
   ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
+  ALLEGRO_BITMAP *shot;
 
 } sprites_t;
 
@@ -87,7 +89,7 @@ static void draw_player();
 static void draw_player_shot();
 static void draw_alien_shot();
 static void draw_shield(unsigned shield);
-static ALLEGRO_BITMAP *sprite_grab(int x, int y, int w, int h);
+static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h);
 static void sprites_init();
 static void sprites_deinit();
 
@@ -408,7 +410,7 @@ game_state_t game_update(unsigned level) {
         }
         for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
           if ( aliens_is_alive(i, j) ) {
-            draw_alien(i, j, alienSprite, ALIEN_RETRO);
+            draw_alien(i, j, alienSprite, ALIEN_GOLD);
           }
         }
       }
@@ -441,7 +443,7 @@ static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color) 
   int srcWidth = al_get_bitmap_width(alienSprite);
   int srcHeight = al_get_bitmap_height(alienSprite);
   // Para ver la hitbox
-  al_draw_rectangle(alienX, alienY, alienX + ALIENS_W, alienY + ALIENS_H, al_map_rgb(255, 0, 0), 1);
+  // al_draw_rectangle(alienX, alienY, alienX + ALIENS_W, alienY + ALIENS_H, al_map_rgb(255, 0, 0), 1);
   al_draw_scaled_bitmap(alienSprite, 0, 0, srcWidth, srcHeight, alienX, alienY, ALIENS_W, ALIENS_H, 0);
 }
 
@@ -450,8 +452,10 @@ static void draw_player() {
 }
 
 static void draw_alien_shot() {
-  if ( alien_shot_is_used() )
-    al_draw_filled_rectangle(alien_shot_get_x(), alien_shot_get_y(), alien_shot_get_x() + SHOT_W, alien_shot_get_y() + SHOT_H, al_map_rgb(255, 255, 255));
+  if ( alien_shot_is_used() ){
+    //al_draw_filled_rectangle(alien_shot_get_x(), alien_shot_get_y(), alien_shot_get_x() + SHOT_W, alien_shot_get_y() + SHOT_H, al_map_rgb(255, 255, 255));
+    al_draw_scaled_bitmap(sprites.shot, 0, 0, 3, 12, alien_shot_get_x(), alien_shot_get_y(), SHOT_W, SHOT_H, 0);
+  }
 }
 
 static void draw_player_shot() {
@@ -469,8 +473,8 @@ static void draw_shield(unsigned shield) {
   }
 }
 
-static ALLEGRO_BITMAP *sprite_grab(int x, int y, int w, int h) {
-  ALLEGRO_BITMAP *sprite = al_create_sub_bitmap(sprites._sheet, x, y, w, h);
+static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h) {
+  ALLEGRO_BITMAP *sprite = al_create_sub_bitmap(father, x, y, w, h);
   init_error(sprite, "sprite grab");
   return sprite;
 }
@@ -478,19 +482,23 @@ static ALLEGRO_BITMAP *sprite_grab(int x, int y, int w, int h) {
 static void sprites_init() {
   sprites._sheet = al_load_bitmap(SPRITESHEET2);
   init_error(sprites._sheet, "spritesheet");
+  sprites._sheet_shot = al_load_bitmap(SPRITESHEETSHOT);
+  init_error(sprites._sheet_shot, "spritesheet_shot");
 
   int xOffset = 0;
   for(int i = 0; i < ALIEN_TOTAL_COLORS; i++){
     if(i >= 6) xOffset = 578;
-    sprites.aliens[0][i][0] = sprite_grab(xOffset+20 , 22+(i%6)*74, 48, 32);
-    sprites.aliens[0][i][1] = sprite_grab(xOffset+104, 22+(i%6)*74, 48, 32);
-    sprites.aliens[1][i][0] = sprite_grab(xOffset+188, 22+(i%6)*74, 48, 32);
-    sprites.aliens[1][i][1] = sprite_grab(xOffset+272, 22+(i%6)*74, 48, 32);
-    sprites.aliens[2][i][0] = sprite_grab(xOffset+352, 22+(i%6)*74, 48, 32);
-    sprites.aliens[2][i][1] = sprite_grab(xOffset+428, 22+(i%6)*74, 48, 32);
+    sprites.aliens[0][i][0] = sprite_grab(sprites._sheet, xOffset+20 , 22+(i%6)*74, 48, 32);
+    sprites.aliens[0][i][1] = sprite_grab(sprites._sheet, xOffset+104, 22+(i%6)*74, 48, 32);
+    sprites.aliens[1][i][0] = sprite_grab(sprites._sheet, xOffset+188, 22+(i%6)*74, 48, 32);
+    sprites.aliens[1][i][1] = sprite_grab(sprites._sheet, xOffset+272, 22+(i%6)*74, 48, 32);
+    sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+352, 22+(i%6)*74, 48, 32);
+    sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+428, 22+(i%6)*74, 48, 32);
   }
+  sprites.shot = sprite_grab(sprites._sheet_shot, 0, 0, 3, 12);
 }
 
 static void sprites_deinit() {
   al_destroy_bitmap(sprites._sheet);
+  al_destroy_bitmap(sprites._sheet_shot);
 }

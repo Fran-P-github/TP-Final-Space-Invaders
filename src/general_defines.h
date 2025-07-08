@@ -117,6 +117,7 @@
 #define AUDIO_UFO "../assets/Audio/ufo.wav"
 #define AUDIO_MENU_SONG "../assets/Audio/menuSong.wav"
 #define SPRITESHEET2 "../sprites/spritesheet2.png"
+#define SPRITESHEETSHOT "../sprites/alienshot.png"
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
