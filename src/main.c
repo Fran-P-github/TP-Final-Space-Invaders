@@ -6,18 +6,18 @@
      Description:
 
 
-     
+
   ******************************************************************************/
 
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include"general_defines.h"
+#include "general_defines.h"
 #if PLATFORM == ALLEGRO
-#include"front_allegro.h"
+#include "front_allegro.h"
 #elif PLATFORM == RPI
-#include"front_rb.h"
+#include "front_rb.h"
 #endif
 
 /*******************************************************************************
@@ -56,32 +56,33 @@
  *******************************************************************************
  ******************************************************************************/
 
-int main(){
-    game_state_t state = front_init();
+int main() {
+  game_state_t state = front_init();
 
-    state = MENU; // Testing. Despues cambiar a MENU
-    unsigned int level = 0;
+  state = GAME; // Testing. Despues cambiar a MENU
 
-    while(state != CLOSED){
-        switch (state){
-          case MENU:
-            level = 0;
-            state = menu();
-            break;
-          case GAME:
-            state = game_update(level++);
-            break;
-          case GAME_CRAZY:
-            break;
-          case PAUSE:
-            state = game_pause();
-            break;
-          case CLOSED:
-            break;
-      }
+  unsigned int level = 0;
+
+  while ( state != CLOSED ) {
+    switch ( state ) {
+      case MENU:
+        level = 0;
+        state = menu();
+        break;
+      case GAME:
+        state = game_update(level++);
+        break;
+      case GAME_CRAZY:
+        break;
+      case PAUSE:
+        state = game_pause();
+        break;
+      case CLOSED:
+        break;
     }
+  }
 
-    endgame();
+  endgame();
 
-    return 0;
+  return 0;
 }

@@ -179,7 +179,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   button_t button_start;
   button_t button_play;
-
+/*************************PRE-LOOP*****************************/
   char intro_background_path[64];
 
   short int counter_1, counter_2, counter_3, screen_width, screen_height, mouse_x, mouse_y;
@@ -461,6 +461,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   /****************************RETURN****************************/
 
   al_hide_mouse_cursor(display);
+  
 
   if ( select == QUIT ) return CLOSED;
   return GAME;
