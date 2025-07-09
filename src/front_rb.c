@@ -118,18 +118,17 @@ game_state_t front_init(){
 
 game_state_t menu(){
     static bool show_logo = true; // Show leaderboard when false
-    static unsigned long long start = 0;
-    double elapsed = (double)(get_millis() - start) / 1000;
+    static int logo_iterations = 0;
 
     if(show_logo){
-        if(logo_menu_display() && elapsed >= 8){
+        if(logo_menu_display() && ++logo_iterations > 3){ // Show logo 3 times before showing hi-scores
             show_logo = false;
             disp_clear();
         }
     }else{ // Show leaderboard
         if(leaderboard_menu_display()){
             show_logo = true;
-            start = get_millis();
+            logo_iterations = 0;
             disp_clear();
         }
     }
@@ -245,7 +244,7 @@ static void sounds_update(){
 }
 
 static bool leaderboard_menu_display(){
-    static bool show_score = false; // Show TOP number when false
+    static bool show_score = true; // Show TOP number when false
     highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
     static unsigned current_score = 0;
     static unsigned cont_this_score = 0;
@@ -253,18 +252,19 @@ static bool leaderboard_menu_display(){
 
     static unsigned long long start = 0;
     double elapsed = (double)(get_millis() - start) / 1000;
-    if(elapsed >= 0.2){ // No son 0.2 segundos, es porque algo anda mal con esta forma de ver el tiempo en la rpi
-        cont_this_score++;
+    if(elapsed >= 1){
         show_score = !show_score;
         start = get_millis();
         if(cont_this_score == 2*displays_per_score){
+            cont_this_score  = 0;
             if(++current_score == MAX_SCORES){
                 current_score = 0;
+                show_score = true;
                 return true;
             }
-            cont_this_score  = 0;
             show_score = false;
         }
+        cont_this_score++;
     }
 
     char buf[5];
@@ -319,9 +319,10 @@ static bool logo_menu_display(){
 
         disp_update();
         ++column;
+        return !(column % LETTERS_WIDTH);
     }
 
-    return !(column % LETTERS_WIDTH);
+    return false;
 }
 
 static void level_end_animation(level_state_t level_state){
