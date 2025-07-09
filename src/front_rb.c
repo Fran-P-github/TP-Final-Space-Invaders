@@ -84,7 +84,7 @@ static bool leaderboard_menu_display();
 static void level_end_animation(level_state_t level_state);
 static void get_player_name(char name[4], unsigned x, unsigned y);
 
-static void update_sounds();
+static void sounds_update();
 
 // Audio sounds
 static Audio *bgMusic = NULL;
@@ -162,7 +162,7 @@ game_state_t game_update(unsigned level){
             ++frame;
             frame_start = get_millis();
             level_state = back_update(level);
-            update_sounds();
+            sounds_update();
             redraw = true;
         }
 
@@ -204,7 +204,7 @@ game_state_t game_update(unsigned level){
     }
 }
 
-static void update_sounds(){
+static void sounds_update(){
     if(mothership_is_active()){
         static unsigned long long start = 0;
         double elapsed = (double)(get_millis() - start);
@@ -220,6 +220,16 @@ static void update_sounds(){
         if(elapsed > 40){ // TODO: retocar esto para que se escuche mejor el sonido, o cambiar intervalos en el back
             start = get_millis();
             playSoundFromMemory(alienMovedSound, SDL_MIX_MAXVOLUME);
+        }
+    }
+
+    {
+        static int last_aliens_alive = 0;
+        if(!last_aliens_alive) last_aliens_alive = total_aliens_alive();
+
+        if(last_aliens_alive > total_aliens_alive()){
+            last_aliens_alive--;
+            playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
         }
     }
 }
