@@ -77,14 +77,13 @@ typedef struct {
  ******************************************************************************/
 
 extern const bool aliensMoved;
-extern bool aliensFrame;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
 static void draw_mothership();
-static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color);
+static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color, unsigned char aliensFrame);
 static void draw_player();
 static void draw_player_shot();
 static void draw_alien_shot();
@@ -403,17 +402,24 @@ game_state_t game_update(unsigned level) {
         draw_shield(x);
       }
       draw_player();
-      int alienSprite = SPRITE_ALIENS_NUM;
-      for ( i = 0; i < ALIENS_ROWS; ++i ) {
-        if ( alienSprite > 0 && i % 2 == 0 ) {
-          alienSprite--;
-        }
-        for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
-          if ( aliens_is_alive(i, j) ) {
-            draw_alien(i, j, alienSprite, ALIEN_GOLD);
+
+      {
+        int alienSprite = SPRITE_ALIENS_NUM;
+        static unsigned char aliensFrame = 0;
+        if(aliensMoved) aliensFrame = !aliensFrame;
+
+        for ( i = 0; i < ALIENS_ROWS; ++i ) {
+          if ( alienSprite > 0 && i % 2 == 0 ) {
+            alienSprite--;
+          }
+          for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
+            if ( aliens_is_alive(i, j) ) {
+              draw_alien(i, j, alienSprite, ALIEN_GOLD, aliensFrame);
+            }
           }
         }
       }
+
       if ( mothership_is_active() ) {
         al_play_sample_instance(ufoSample);
         draw_mothership();
@@ -437,7 +443,7 @@ static void draw_mothership() {
   al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(128, 0, 255));
 }
 
-static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color) {
+static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color, unsigned char aliensFrame) {
   int alienX = aliens_get_x(i, j), alienY = aliens_get_y(i, j);
   ALLEGRO_BITMAP *alienSprite = sprites.aliens[sprite][color][aliensFrame];
   int srcWidth = al_get_bitmap_width(alienSprite);
