@@ -467,8 +467,8 @@ static bool should_spawn_mothership(double elapsed_time) {
   const double max_prob = 0.5; // max
   const double rate = 0.00005; // increase per second
 #elif PLATFORM == RPI
-  const double max_prob = 0.2; // max
-  const double rate = 0.01;    // increase per second
+  const double max_prob = 0.5; // max
+  const double rate = 0.00005;    // increase per second
 #endif
 
   double probability = elapsed_time * rate;

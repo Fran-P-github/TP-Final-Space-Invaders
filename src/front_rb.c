@@ -82,6 +82,15 @@ static bool leaderboard_menu_display();
 static void level_end_animation(level_state_t level_state);
 static void get_player_name(char name[4], unsigned x, unsigned y);
 
+// Audio sounds
+static Audio *bgMusic = NULL;
+static Audio *mothershipMusic = NULL;
+static Audio *playerShotSound = NULL;
+static Audio *playerDeathSound = NULL;
+static Audio *alienDeathSound = NULL;
+static Audio *alienMovedSound = NULL;
+
+// TODO: chequear que todo se inicialice bien
 game_state_t front_init(){
     back_init();
 
@@ -90,6 +99,14 @@ game_state_t front_init(){
     disp_init();
     disp_clear();
     disp_update();
+
+    initAudio();
+    playerShotSound = createAudio(AUDIO_PLAYER_SHOT, 0, SDL_MIX_MAXVOLUME);
+    playerDeathSound = createAudio(AUDIO_PLAYER_DEATH, 0, SDL_MIX_MAXVOLUME);
+    alienDeathSound = createAudio(AUDIO_INVADER_DEATH, 0, SDL_MIX_MAXVOLUME);
+    alienMovedSound = createAudio(AUDIO_INVADER_MOVED, 0, SDL_MIX_MAXVOLUME);
+    mothershipMusic = createAudio(AUDIO_UFO, 0, SDL_MIX_MAXVOLUME);
+    bgMusic = createAudio(GAME_BG_MUSIC, 0, SDL_MIX_MAXVOLUME);
 
     return MENU;
 }
@@ -167,6 +184,13 @@ game_state_t game_update(unsigned level){
             }
             if(mothership_is_active()){
                 draw_mothership();
+
+                static unsigned long long start = 0;
+                double elapsed = (double)(get_millis() - start) / 1000;
+                if(elapsed > 2){
+                    start = get_millis();
+                    playSoundFromMemory(mothershipMusic, SDL_MIX_MAXVOLUME);
+                }
             }
 
             disp_update();
@@ -516,8 +540,8 @@ static bool update_joystick(){
             return true;
         }
 
-        if(joystick.sw == J_PRESS){
-            player_try_shoot();
+        if(joystick.sw == J_PRESS && player_try_shoot()){
+            playSoundFromMemory(playerShotSound, SDL_MIX_MAXVOLUME);
         }
 
         movement_x_t movement = movement_read_x(joystick.x);
