@@ -1,48 +1,65 @@
-// TODO: ver como arreglar la forma de ver el tiempo que pasa para algo en la rpi. Creo que eso hace que no ande tan bien el control del jugador
-
 #include<time.h>
 #include<unistd.h>
 #include<string.h>
 
-// Modulos
+/*******************************************************************************
+ * INCLUDE HEADER FILES
+ ******************************************************************************/
+
+// Program modules
 #include "front_rb.h"
 #include "general_defines.h"
 #include "back.h"
 #include "font_3x5.h"
 #include "scores.h"
-// Matriz de leds y joystick
+
+// LED matrix and joystick
 #include "../libs/joydisp/disdrv.h"
 #include "../libs/joydisp/joydrv.h"
+
 // Audio
 #include <SDL2/SDL.h>
 #include "../libs/SDL2/audio.h"
 
+/*******************************************************************************
+ * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
+ ******************************************************************************/
+
 #define FPS 6
 
+// Player joystick defnitions
 #define JOY_THRESHOLD_SLOW  20
 #define JOY_THRESHOLD_FAST  100
-
 #define SLOW_MOVEMENT_WAIT_TIME 0.4
 #define FAST_MOVEMENT_WAIT_TIME 0.1
 
-#define LETTER_HEIGHT 5
-#define LETTER_MARGIN 2
-#define LETTERS_WIDTH 57
-#define LETTERS_WAIT_TIME 0.1 // Seconds
+// Intro letters definitions
+#define INTRO_LETTER_HEIGHT 5
+#define INTRO_LETTER_MARGIN 2
+#define INTRO_LETTERS_WIDTH 57
+#define INTRO_LETTERS_WAIT_TIME 0.1 // Seconds
 
-#define MENU_OPTIONS 3
-#define ARROW_X 2
-#define ARROW_Y 3
-#define ARROW_SPACING 5   // Espaciado horizontal entre opciones
+// Pause menu definitions
+typedef enum{
+    RESUME=0,
+    HOME,
+    EXIT
+} pause_option_t;
+#define MENU_OPTIONS EXIT+1
+#define ARROW_X 2 // Arrows initial
+#define ARROW_Y 3 // position
+#define ARROW_SPACING 5   // Options horizontal spacing
 #define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
 
+// Sizes to use font3x5 variables
 #define CHAR_WIDTH 3
 #define CHAR_HEIGHT 5
 #define CHAR_SPACING 1
 #define LINE_SPACING 1
 
-extern const bool aliensMoved;
-extern const bool playerDied;
+/*******************************************************************************
+ * ENUMERATIONS, STRUCTURES AND TYPEDEFS
+ ******************************************************************************/
 
 typedef enum{
     NO_MOVE_X=0,
@@ -58,6 +75,17 @@ typedef enum{
     MOVE_DOWN
 } movement_y_t;
 
+/*******************************************************************************
+ * EXTERN VARIABLES
+ ******************************************************************************/
+
+extern const bool aliensMoved;
+extern const bool playerDied;
+
+/*******************************************************************************
+ * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
+ ******************************************************************************/
+
 static void draw_rectangle(int x1, int y1, int x2, int y2);
 static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j);
@@ -68,6 +96,7 @@ static void draw_shield(unsigned shield);
 
 static void wait_button_press();
 static void wait_button_release();
+// Returns: true when going into PAUSE. false otherwise
 static bool update_joystick();
 static bool check_pause(joyinfo_t joystick);
 static movement_x_t movement_read_x(int joystick_x_coordinate);
@@ -87,6 +116,20 @@ static void get_player_name(char name[4], unsigned x, unsigned y);
 
 static void sounds_update();
 
+#define play_sound_with_duration(sound, duration) \
+{ \
+    static unsigned long long start = 0; \
+    double elapsed = (double)(get_millis() - start); \
+    if(elapsed > (duration)){ \
+        start = get_millis(); \
+        playSoundFromMemory((sound), SDL_MIX_MAXVOLUME); \
+    } \
+}
+
+/*******************************************************************************
+ * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
+ ******************************************************************************/
+
 // Audio sounds
 static Audio *bgMusic = NULL;
 static Audio *mothershipMusic = NULL;
@@ -94,6 +137,10 @@ static Audio *playerShotSound = NULL;
 static Audio *playerDeathSound = NULL;
 static Audio *alienDeathSound = NULL;
 static Audio *alienMovedSound = NULL;
+
+/*******************************************************************************
+                        GLOBAL FUNCTION DEFINITIONS
+ ******************************************************************************/
 
 // TODO: chequear que todo se inicialice bien
 game_state_t front_init(){
@@ -114,6 +161,87 @@ game_state_t front_init(){
     bgMusic = createAudio(GAME_BG_MUSIC, 0, SDL_MIX_MAXVOLUME);
 
     return MENU;
+}
+
+game_state_t game_pause(){
+    const char resume[3][4] = {
+        " * ",
+        " **",
+        " * "
+    };
+    const char menu[3][4] = {
+        " * ",
+        "***",
+        "***"
+    };
+    const char exit[3][4] = {
+        "* *",
+        " * ",
+        "* *"
+    };
+    const char lives[3][4] = {
+        "* *",
+        "***",
+        " * "
+    };
+
+    disp_clear();
+    draw3x3(resume, 1, ARROW_Y+2);
+    draw3x3(menu, 6, ARROW_Y+2);
+    draw3x3(exit, 11, ARROW_Y+2);
+    draw3x3(lives, 4, 12);
+    char buf[4];
+    snprintf(buf, sizeof(buf), "%d", player_get_lives());
+    draw_text_wrapped(buf, 8, 11);
+    disp_update();
+
+    // Wait for button release
+    wait_button_release();
+
+    pause_option_t selected = RESUME;
+
+    while (true) {
+        joyinfo_t js = joy_read();
+        movement_x_t pos;
+        static movement_x_t prev_pos = NO_MOVE_X;
+
+        if (js.x < -50) pos = MOVE_LEFT_FAST;
+        else if (js.x > 50) pos = MOVE_RIGHT_FAST;
+        else pos = NO_MOVE_X;
+        if(pos != prev_pos){
+            if(pos == MOVE_RIGHT_FAST) selected++;
+            if(pos == MOVE_LEFT_FAST) selected--;
+
+            if(selected<0) selected = 0;
+            if(selected>=MENU_OPTIONS) selected = MENU_OPTIONS-1;
+        }
+        prev_pos = pos;
+
+        // Draw options
+        for (int i = 0; i < MENU_OPTIONS; ++i) {
+            dcoord_t coord = { .x = ARROW_X+i*ARROW_SPACING, .y = ARROW_Y };
+            disp_write(coord, i == selected ? D_ON : D_OFF);
+        }
+        disp_update();
+
+        // Selección con botón
+        if (js.sw == J_PRESS) {
+            wait_button_release();
+            disp_clear();
+            switch(selected){
+                case RESUME:
+                    return GAME;
+                    break;
+                case HOME:
+                    return MENU;
+                    break;
+                case EXIT:
+                    return CLOSED;
+                    break;
+            }
+        }
+    }
+    return GAME;
 }
 
 game_state_t menu(){
@@ -204,32 +332,46 @@ game_state_t game_update(unsigned level){
     }
 }
 
+void endgame(){
+    disp_clear();
+
+    char score[10];
+    snprintf(score, sizeof(score), "%d", player_get_score());
+    disp_clear();
+    blink_string(score, strlen(score), 0, 3);
+
+    draw_text_wrapped("NAME", 0, 3);
+    disp_update();
+    char name[NAME_LEN+1]; // 3 letters
+    get_player_name(name, 2, 10);
+    disp_clear();
+    blink_string(name, sizeof(name)-1, 2, 5);
+
+    highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
+    if( try_insert_score(top_scores, name, player_get_score()) ){
+        disp_clear();
+        blink_string("NEW BEST", sizeof("NEW BEST")-1, 0, 3);
+    }
+    save_scores(top_scores);
+}
+
+/*******************************************************************************
+ *******************************************************************************
+                        LOCAL FUNCTION DEFINITIONS
+ *******************************************************************************
+ ******************************************************************************/
+
 static void sounds_update(){
     if(mothership_is_active()){
-        static unsigned long long start = 0;
-        double elapsed = (double)(get_millis() - start);
-        if(elapsed > 2000){
-            start = get_millis();
-            playSoundFromMemory(mothershipMusic, SDL_MIX_MAXVOLUME);
-        }
+        play_sound_with_duration(mothershipMusic, 2000);
     }
 
     if(playerDied){
-        static unsigned long long start = 0;
-        double elapsed = (double)(get_millis() - start);
-        if(elapsed > 800){
-            start = get_millis();
-            playSoundFromMemory(playerDeathSound, SDL_MIX_MAXVOLUME);
-        }
+        play_sound_with_duration(playerDeathSound, 800);
     }
 
     if(aliensMoved){
-        static unsigned long long start = 0;
-        double elapsed = (double)(get_millis() - start);
-        if(elapsed > 40){ // TODO: retocar esto para que se escuche mejor el sonido, o cambiar intervalos en el back
-            start = get_millis();
-            playSoundFromMemory(alienMovedSound, SDL_MIX_MAXVOLUME);
-        }
+        play_sound_with_duration(alienMovedSound, 40); // TODO: retocar este tiempo para que se escuche mejor el sonido, o cambiar intervalos en el back
     }
 
     {
@@ -279,47 +421,47 @@ static bool leaderboard_menu_display(){
 }
 
 static bool logo_menu_display(){
-    const char space[LETTER_HEIGHT][LETTERS_WIDTH] = {
+    const char space[INTRO_LETTER_HEIGHT][INTRO_LETTERS_WIDTH] = {
         "        ***  ****   ***   ***  *****                    ",
         "       *     *   * *   * *     *                        ",
         "        ***  ****  ***** *     ***                      ",
         "           * *     *   * *     *                        ",
         "        ***  *     *   *  ***  *****                    "
     };
-    const char invaders[LETTER_HEIGHT][LETTERS_WIDTH] = {
+    const char invaders[INTRO_LETTER_HEIGHT][INTRO_LETTERS_WIDTH] = {
         "***** *   * *   *  ***  ****  ***** ****   ***         ",
         "  *   **  * *   * *   * *   * *     *   * *            ",
         "  *   * * *  * *  ***** *   * ***   ****   ***         ",
         "  *   *  **  * *  *   * *   * *     * *       *        ",
         "***** *   *   *   *   * ****  ***** *  *   ***         "
     };
-    static unsigned column = LETTERS_WIDTH - 4;
+    static unsigned column = INTRO_LETTERS_WIDTH - 4;
 
     static unsigned long long start = 0;
     double elapsed = (double)(get_millis() - start) / 1000;
-    if(elapsed >= LETTERS_WAIT_TIME){
+    if(elapsed >= INTRO_LETTERS_WAIT_TIME){
         start = get_millis();
 
         unsigned i, j;
         // SPACE
-        for(i=0; i<LETTER_HEIGHT; ++i){
+        for(i=0; i<INTRO_LETTER_HEIGHT; ++i){
             for(j=0; j<WORLD_WIDTH; ++j){
-                dcoord_t coord = { .x=j, .y=i+LETTER_MARGIN };
-                disp_write(coord, space[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
+                dcoord_t coord = { .x=j, .y=i+INTRO_LETTER_MARGIN };
+                disp_write(coord, space[i][(j+column)%INTRO_LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
             }
         }
 
         // INVADERS
-        for(i=0; i<LETTER_HEIGHT; ++i){
+        for(i=0; i<INTRO_LETTER_HEIGHT; ++i){
             for(j=0; j<WORLD_WIDTH; ++j){
-                dcoord_t coord = { .x=j, .y=i+LETTER_HEIGHT+2*LETTER_MARGIN };
-                disp_write(coord, invaders[i][(j+column)%LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
+                dcoord_t coord = { .x=j, .y=i+INTRO_LETTER_HEIGHT+2*INTRO_LETTER_MARGIN };
+                disp_write(coord, invaders[i][(j+column)%INTRO_LETTERS_WIDTH]=='*' ? D_ON : D_OFF);
             }
         }
 
         disp_update();
         ++column;
-        return !(column % LETTERS_WIDTH);
+        return !(column % INTRO_LETTERS_WIDTH);
     }
 
     return false;
@@ -352,110 +494,6 @@ static void draw3x3(const char icon[3][4], unsigned x, unsigned y){
     }
 }
 
-game_state_t game_pause(){
-    const char resume[3][4] = {
-        " * ",
-        " **",
-        " * "
-    };
-    const char menu[3][4] = {
-        " * ",
-        "***",
-        "***"
-    };
-    const char exit[3][4] = {
-        "* *",
-        " * ",
-        "* *"
-    };
-    const char lives[3][4] = {
-        "* *",
-        "***",
-        " * "
-    };
-
-    disp_clear();
-    draw3x3(resume, 1, ARROW_Y+2);
-    draw3x3(menu, 6, ARROW_Y+2);
-    draw3x3(exit, 11, ARROW_Y+2);
-    draw3x3(lives, 4, 12);
-    char buf[4];
-    snprintf(buf, sizeof(buf), "%d", player_get_lives());
-    draw_text_wrapped(buf, 8, 11);
-    disp_update();
-
-    // Wait for button release
-    wait_button_release();
-
-    int selected = 0;
-
-    while (true) {
-        joyinfo_t js = joy_read();
-        movement_x_t pos;
-        static movement_x_t prev_pos = NO_MOVE_X;
-
-        if (js.x < -50) pos = MOVE_LEFT_FAST;
-        else if (js.x > 50) pos = MOVE_RIGHT_FAST;
-        else pos = NO_MOVE_X;
-        if(pos != prev_pos){
-            if(pos == MOVE_RIGHT_FAST) selected++;
-            if(pos == MOVE_LEFT_FAST) selected--;
-
-            if(selected<0) selected = 0;
-            if(selected>=MENU_OPTIONS) selected = MENU_OPTIONS-1;
-        }
-        prev_pos = pos;
-
-        // Draw options
-        for (int i = 0; i < MENU_OPTIONS; ++i) {
-            dcoord_t coord = { .x = ARROW_X+i*ARROW_SPACING, .y = ARROW_Y };
-            disp_write(coord, i == selected ? D_ON : D_OFF);
-        }
-        disp_update();
-
-        // Selección con botón
-        if (js.sw == J_PRESS) {
-            wait_button_release();
-            disp_clear();
-            switch(selected){
-                case 0:
-                    return GAME;
-                    break;
-                case 1:
-                    return MENU;
-                    break;
-                case 2:
-                    return CLOSED;
-                    break;
-            }
-        }
-    }
-    return GAME;
-}
-
-void endgame(){
-    disp_clear();
-
-    char score[10];
-    snprintf(score, sizeof(score), "%d", player_get_score());
-    disp_clear();
-    blink_string(score, strlen(score), 0, 3);
-
-    draw_text_wrapped("NAME", 0, 3);
-    disp_update();
-    char name[NAME_LEN+1]; // 3 letters
-    get_player_name(name, 2, 10);
-    disp_clear();
-    blink_string(name, sizeof(name)-1, 2, 5);
-
-    highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
-    if( try_insert_score(top_scores, name, player_get_score()) ){
-        disp_clear();
-        blink_string("NEW BEST", sizeof("NEW BEST")-1, 0, 3);
-    }
-    save_scores(top_scores);
-}
-
 static void blink_string(char buf[], unsigned size, unsigned x, unsigned y){
     for(unsigned i=0; i<3; ++i){ // Score blinks 3 times
         usleep(300000); // 0.3 sec
@@ -470,17 +508,17 @@ static void blink_string(char buf[], unsigned size, unsigned x, unsigned y){
 static void get_player_name(char name[4], unsigned x, unsigned y){
     static const char letters[LETTERS_CANT+1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    unsigned index = 0;
+    unsigned index = 0; // Current letter
     unsigned current_letter = 0;
     movement_y_t prev_movement = NO_MOVE_Y;
 
-    name[0] = name[1] = name[2] = name[3] = '\0'; // Limpiar
+    name[0] = name[1] = name[2] = name[3] = '\0'; // Clean
 
     while(index < 3){
         joyinfo_t js = joy_read();
         movement_y_t movement = movement_read_y(js.y);
 
-        // Detectar flanco (cambio de movimiento)
+        // Detect movement
         if(movement != prev_movement){
             if(movement == MOVE_UP){
                 current_letter = (current_letter + 1) % LETTERS_CANT;
@@ -494,7 +532,7 @@ static void get_player_name(char name[4], unsigned x, unsigned y){
         draw_text_wrapped(name, x, y);
         disp_update();
 
-        // Confirmar letra al soltar el botón después de presionarlo
+        // Save letter on button release
         static bool was_pressed = false;
         if(js.sw == J_PRESS){
             was_pressed = true;
@@ -547,13 +585,13 @@ static void draw_text_wrapped(const char *str, int x, int y) {
             x += CHAR_WIDTH + CHAR_SPACING;
         }
 
-        // Salto de línea si no entra el siguiente carácter
+        // Go to next line if no more characters fit in this line
         if (x + CHAR_WIDTH > WORLD_WIDTH) {
             x = orig_x;
             y += CHAR_HEIGHT + LINE_SPACING;
         }
 
-        // Cortar si nos pasamos del alto del display
+        // Done if no more characters fit in display
         if (y + CHAR_HEIGHT > WORLD_HEIGHT) {
             break;
         }
@@ -562,6 +600,9 @@ static void draw_text_wrapped(const char *str, int x, int y) {
 
 static void wait_button_press(){
     while(joy_read().sw == J_NOPRESS);
+
+    // Debouncing
+    usleep(100000); // 0.1 sec
 }
 
 static void wait_button_release(){
@@ -571,7 +612,6 @@ static void wait_button_release(){
     usleep(100000); // 0.1 sec
 }
 
-// Returns: true when going into PAUSE. false otherwise
 static bool update_joystick(){
         joyinfo_t joystick = joy_read();
 
@@ -623,12 +663,12 @@ static bool check_pause(joyinfo_t joystick){
 
     if(joystick.sw == J_PRESS) {
         if(!was_pressed) {
-            pause_time_start = get_millis();  // primer frame de la pulsación
+            pause_time_start = get_millis();  // Button press just started
         }
         double pause_elapsed = (double)(get_millis() - pause_time_start) / 1000;
         if(pause_elapsed >= BUTTON_PAUSE_TIME) {
             was_pressed = false;
-            return true;  // Se pausó el juego
+            return true;  // Game paused
         }
         was_pressed = true;
     } else {
@@ -681,7 +721,7 @@ static void draw_rectangle(int x1, int y1, int x2, int y2){
     for(i = x1; i <= x2; i++){
         for(j = y1; j <= y2; j++){
             if(i>=0 && j>=0 && i<WORLD_WIDTH && j<WORLD_HEIGHT)
-                disp_write((dcoord_t){.x=i, .y=j}, D_ON); // Se prende el led en la posicion {i, j}
+                disp_write((dcoord_t){.x=i, .y=j}, D_ON); // LED {i,j} turned on
         }
     } 
 }
