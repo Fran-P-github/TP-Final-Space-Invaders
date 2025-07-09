@@ -13,7 +13,6 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -23,8 +22,8 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
-#define ALIENS_MOVE_MIN_INTERVAL 0.3
-#define ALIENS_MOVE_MAX_INTERVAL 1
+#define ALIENS_MOVE_MIN_INTERVAL 0.01
+#define ALIENS_MOVE_MAX_INTERVAL 0.5
 
 #if PLATFORM == ALLEGRO
 
@@ -110,8 +109,6 @@ typedef struct {
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static uint64_t get_millis();
-
 static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives);
 static void player_init();
 static void player_reset_lives();
@@ -184,6 +181,26 @@ static mothership_t mothership;
                         GLOBAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
+
+unsigned long long get_millis() {
+#if defined(__linux__) || defined(__unix__)
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (unsigned long long) (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+#elif defined(_WIN32)
+  static LARGE_INTEGER freq;
+  static BOOL initialized = FALSE;
+  if ( !initialized ) {
+    QueryPerformanceFrequency(&freq);
+    initialized = TRUE;
+  }
+  LARGE_INTEGER counter;
+  QueryPerformanceCounter(&counter);
+  return (unsigned long long) ((counter.QuadPart * 1000) / freq.QuadPart);
+#else
+#error "get_millis() not implemented for this platform"
+#endif
+}
 
 int mothership_get_x() {
   return mothership.x;
@@ -389,10 +406,10 @@ static void shots_update() {
 }
 
 static void mothership_update() {
-  static clock_t start = 0;
-  double elapsed = (double) (clock() - start) / CLOCKS_PER_SEC;
+  static unsigned long long start = 0;
+  double elapsed = (double) (get_millis() - start) / CLOCKS_PER_SEC;
   if ( !mothership.is_active && !should_spawn_mothership(elapsed) ) return; // Mothership inactive and not activated yet
-  start = clock();
+  start = get_millis();
 
   static bool spawn_right;
 
@@ -638,38 +655,16 @@ static void update_aliens_speed(unsigned level) {
   aliens_move_interval = ALIENS_MOVE_MAX_INTERVAL * alive_ratio;
 
   // Aplicar escalado con el nivel (aumenta la velocidad base)
-  aliens_move_interval /= (1 + 0.2 * level); // 20% más rápido por nivel
+  aliens_move_interval /= (1 + 1. * level); // 20% más rápido por nivel
 
   // Limitar al mínimo
   if ( aliens_move_interval < ALIENS_MOVE_MIN_INTERVAL )
     aliens_move_interval = ALIENS_MOVE_MIN_INTERVAL;
 }
 
-static uint64_t get_millis() {
-#if defined(ALLEGRO5)
-  return (uint64_t) (al_get_time() * 1000);
-#elif defined(__linux__) || defined(__unix__)
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t) (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
-#elif defined(_WIN32)
-  static LARGE_INTEGER freq;
-  static BOOL initialized = FALSE;
-  if ( !initialized ) {
-    QueryPerformanceFrequency(&freq);
-    initialized = TRUE;
-  }
-  LARGE_INTEGER counter;
-  QueryPerformanceCounter(&counter);
-  return (uint64_t) ((counter.QuadPart * 1000) / freq.QuadPart);
-#else
-#error "get_millis() not implemented for this platform"
-#endif
-}
-
 static movement_t aliens_update_position(unsigned row) {
   if ( row >= ALIENS_ROWS ) return false;
-  static uint64_t start = 0;
+  static unsigned long long start = 0;
   double elapsed = (double) (get_millis() - start) / 1000;
   unsigned i, j;
   static movement_t movement = MOVEMENT_RIGHT;
