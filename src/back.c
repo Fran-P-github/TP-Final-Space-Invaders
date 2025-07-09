@@ -46,15 +46,15 @@
 
 #elif PLATFORM == RPI
 
-#define MOTHERSHIP_DX 1
+#define MOTHERSHIP_DX 0.05
 
 #define ALIENS_DX 1
 #define ALIENS_DY 1
 
 #define PLAYER_DX 1
 
-#define SHOT_DY_ALIEN 1
-#define SHOT_DY_PLAYER 1
+#define SHOT_DY_ALIEN 0.1
+#define SHOT_DY_PLAYER 0.1
 
 #endif
 
@@ -86,7 +86,12 @@ struct shield {
 typedef struct shield shield_t[SHIELD_H][SHIELD_W];
 
 typedef struct {
-  int x, y;
+  int x;
+#if PLATFORM == ALLEGRO
+  int y;
+#elif PLATFORM == RPI
+  double y;
+#endif
   int dy;
   bool is_used;
 } shot_t;
@@ -99,7 +104,12 @@ typedef enum movement {
 } movement_t;
 
 typedef struct {
-  int x, y;
+  #if PLATFORM == ALLEGRO
+  int x;
+#elif PLATFORM == RPI
+  double x;
+#endif
+  int y;
   int dx;
   bool is_active;
   int points; // Point given to player when shot
@@ -407,7 +417,7 @@ static void shots_update() {
 
 static void mothership_update() {
   static unsigned long long start = 0;
-  double elapsed = (double) (get_millis() - start) / CLOCKS_PER_SEC;
+  double elapsed = (double) (get_millis() - start) / 1000;
   if ( !mothership.is_active && !should_spawn_mothership(elapsed) ) return; // Mothership inactive and not activated yet
   start = get_millis();
 

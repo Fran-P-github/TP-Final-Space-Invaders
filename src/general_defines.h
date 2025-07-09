@@ -22,7 +22,6 @@
 
 #define PLAYER_INITIAL_LIVES 3
 #define ALIENS_POINTS 5
-#define SHIELDS_CANT 3
 #define SHIELD_BLOCK_LIVES 2
 
 #define RPI 0
@@ -56,6 +55,7 @@
 #define SHOT_W 4
 #define SHOT_H 14
 
+#define SHIELDS_CANT 3
 #define SHIELD_BLOCK_LIVES 2
 #define SHIELD_BLOCK_W 12
 #define SHIELD_BLOCK_H 12
@@ -93,6 +93,7 @@
 #define SHOT_W 1
 #define SHOT_H 1
 
+#define SHIELDS_CANT 2
 #define SHIELD_BLOCK_W 1
 #define SHIELD_BLOCK_H 1
 #define SHIELD_W 3

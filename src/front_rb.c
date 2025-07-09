@@ -17,11 +17,13 @@
 #include <SDL2/SDL.h>
 #include "../libs/SDL2/audio.h"
 
+#define FPS 6
+
 #define JOY_THRESHOLD_SLOW  20
 #define JOY_THRESHOLD_FAST  100
 
-#define SLOW_MOVEMENT_WAIT_TIME 4
-#define FAST_MOVEMENT_WAIT_TIME 0.3
+#define SLOW_MOVEMENT_WAIT_TIME 0.4
+#define FAST_MOVEMENT_WAIT_TIME 0.1
 
 #define LETTER_HEIGHT 5
 #define LETTER_MARGIN 2
@@ -94,8 +96,8 @@ game_state_t front_init(){
 
 game_state_t menu(){
     static bool show_logo = true; // Show leaderboard when false
-    static clock_t start = 0;
-    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    static unsigned long long start = 0;
+    double elapsed = (double)(get_millis() - start) / 1000;
 
     if(show_logo){
         if(logo_menu_display() && elapsed >= 8){
@@ -105,7 +107,7 @@ game_state_t menu(){
     }else{ // Show leaderboard
         if(leaderboard_menu_display()){
             show_logo = true;
-            start = clock();
+            start = get_millis();
             disp_clear();
         }
     }
@@ -132,13 +134,12 @@ game_state_t game_update(unsigned level){
             return PAUSE;
         }
 
-        static clock_t frame_start = 0;
-        double frame_elapsed = (double)(clock() - frame_start) / CLOCKS_PER_SEC;
-        const double fps = 6;
-        const double frame_time = 1 / fps; // Seconds
+        static unsigned long long frame_start = 0;
+        double frame_elapsed = (double)(get_millis() - frame_start) / 1000;
+        const double frame_time = 1 / FPS; // Seconds
         if(frame_elapsed >= frame_time){
             ++frame;
-            frame_start = clock();
+            frame_start = get_millis();
             level_state = back_update(level);
             redraw = true;
         }
@@ -188,12 +189,12 @@ static bool leaderboard_menu_display(){
     static unsigned cont_this_score = 0;
     const unsigned displays_per_score = 2;
 
-    static clock_t start = 0;
-    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    static unsigned long long start = 0;
+    double elapsed = (double)(get_millis() - start) / 1000;
     if(elapsed >= 0.2){ // No son 0.2 segundos, es porque algo anda mal con esta forma de ver el tiempo en la rpi
         cont_this_score++;
         show_score = !show_score;
-        start = clock();
+        start = get_millis();
         if(cont_this_score == 2*displays_per_score){
             if(++current_score == MAX_SCORES){
                 current_score = 0;
@@ -232,10 +233,10 @@ static bool logo_menu_display(){
     };
     static unsigned column = LETTERS_WIDTH - 4;
 
-    static clock_t start = 0;
-    double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
+    static unsigned long long start = 0;
+    double elapsed = (double)(get_millis() - start) / 1000;
     if(elapsed >= LETTERS_WAIT_TIME){
-        start = clock();
+        start = get_millis();
 
         unsigned i, j;
         // SPACE
@@ -521,14 +522,14 @@ static bool update_joystick(){
 
         movement_x_t movement = movement_read_x(joystick.x);
         static movement_x_t prev_movement = NO_MOVE_X;
-        static clock_t player_time_start = 0;
-        double player_elapsed = (double)(clock() - player_time_start) / CLOCKS_PER_SEC;
+        static unsigned long long player_time_start = 0;
+        double player_elapsed = (double)(get_millis() - player_time_start) / 1000;
         double player_wait_time =   movement == MOVE_LEFT_FAST || movement == MOVE_RIGHT_FAST ? FAST_MOVEMENT_WAIT_TIME :
                                     movement == MOVE_LEFT_SLOW || movement == MOVE_RIGHT_SLOW ? SLOW_MOVEMENT_WAIT_TIME :
                                     99999;
 
         if(movement != prev_movement || player_elapsed > player_wait_time){
-            player_time_start = clock();
+            player_time_start = get_millis();
 
             switch(movement){
                 case MOVE_RIGHT_SLOW:
@@ -553,14 +554,14 @@ static bool update_joystick(){
 }
 
 static bool check_pause(joyinfo_t joystick){
-    static clock_t pause_time_start = 0;
+    static unsigned long long pause_time_start = 0;
     static bool was_pressed = false;
 
     if(joystick.sw == J_PRESS) {
         if(!was_pressed) {
-            pause_time_start = clock();  // primer frame de la pulsación
+            pause_time_start = get_millis();  // primer frame de la pulsación
         }
-        double pause_elapsed = (double)(clock() - pause_time_start) / CLOCKS_PER_SEC;
+        double pause_elapsed = (double)(get_millis() - pause_time_start) / 1000;
         if(pause_elapsed >= BUTTON_PAUSE_TIME) {
             was_pressed = false;
             return true;  // Se pausó el juego
