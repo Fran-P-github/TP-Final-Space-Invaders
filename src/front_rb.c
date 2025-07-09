@@ -41,6 +41,8 @@
 #define CHAR_SPACING 1
 #define LINE_SPACING 1
 
+extern const bool aliensMoved;
+
 typedef enum{
     NO_MOVE_X=0,
     MOVE_RIGHT_SLOW,
@@ -81,6 +83,8 @@ static bool leaderboard_menu_display();
 
 static void level_end_animation(level_state_t level_state);
 static void get_player_name(char name[4], unsigned x, unsigned y);
+
+static void update_sounds();
 
 // Audio sounds
 static Audio *bgMusic = NULL;
@@ -158,6 +162,7 @@ game_state_t game_update(unsigned level){
             ++frame;
             frame_start = get_millis();
             level_state = back_update(level);
+            update_sounds();
             redraw = true;
         }
 
@@ -184,13 +189,6 @@ game_state_t game_update(unsigned level){
             }
             if(mothership_is_active()){
                 draw_mothership();
-
-                static unsigned long long start = 0;
-                double elapsed = (double)(get_millis() - start) / 1000;
-                if(elapsed > 2){
-                    start = get_millis();
-                    playSoundFromMemory(mothershipMusic, SDL_MIX_MAXVOLUME);
-                }
             }
 
             disp_update();
@@ -203,6 +201,26 @@ game_state_t game_update(unsigned level){
         return GAME;
     }else{
         return CLOSED;
+    }
+}
+
+static void update_sounds(){
+    if(mothership_is_active()){
+        static unsigned long long start = 0;
+        double elapsed = (double)(get_millis() - start);
+        if(elapsed > 2000){
+            start = get_millis();
+            playSoundFromMemory(mothershipMusic, SDL_MIX_MAXVOLUME);
+        }
+    }
+
+    if(aliensMoved){
+        static unsigned long long start = 0;
+        double elapsed = (double)(get_millis() - start);
+        if(elapsed > 40){ // TODO: retocar esto para que se escuche mejor el sonido, o cambiar intervalos en el back
+            start = get_millis();
+            playSoundFromMemory(alienMovedSound, SDL_MIX_MAXVOLUME);
+        }
     }
 }
 
