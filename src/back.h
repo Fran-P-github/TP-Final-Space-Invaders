@@ -54,6 +54,7 @@ bool player_shot_is_used();
 int mothership_get_x();
 int mothership_get_y();
 
+int aliens_get_frame(unsigned i, unsigned j);
 int aliens_get_x(unsigned i, unsigned j);
 int aliens_get_y(unsigned i, unsigned j);
 bool aliens_is_alive(unsigned i, unsigned j);

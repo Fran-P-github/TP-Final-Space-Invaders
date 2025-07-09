@@ -41,6 +41,11 @@
 #define VOLUME_UFO .1
 // Sprites
 #define SPRITE_ALIENS_NUM 3
+#define SPRITE_SHOT_FRAMES 6
+#define SPRITE_SHOT_W 3
+#define SPRITE_SHOT_H 12
+#define SPRITE_SHOT_SPACING 1
+#define SPRITE_SHOT_NUM 2
 
 
 /*******************************************************************************
@@ -68,7 +73,7 @@ typedef struct {
   ALLEGRO_BITMAP *ship;
   ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
   ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
-  ALLEGRO_BITMAP *shot;
+  ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];
 
 } sprites_t;
 
@@ -83,10 +88,10 @@ extern const bool aliensMoved;
  ******************************************************************************/
 
 static void draw_mothership();
-static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color, unsigned char aliensFrame);
+static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color);
 static void draw_player();
-static void draw_player_shot();
-static void draw_alien_shot();
+static void draw_player_shot(unsigned frame, unsigned color);
+static void draw_alien_shot(unsigned frame, unsigned color);
 static void draw_shield(unsigned shield);
 static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h);
 static void sprites_init();
@@ -326,6 +331,8 @@ game_state_t game_update(unsigned level) {
   bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;
   level_state_t level_state = LEVEL_NOT_DONE;
   unsigned long long frame = 0;
+  unsigned shotFrame = 0, playerShotColor = 0, alienShotColor = 0;
+  bool frameDecrement = false;
 
   al_start_timer(timer);
 
@@ -387,17 +394,32 @@ game_state_t game_update(unsigned level) {
     }
 
     if ( redraw ) {
+      // Manejo de frames para las animaciones de disparo (alien y jugador)
+      if(frame%3 == 0){
+        if(shotFrame >= SPRITE_SHOT_NUM) frameDecrement = true;
+        else if (shotFrame <= 0) frameDecrement = false;
+        frameDecrement ? shotFrame-- : shotFrame++;
+        alienShotColor += 40;
+        playerShotColor += 30;
+      }
+      // Maximos valores de color para el disparo del jugador
+      if(!player_shot_is_used()) playerShotColor = 0;
+      else if(playerShotColor >= 255) playerShotColor = 255;
+      // Maximos valores de color para el disparo del alien
+      if(!alien_shot_is_used()) alienShotColor = 0;
+      else if(alienShotColor >= 255) alienShotColor = 255;
       redraw = false;
+
       al_set_target_bitmap(buffer);
       al_clear_to_color(al_map_rgb(0, 0, 0));
       al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "width: %d height: %d", al_get_display_width(disp), al_get_display_height(disp));
       unsigned i, j;
-      draw_player_shot();
+      draw_player_shot(shotFrame, playerShotColor);
       unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
       if ( alien_column_to_shoot >= 0 ) {
         alien_try_shoot(alien_column_to_shoot);
       }
-      draw_alien_shot();
+      draw_alien_shot(shotFrame, alienShotColor);
       for ( int x = 0; x < SHIELDS_CANT; x++ ) {
         draw_shield(x);
       }
@@ -405,8 +427,8 @@ game_state_t game_update(unsigned level) {
 
       {
         int alienSprite = SPRITE_ALIENS_NUM;
-        static unsigned char aliensFrame = 0;
-        if(aliensMoved) aliensFrame = !aliensFrame;
+        // static unsigned char aliensFrame = 0;
+        // if(aliensMoved) aliensFrame = !aliensFrame;
 
         for ( i = 0; i < ALIENS_ROWS; ++i ) {
           if ( alienSprite > 0 && i % 2 == 0 ) {
@@ -414,7 +436,7 @@ game_state_t game_update(unsigned level) {
           }
           for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
             if ( aliens_is_alive(i, j) ) {
-              draw_alien(i, j, alienSprite, ALIEN_GOLD, aliensFrame);
+              draw_alien(i, j, alienSprite, ALIEN_GOLD);
             }
           }
         }
@@ -426,6 +448,7 @@ game_state_t game_update(unsigned level) {
       } else {
         al_stop_sample_instance(ufoSample);
       }
+
       al_set_target_backbuffer(disp);
       al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0); // flags
       al_flip_display();
@@ -443,8 +466,9 @@ static void draw_mothership() {
   al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(128, 0, 255));
 }
 
-static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color, unsigned char aliensFrame) {
+static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color) {
   int alienX = aliens_get_x(i, j), alienY = aliens_get_y(i, j);
+  int aliensFrame = aliens_get_frame(i, j);
   ALLEGRO_BITMAP *alienSprite = sprites.aliens[sprite][color][aliensFrame];
   int srcWidth = al_get_bitmap_width(alienSprite);
   int srcHeight = al_get_bitmap_height(alienSprite);
@@ -457,16 +481,36 @@ static void draw_player() {
   al_draw_filled_rectangle(player_get_x(), player_get_y(), player_get_x() + PLAYER_W, player_get_y() + PLAYER_H, al_map_rgb(0, 255, 0));
 }
 
-static void draw_alien_shot() {
+static void draw_alien_shot(unsigned frame, unsigned color) {
   if ( alien_shot_is_used() ){
-    //al_draw_filled_rectangle(alien_shot_get_x(), alien_shot_get_y(), alien_shot_get_x() + SHOT_W, alien_shot_get_y() + SHOT_H, al_map_rgb(255, 255, 255));
-    al_draw_scaled_bitmap(sprites.shot, 0, 0, 3, 12, alien_shot_get_x(), alien_shot_get_y(), SHOT_W, SHOT_H, 0);
+    //al_draw_rectangle(alien_shot_get_x(), alien_shot_get_y(), alien_shot_get_x() + SHOT_W, alien_shot_get_y() + SHOT_H, al_map_rgb(255, 0, 0), 1);
+    al_draw_tinted_scaled_bitmap(
+      sprites.shot[0][frame],
+      al_map_rgb(255, 255-color, 255-color),
+      0, 0,
+      SPRITE_SHOT_W,
+      SPRITE_SHOT_H,
+      alien_shot_get_x()-SPRITE_SHOT_SPACING,
+      alien_shot_get_y(),
+      SHOT_W, SHOT_H, 0
+    );
   }
 }
 
-static void draw_player_shot() {
-  if ( player_shot_is_used() )
-    al_draw_filled_rectangle(player_shot_get_x(), player_shot_get_y(), player_shot_get_x() + SHOT_W, player_shot_get_y() + SHOT_H, al_map_rgb(255, 255, 255));
+static void draw_player_shot(unsigned frame, unsigned color) {
+  if ( player_shot_is_used() ){
+    //al_draw_rectangle(player_shot_get_x(), player_shot_get_y(), player_shot_get_x() + SHOT_W, player_shot_get_y() + SHOT_H, al_map_rgb(255, 0, 0), 1);
+    al_draw_tinted_scaled_bitmap(
+      sprites.shot[1][frame],
+      al_map_rgb(255-color, 255, 255-color),
+      0, 0,
+      SPRITE_SHOT_W,
+      SPRITE_SHOT_H,
+      player_shot_get_x()-SPRITE_SHOT_SPACING,
+      player_shot_get_y(),
+      SHOT_W, SHOT_H, 0
+    );
+  }
 }
 
 static void draw_shield(unsigned shield) {
@@ -501,7 +545,23 @@ static void sprites_init() {
     sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+352, 22+(i%6)*74, 48, 32);
     sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+428, 22+(i%6)*74, 48, 32);
   }
-  sprites.shot = sprite_grab(sprites._sheet_shot, 0, 0, 3, 12);
+
+  // Recorte de los frames para las animaciones del disparo
+  int xSpacing, ySpacing = 0;
+  for(int j = 0; j < SPRITE_SHOT_NUM; j++){
+    xSpacing = 0;
+    for(int i = 0; i < SPRITE_SHOT_FRAMES; i++){
+      if(i > 0) xSpacing = SPRITE_SHOT_SPACING;
+      sprites.shot[j][i] = sprite_grab(
+        sprites._sheet_shot,
+        (xSpacing+SPRITE_SHOT_W)*i,
+        (ySpacing+SPRITE_SHOT_H)*j,
+        SPRITE_SHOT_W,
+        SPRITE_SHOT_H
+      );
+    }
+    ySpacing = SPRITE_SHOT_SPACING;
+  }
 }
 
 static void sprites_deinit() {

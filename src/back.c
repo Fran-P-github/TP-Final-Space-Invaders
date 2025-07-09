@@ -42,7 +42,7 @@
 
 // #define SHOT_DY ( SHOT_W / 2 )
 #define SHOT_VELOCITY_ALIEN 200
-#define SHOT_VELOCITY_PLAYER 200
+#define SHOT_VELOCITY_PLAYER 300
 #define SHOT_DY_ALIEN (SHOT_VELOCITY_ALIEN / FRAME_RATE)
 #define SHOT_DY_PLAYER (SHOT_VELOCITY_PLAYER / FRAME_RATE)
 
@@ -75,6 +75,7 @@ typedef struct {
   int x, y;
   int lives;
   int points; // Point given to player when killed
+  int frame;
 } alien_t;
 
 typedef struct {
@@ -246,6 +247,10 @@ int player_shot_get_y() {
 }
 bool player_shot_is_used() {
   return player_shot.is_used;
+}
+
+int aliens_get_frame(unsigned i, unsigned j){
+  return aliens[i][j].frame;
 }
 
 int aliens_get_x(unsigned i, unsigned j) {
@@ -520,6 +525,7 @@ static void aliens_init(unsigned rows, unsigned cols, unsigned lives) {
       aliens[i][j].y = y;
       aliens[i][j].lives = (i < rows && j < cols) ? lives : 0;
       aliens[i][j].points = ALIENS_POINTS;
+      aliens[i][j].frame = 0;
 
       x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
     }
@@ -712,27 +718,33 @@ static movement_t aliens_update_position(unsigned row) {
       case MOVEMENT_RIGHT:
         aliens_move_right(row);
         for ( i = ALIENS_COLUMNS - 1; i < ALIENS_COLUMNS; --i ) { // Comparación así por i unsigned
-          if ( aliens_alive_in_column(i) )
-            for ( j = ALIENS_ROWS - 1; j < ALIENS_ROWS; --j )
+          if ( aliens_alive_in_column(i) ){
+            aliens[row][i].frame = !aliens[row][i].frame; // Cambia de frame solo en la fila que se movio
+            for ( j = ALIENS_ROWS - 1; j < ALIENS_ROWS; --j ){
               if ( aliens_alive_in_row(j) && (aliens[j][i].x + ALIENS_W - 1 > WORLD_WIDTH - 1) ) {
                 aliens_move_left(row); // Nos habíamos pasado
                 movement = MOVEMENT_DOWN;
                 movement_post_down = MOVEMENT_LEFT;
                 break;
               }
+            }
+          }
         }
         break;
       case MOVEMENT_LEFT:
         aliens_move_left(row);
         for ( i = 0; i < ALIENS_COLUMNS; ++i ) { // Comparación así por i unsigned
-          if ( aliens_alive_in_column(i) )
-            for ( j = ALIENS_ROWS - 1; j < ALIENS_ROWS; --j )
+          if ( aliens_alive_in_column(i) ){
+            aliens[row][i].frame = !aliens[row][i].frame; // Cambia de frame solo en la fila que se movio
+            for ( j = ALIENS_ROWS - 1; j < ALIENS_ROWS; --j ){
               if ( aliens_alive_in_row(j) && (aliens[j][i].x < 0) ) {
                 aliens_move_right(row); // Nos habíamos pasado
                 movement = MOVEMENT_DOWN;
                 movement_post_down = MOVEMENT_RIGHT;
                 break;
               }
+            }
+          }
         }
         break;
       case MOVEMENT_DOWN:

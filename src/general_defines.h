@@ -52,8 +52,8 @@
 #define ALIENS_H 32
 #define ALIENS_MARGIN 20 // Que tan separados del borde superior
 
-#define SHOT_W 4
-#define SHOT_H 14
+#define SHOT_W 8//4
+#define SHOT_H 19//14
 
 #define SHIELDS_CANT 3
 #define SHIELD_BLOCK_LIVES 2
