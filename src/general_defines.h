@@ -112,7 +112,7 @@
 
 // Audio files (Son los mismos independientemente de la plataforma)
 #define AUDIO_PLAYER_SHOT "../assets/Audio/shoot.wav"
-#define AUDIO_PLAYER_DEATH "../assets/Audio/explosion.wav"
+#define AUDIO_PLAYER_DEATH "../assets/Audio/playerkilled.wav"
 #define AUDIO_INVADER_DEATH "../assets/Audio/invaderkilled.wav"
 #define AUDIO_INVADER_MOVED "../assets/Audio/invadermoved.wav"
 #define AUDIO_UFO "../assets/Audio/ufo.wav"

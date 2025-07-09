@@ -22,6 +22,8 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
+#define MAX_ULL -1ULL
+
 #if PLATFORM == ALLEGRO
 
 #define ALIENS_MOVE_MIN_INTERVAL 0.01
@@ -62,8 +64,8 @@
 #endif
 
 // VARIABLE GLOBAL Y PUBLICA
-
 bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los aliens
+bool playerDied;
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -129,7 +131,7 @@ static void shield_init(unsigned shield, int x, int y, unsigned lives); // Inits
 
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
-static void shots_update();
+static bool shots_update(); // returns true when aliens hit player
 
 static int rand_between(int lo, int hi);
 
@@ -140,7 +142,7 @@ static bool should_spawn_mothership(double elapsed_time);
 
 // Call for shots to update
 static void player_shot_update();
-static void alien_shot_update();
+static bool alien_shot_update(); // returns true when aliens hit player
 
 // Move player
 static void player_move(int x, int y);
@@ -318,10 +320,12 @@ void player_reset_on_new_level() {
   player.x = INITIAL_PLAYER_X_COORDINATE;
   player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
   player_shot.is_used = false;
+  playerDied = false;
 }
 
 void player_reset_on_new_game() {
   player_reset_lives();
+  playerDied = false;
 }
 
 void player_move_right() {
@@ -334,16 +338,35 @@ void player_move_left() {
 }
 
 level_state_t back_update(unsigned current_level) {
-  shots_update();
+  static unsigned long long player_death_start = MAX_ULL; // Variable is MAX_ULL while player is not in death state
+  
+  if(shots_update()){
+    if(player.lives <= 0) return ALIENS_WIN;
+
+    player_death_start = get_millis();
+  }
+
   mothership_update();
 
-  if ( aliens_update(current_level) || player.lives <= 0 ) {
+  if ( aliens_update(current_level) ) {
+    player_death_start = MAX_ULL;
     return ALIENS_WIN;
   }
+
   if ( total_aliens_alive() == 0 ) {
     player.lives++;
+    player_death_start = MAX_ULL;
     return PLAYER_WINS;
   }
+
+  double elapsed = (double) (get_millis() - player_death_start);
+  //if(player_death_start != MAX_ULL) player.x += PLAYER_OFFSET_WHEN_DEAD;
+  if(elapsed <= 800) return LEVEL_NOT_DONE;
+  if(player_death_start != MAX_ULL){
+    player_reset_on_new_level();
+    player_death_start = MAX_ULL;
+  }
+
   return LEVEL_NOT_DONE;
 }
 
@@ -412,9 +435,9 @@ static bool aliens_update(unsigned current_level) {
   return false;
 }
 
-static void shots_update() {
+static bool shots_update() {
   player_shot_update();
-  alien_shot_update();
+  return alien_shot_update();
 }
 
 static void mothership_update() {
@@ -538,6 +561,7 @@ static void shield_init(unsigned k, int x, int y, unsigned lives) {
 }
 
 static void player_move(int x, int y) {
+  if(playerDied) return;
   player.x += x;
   player.y += y;
 }
@@ -812,18 +836,12 @@ static void player_shot_update() {
     player_shot.is_used = false;
 }
 
-static void alien_shot_update() {
-  if ( !alien_shot.is_used ) return;
+static bool alien_shot_update() {
+  if ( !alien_shot.is_used ) return false;
 
   alien_shot.y += SHOT_DY_ALIEN;
 
   // Player_shot collition: it is in player_shot_update
-
-  // Player collition
-  if ( collide(alien_shot.x, alien_shot.y, alien_shot.x + SHOT_W - 1, alien_shot.y + SHOT_H - 1, player.x, player.y, player.x + PLAYER_W - 1, player.y + PLAYER_H - 1) ) {
-    alien_shot.is_used = false;
-    player.lives--;
-  }
 
   // Shield collition
   unsigned i, j;
@@ -845,4 +863,13 @@ static void alien_shot_update() {
   // Window limit
   if ( alien_shot.y + SHOT_H - 1 > WORLD_HEIGHT ) // Out of bounds
     alien_shot.is_used = false;
+
+  // Player collition
+  if ( !playerDied && collide(alien_shot.x, alien_shot.y, alien_shot.x + SHOT_W - 1, alien_shot.y + SHOT_H - 1, player.x, player.y, player.x + PLAYER_W - 1, player.y + PLAYER_H - 1) ) {
+    alien_shot.is_used = false;
+    player.lives--;
+    playerDied = true;
+    return true;
+  }
+  return false;
 }

@@ -42,6 +42,7 @@
 #define LINE_SPACING 1
 
 extern const bool aliensMoved;
+extern const bool playerDied;
 
 typedef enum{
     NO_MOVE_X=0,
@@ -211,6 +212,15 @@ static void sounds_update(){
         if(elapsed > 2000){
             start = get_millis();
             playSoundFromMemory(mothershipMusic, SDL_MIX_MAXVOLUME);
+        }
+    }
+
+    if(playerDied){
+        static unsigned long long start = 0;
+        double elapsed = (double)(get_millis() - start);
+        if(elapsed > 800){
+            start = get_millis();
+            playSoundFromMemory(playerDeathSound, SDL_MIX_MAXVOLUME);
         }
     }
 
@@ -567,6 +577,7 @@ static bool update_joystick(){
         if(check_pause(joystick)){
             return true;
         }
+        if(playerDied) return false;
 
         if(joystick.sw == J_PRESS && player_try_shoot()){
             playSoundFromMemory(playerShotSound, SDL_MIX_MAXVOLUME);
@@ -683,7 +694,9 @@ static void draw_alien(unsigned i, unsigned j){
 }
 
 static void draw_player(){
-    draw_rectangle(player_get_x(), player_get_y(), player_get_x()+PLAYER_W-1, player_get_y()+PLAYER_H-1);
+    if(!playerDied){
+        draw_rectangle(player_get_x(), player_get_y(), player_get_x()+PLAYER_W-1, player_get_y()+PLAYER_H-1);
+    }
 }
 
 static void draw_alien_shot(){
