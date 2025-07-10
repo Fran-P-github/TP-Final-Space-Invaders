@@ -66,6 +66,7 @@
 // VARIABLE GLOBAL Y PUBLICA
 bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los aliens
 bool playerDied;
+explosion_t explosion; // Variable para invocar explosiones
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -416,6 +417,8 @@ static bool aliens_update(unsigned current_level) {
   }
   movement_t last_movement;
   static movement_t prev_last_movement = NO_MOVEMENT;
+  #include <stdio.h>
+  printf("Row to move: %d\n", row_to_move);
   if ( (last_movement = aliens_update_position(row_to_move)) != NO_MOVEMENT )
     row_to_move = (row_to_move - 1) >= ALIENS_ROWS ? (ALIENS_ROWS - 1) : (row_to_move - 1);
   // Get next row with alive aliens
@@ -424,7 +427,7 @@ static bool aliens_update(unsigned current_level) {
   }
   if ( last_movement != NO_MOVEMENT ) {
     if ( last_movement == MOVEMENT_DOWN && prev_last_movement != MOVEMENT_DOWN ) {
-      row_to_move = ALIENS_ROWS - 1;
+      row_to_move = ALIENS_ROWS - 2;
     }
     prev_last_movement = last_movement;
   }
@@ -708,44 +711,45 @@ static movement_t aliens_update_position(unsigned row) {
   if ( row >= ALIENS_ROWS ) return false;
   static unsigned long long start = 0;
   double elapsed = (double) (get_millis() - start) / 1000;
-  unsigned i, j;
+  int i, j;
   static movement_t movement = MOVEMENT_RIGHT;
   static movement_t movement_post_down = MOVEMENT_LEFT;
+
+  int topRow = get_top_alien_row();
+  // Check movement direction
+  for ( i = ALIENS_COLUMNS - 1; i >= 0; --i ) {
+    if ( aliens_alive_in_column(i) ){
+      for ( j = ALIENS_ROWS - 1; j >= 0; --j ){
+        if(!aliens_alive_in_row(j)) continue;
+        if (movement==MOVEMENT_RIGHT && (aliens[j][i].x + ALIENS_W-1 + ALIENS_DX > WORLD_WIDTH-1) ) {
+          if(j == topRow){
+            movement = MOVEMENT_DOWN;
+            movement_post_down = MOVEMENT_LEFT;
+          }
+        }
+        else if (movement==MOVEMENT_LEFT && (aliens[j][i].x - ALIENS_DX < 0) ) {
+          if(j == topRow){
+            movement = MOVEMENT_DOWN;
+            movement_post_down = MOVEMENT_RIGHT;
+          }
+        }
+      }
+    }
+  }
+
   aliensMoved = elapsed >= aliens_move_interval;
-  if ( elapsed >= aliens_move_interval ) {
+  if ( elapsed >= aliens_move_interval) {
+
+    for(int i = 0; i < ALIENS_COLUMNS; i++)
+      aliens[row][i].frame = !aliens[row][i].frame; // Cambia de frame solo en la fila que se movio
+
     start = get_millis();
     switch ( movement ) {
       case MOVEMENT_RIGHT:
         aliens_move_right(row);
-        for ( i = ALIENS_COLUMNS - 1; i < ALIENS_COLUMNS; --i ) { // Comparación así por i unsigned
-          if ( aliens_alive_in_column(i) ){
-            aliens[row][i].frame = !aliens[row][i].frame; // Cambia de frame solo en la fila que se movio
-            for ( j = ALIENS_ROWS - 1; j < ALIENS_ROWS; --j ){
-              if ( aliens_alive_in_row(j) && (aliens[j][i].x + ALIENS_W - 1 > WORLD_WIDTH - 1) ) {
-                aliens_move_left(row); // Nos habíamos pasado
-                movement = MOVEMENT_DOWN;
-                movement_post_down = MOVEMENT_LEFT;
-                break;
-              }
-            }
-          }
-        }
         break;
       case MOVEMENT_LEFT:
         aliens_move_left(row);
-        for ( i = 0; i < ALIENS_COLUMNS; ++i ) { // Comparación así por i unsigned
-          if ( aliens_alive_in_column(i) ){
-            aliens[row][i].frame = !aliens[row][i].frame; // Cambia de frame solo en la fila que se movio
-            for ( j = ALIENS_ROWS - 1; j < ALIENS_ROWS; --j ){
-              if ( aliens_alive_in_row(j) && (aliens[j][i].x < 0) ) {
-                aliens_move_right(row); // Nos habíamos pasado
-                movement = MOVEMENT_DOWN;
-                movement_post_down = MOVEMENT_RIGHT;
-                break;
-              }
-            }
-          }
-        }
         break;
       case MOVEMENT_DOWN:
         aliens_move_down(row);
@@ -820,6 +824,9 @@ static void player_shot_update() {
     for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
       if ( aliens[i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x + ALIENS_W - 1, aliens[i][j].y + ALIENS_H - 1) ) {
         player_shot.is_used = false;
+        explosion.x = aliens[i][j].x;
+        explosion.y = aliens[i][j].y;
+        explosion.explosion_interval = 5;
         aliens[i][j].lives--;
         player.score += aliens[i][j].points;
         break;
