@@ -335,7 +335,9 @@ game_state_t game_pause(unsigned int level) {
     al_destroy_font(font);
     al_start_timer(timer); // Resume timer after pause
     al_flush_event_queue(queue); // Flush queue to give it back empty to game_update
-    key[ALLEGRO_KEY_ESCAPE] = 0; // Was used here
+    memset(key, 0, sizeof(key)); // Clear keys mask for going back to game
+    al_clear_to_color(al_map_rgb(0, 0, 0)); // Clear screen on exit
+    al_flip_display();
     return result;
 }
 
