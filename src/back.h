@@ -26,6 +26,12 @@
 
 typedef enum{ LEVEL_NOT_DONE=0, PLAYER_WINS, ALIENS_WIN } level_state_t;
 
+typedef enum{
+  ALIEN_FAT=0,
+  ALIEN_WINGED,
+  ALIEN_SMALL
+} alien_type_t;
+
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
@@ -39,7 +45,7 @@ level_state_t back_update(unsigned int current_level, void (*alienDeath)(unsigne
 
 // aliens_rows/columns: number of aliens to spawn. ALIENS_ROWS/COLUMNS assumed if a grater number is given
 // For aliens_lives, 1 is assumed if 0 is given
-void level_init(unsigned int aliens_rows, unsigned int aliens_cols, unsigned aliens_lives, unsigned shield_block_lives);
+void level_init(unsigned int aliens_rows, unsigned int aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives);
 
 void player_reset_on_new_level();
 void player_reset_on_new_game();
@@ -57,6 +63,9 @@ int mothership_get_y();
 int aliens_get_x(unsigned i, unsigned j);
 int aliens_get_y(unsigned i, unsigned j);
 bool aliens_is_alive(unsigned i, unsigned j);
+int aliens_get_lives(unsigned i, unsigned j);
+alien_type_t alines_get_type(unsigned i, unsigned j);
+
 int alien_shot_get_x();
 int alien_shot_get_y();
 bool alien_shot_is_used();

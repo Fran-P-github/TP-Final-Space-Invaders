@@ -75,6 +75,7 @@ typedef struct {
   int x, y;
   int lives;
   int points; // Point given to player when killed
+  alien_type_t type;
 } alien_t;
 
 typedef struct {
@@ -123,7 +124,7 @@ typedef struct {
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives);
+static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives_min, unsigned lives_max);
 static void player_init();
 static void player_reset_lives();
 static void shields_init(unsigned lives);
@@ -257,8 +258,14 @@ int aliens_get_y(unsigned i, unsigned j) {
 bool aliens_is_alive(unsigned i, unsigned j) {
   return aliens[i][j].lives;
 }
+int aliens_get_lives(unsigned i, unsigned j) {
+  return aliens[i][j].lives;
+}
 double aliens_get_move_interval() {
   return aliens_move_interval;
+}
+alien_type_t alines_get_type(unsigned i, unsigned j){
+  return aliens[i][j].type;
 }
 void aliens_set_move_interval(double interval) {
   aliens_move_interval = interval;
@@ -301,8 +308,9 @@ void back_init() {
   player_init();
 }
 
-void level_init(unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives, unsigned shield_block_lives) {
-  aliens_init(aliens_rows, aliens_cols, aliens_lives);
+void level_init(unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives) {
+  if(!aliens_lives_min) aliens_lives_min = 1;
+  aliens_init(aliens_rows, aliens_cols, aliens_lives_min, aliens_lives_max);
   shields_init(shield_block_lives);
 }
 
@@ -510,16 +518,28 @@ static bool should_spawn_mothership(double elapsed_time) {
 }
 
 #define FIRST_ALIEN_X_COORDINATE ((WORLD_WIDTH - (cols * ALIENS_W + (cols - 1) * ALIENS_HORIZONTAL_SEPARATION)) / 2) //+250) //+250 para que empieze mas a la derecha y testear mas facil
-static void aliens_init(unsigned rows, unsigned cols, unsigned lives) {
-  if ( !lives ) lives = 1;
+static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsigned lives_max) {
   unsigned i, j;
   int x = FIRST_ALIEN_X_COORDINATE;
   int y = ALIENS_MARGIN;
   for ( i = 0; i < ALIENS_ROWS; ++i ) {
     for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
+      if(i + 1 > (double)2/3 * rows){
+        aliens[i][j].type = ALIEN_FAT;
+      }else if(i + 1 > (double)1/3 * rows){
+        aliens[i][j].type = ALIEN_WINGED;
+      }else{
+        aliens[i][j].type = ALIEN_SMALL;
+      }
+
       aliens[i][j].x = x;
       aliens[i][j].y = y;
-      aliens[i][j].lives = (i < rows && j < cols) ? lives : 0;
+
+      if((i < rows && j < cols)){
+        aliens[i][j].lives = rows > 1 ? lives_min + ( (lives_max - lives_min) * i ) / (rows - 1) : lives_max;
+      }else{
+        aliens[i][j].lives = 0;
+      }
       aliens[i][j].points = ALIENS_POINTS;
 
       x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;

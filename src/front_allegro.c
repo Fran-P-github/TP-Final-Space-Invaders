@@ -68,7 +68,7 @@ typedef enum {
     ALIEN_SILVER,
     ALIEN_RETRO,
     ALIEN_TOTAL_COLORS
-} alien_color;
+} alien_color_t;
 
 typedef struct {
   ALLEGRO_BITMAP *_sheet;
@@ -98,7 +98,7 @@ extern const bool aliensMoved;
 
 static void alien_death(unsigned i, unsigned j);
 static void draw_mothership();
-static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color, unsigned char aliensFrame);
+static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame);
 static void draw_player();
 static void draw_player_shot(unsigned frame, unsigned color);
 static void draw_alien_shot(unsigned frame, unsigned color);
@@ -502,7 +502,7 @@ static void init_error(bool state, const char *name) {
 
 game_state_t game_update(unsigned level, bool new_level) {
   if(new_level){ // Restart on new level
-    level_init(ALIENS_ROWS-2 + level / 3, ALIENS_COLUMNS-2 + level / 2, 1 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
+    level_init(ALIENS_ROWS-3 + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
     player_reset_on_new_level();
     if ( level == 0 ) player_reset_on_new_game();
   }
@@ -513,7 +513,6 @@ game_state_t game_update(unsigned level, bool new_level) {
   unsigned long long frame = 0;
   unsigned shotFrame = 0, playerShotColor = 0, alienShotColor = 0;
   bool frameDecrement = false;
-  alien_color alienColor = ALIEN_GOLD;
 
   al_start_timer(timer);
 
@@ -621,13 +620,31 @@ game_state_t game_update(unsigned level, bool new_level) {
           }
           for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
             if ( aliens_is_alive(i, j) ) {
+              alien_color_t alienColor;
+              switch(aliens_get_lives(i, j)){
+                case 1:
+                  alienColor = ALIEN_LPINK;
+                  break;
+                case 2:
+                  alienColor = ALIEN_YELLOW;
+                  break;
+                case 3:
+                  alienColor = ALIEN_ORANGE;
+                  break;
+                case 4:
+                  alienColor = ALIEN_GREEN;
+                  break;
+                default:
+                  alienColor = ALIEN_RETRO; // Never to be reached
+                  break;
+              }
               draw_alien(i, j, alienSprite, alienColor, aliensFrame);
             }
           }
         }
       }
 
-      if(explosion.explosion_interval > 0) draw_explosion(frame, alienColor);
+      if(explosion.explosion_interval > 0) draw_explosion(frame, ALIEN_NEON);
 
       if ( mothership_is_active() ) {
         al_play_sample_instance(ufoSample);
@@ -662,9 +679,9 @@ static void draw_mothership() {
   al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(128, 0, 255));
 }
 
-static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color, unsigned char aliensFrame) {
+static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame) {
   int alienX = aliens_get_x(i, j), alienY = aliens_get_y(i, j);
-  ALLEGRO_BITMAP *alienSprite = sprites.aliens[sprite][color][aliensFrame];
+  ALLEGRO_BITMAP *alienSprite = sprites.aliens[alines_get_type(i,j)][color][aliensFrame];
   int srcWidth = al_get_bitmap_width(alienSprite);
   int srcHeight = al_get_bitmap_height(alienSprite);
   // Para ver la hitbox
