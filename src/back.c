@@ -66,6 +66,7 @@
 // VARIABLE GLOBAL Y PUBLICA
 bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los aliens
 bool playerDied;
+explosion_t explosion; // Variable para invocar explosiones
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -822,6 +823,9 @@ static void player_shot_update() {
         player_shot.is_used = false;
         aliens[i][j].lives--;
         player.score += aliens[i][j].points;
+        explosion.x = aliens[i][j].x;
+        explosion.y = aliens[i][j].y;
+        explosion.explosion_interval = 5;
         break;
       }
     }

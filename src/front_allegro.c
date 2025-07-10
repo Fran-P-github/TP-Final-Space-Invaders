@@ -73,7 +73,7 @@ typedef struct {
   ALLEGRO_BITMAP *ship;
   ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
   ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
-  ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];
+  ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];        // 2 tipos de disparos, 6 estados de animacion
 
 } sprites_t;
 
@@ -82,6 +82,7 @@ typedef struct {
  ******************************************************************************/
 
 extern const bool aliensMoved;
+extern explosion_t explosion;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
@@ -93,6 +94,7 @@ static void draw_player();
 static void draw_player_shot(unsigned frame, unsigned color);
 static void draw_alien_shot(unsigned frame, unsigned color);
 static void draw_shield(unsigned shield);
+static void draw_explosion(unsigned frame, unsigned color);
 static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h);
 static void sprites_init();
 static void sprites_deinit();
@@ -396,7 +398,7 @@ game_state_t game_update(unsigned level) {
     if ( redraw ) {
       // Manejo de frames para las animaciones de disparo (alien y jugador)
       if(frame%3 == 0){
-        if(shotFrame >= SPRITE_SHOT_NUM) frameDecrement = true;
+        if(shotFrame >= SPRITE_SHOT_FRAMES - 1) frameDecrement = true;
         else if (shotFrame <= 0) frameDecrement = false;
         frameDecrement ? shotFrame-- : shotFrame++;
         alienShotColor += 40;
@@ -441,6 +443,8 @@ game_state_t game_update(unsigned level) {
           }
         }
       }
+
+      if(explosion.explosion_interval > 0) draw_explosion(frame, ALIEN_GOLD);
 
       if ( mothership_is_active() ) {
         al_play_sample_instance(ufoSample);
@@ -523,6 +527,13 @@ static void draw_shield(unsigned shield) {
   }
 }
 
+static void draw_explosion(unsigned frame, unsigned color){
+  int srcWidth = al_get_bitmap_width(sprites.aliens_explotion[color]);
+  int srcHeight = al_get_bitmap_height(sprites.aliens_explotion[color]);
+  al_draw_scaled_bitmap(sprites.aliens_explotion[color], 0, 0, srcWidth, srcHeight, explosion.x, explosion.y, ALIENS_W, ALIENS_H, 0);
+  if(frame % 2) explosion.explosion_interval--;
+}
+
 static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h) {
   ALLEGRO_BITMAP *sprite = al_create_sub_bitmap(father, x, y, w, h);
   init_error(sprite, "sprite grab");
@@ -544,6 +555,7 @@ static void sprites_init() {
     sprites.aliens[1][i][1] = sprite_grab(sprites._sheet, xOffset+272, 22+(i%6)*74, 48, 32);
     sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+352, 22+(i%6)*74, 48, 32);
     sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+428, 22+(i%6)*74, 48, 32);
+    sprites.aliens_explotion[i] = sprite_grab(sprites._sheet, xOffset+512, 22+(i%6)*74, 48, 32);
   }
 
   // Recorte de los frames para las animaciones del disparo
