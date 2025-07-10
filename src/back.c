@@ -412,8 +412,6 @@ static bool aliens_update(unsigned current_level) {
   }
   movement_t last_movement;
   static movement_t prev_last_movement = NO_MOVEMENT;
-  #include <stdio.h>
-  printf("Row to move: %d\n", row_to_move);
   if ( (last_movement = aliens_update_position(row_to_move)) != NO_MOVEMENT )
     row_to_move = (row_to_move - 1) >= ALIENS_ROWS ? (ALIENS_ROWS - 1) : (row_to_move - 1);
   // Get next row with alive aliens
