@@ -501,7 +501,7 @@ static void init_error(bool state, const char *name) {
 
 game_state_t game_update(unsigned level, bool new_level) {
   if(new_level){ // Restart on new level
-    level_init(ALIENS_ROWS + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
+    level_init(ALIENS_ROWS-3 + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
     player_reset_on_new_level();
     if ( level == 0 ) player_reset_on_new_game();
   }
@@ -680,7 +680,7 @@ static void draw_mothership() {
 
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame) {
   int alienX = aliens_get_x(i, j), alienY = aliens_get_y(i, j);
-  ALLEGRO_BITMAP *alienSprite = sprites.aliens[sprite][color][aliensFrame];
+  ALLEGRO_BITMAP *alienSprite = sprites.aliens[alines_get_type(i,j)][color][aliensFrame];
   int srcWidth = al_get_bitmap_width(alienSprite);
   int srcHeight = al_get_bitmap_height(alienSprite);
   // Para ver la hitbox

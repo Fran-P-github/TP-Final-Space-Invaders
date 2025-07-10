@@ -26,6 +26,12 @@
 
 typedef enum{ LEVEL_NOT_DONE=0, PLAYER_WINS, ALIENS_WIN } level_state_t;
 
+typedef enum{
+  ALIEN_FAT=0,
+  ALIEN_WINGED,
+  ALIEN_SMALL
+} alien_type_t;
+
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
@@ -58,6 +64,8 @@ int aliens_get_x(unsigned i, unsigned j);
 int aliens_get_y(unsigned i, unsigned j);
 bool aliens_is_alive(unsigned i, unsigned j);
 int aliens_get_lives(unsigned i, unsigned j);
+alien_type_t alines_get_type(unsigned i, unsigned j);
+
 int alien_shot_get_x();
 int alien_shot_get_y();
 bool alien_shot_is_used();
