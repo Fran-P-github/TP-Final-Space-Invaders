@@ -2,7 +2,7 @@ CC := gcc
 # Puede ser allegro o rb
 PLATFORM ?= allegro
 FLAGS := -Wall
-OBJS := main.o front_$(PLATFORM).o back.o menu_$(PLATFORM).o
+OBJS := main.o front_$(PLATFORM).o back.o menu_$(PLATFORM).o scores.o
 
 ifeq ($(PLATFORM), allegro)
 ALFLAGS := $(shell pkg-config allegro-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_image-5 allegro_video-5 --libs --cflags)
@@ -31,6 +31,9 @@ back.o: back.c back.h
 
 menu_$(PLATFORM).o: menu_$(PLATFORM).c menu_$(PLATFORM).h general_defines.h
 	$(CC) $(FLAGS) $(ALFLAGS) -c menu_$(PLATFORM).c
+
+scores.o: scores.h scores.c
+	$(CC) $(FLAGS) -c scores.c
 
 clear:
 	rm -f *.o SpaceInvaders

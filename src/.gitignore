@@ -4,3 +4,6 @@ menu_allegro.o
 back.o
 front_allegro.o
 main.o
+scores.o
+scores_allegro.csv
+scores_rpi.csv
