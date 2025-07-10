@@ -25,6 +25,12 @@
  ******************************************************************************/
 
 typedef enum{ LEVEL_NOT_DONE=0, PLAYER_WINS, ALIENS_WIN } level_state_t;
+typedef struct{
+  int x;
+  int y;
+  int explosion_interval;
+}explosion_t;
+
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE

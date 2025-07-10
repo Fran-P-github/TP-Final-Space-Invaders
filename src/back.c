@@ -829,6 +829,9 @@ static void player_shot_update() {
         explosion.explosion_interval = 5;
         aliens[i][j].lives--;
         player.score += aliens[i][j].points;
+        explosion.x = aliens[i][j].x;
+        explosion.y = aliens[i][j].y;
+        explosion.explosion_interval = 5;
         break;
       }
     }
