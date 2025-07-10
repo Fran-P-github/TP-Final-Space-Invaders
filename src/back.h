@@ -25,12 +25,6 @@
  ******************************************************************************/
 
 typedef enum{ LEVEL_NOT_DONE=0, PLAYER_WINS, ALIENS_WIN } level_state_t;
-typedef struct{
-  int x;
-  int y;
-  int explosion_interval;
-}explosion_t;
-
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -41,7 +35,7 @@ unsigned long long get_millis();
 void back_init();
 
 // First level is level 0
-level_state_t back_update(unsigned int current_level);
+level_state_t back_update(unsigned int current_level, void (*alienDeath)(unsigned i, unsigned j));
 
 // aliens_rows/columns: number of aliens to spawn. ALIENS_ROWS/COLUMNS assumed if a grater number is given
 // For aliens_lives, 1 is assumed if 0 is given

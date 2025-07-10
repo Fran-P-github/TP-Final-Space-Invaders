@@ -37,7 +37,9 @@
 #define MAX_EVENT_WAIT_TIME 0.001
 // Floats para el volumen de los efectos de sonido
 #define VOLUME_PLAYER_SHOT .1
+#define VOLUME_PLAYER_DEATH .3
 #define VOLUME_ALIENS_MOVED .3
+#define VOLUME_ALIENS_DEATH .3
 #define VOLUME_UFO .1
 // Sprites
 #define SPRITE_ALIENS_NUM 3
@@ -77,17 +79,23 @@ typedef struct {
 
 } sprites_t;
 
+typedef struct{
+  int x;
+  int y;
+  int explosion_interval;
+}explosion_t;
+
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
  ******************************************************************************/
 
 extern const bool aliensMoved;
-extern explosion_t explosion;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+static void alien_death(unsigned i, unsigned j);
 static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color, unsigned char aliensFrame);
 static void draw_player();
@@ -128,6 +136,8 @@ static ALLEGRO_MIXER *mixer;
 // Sprites
 static sprites_t sprites;
 
+explosion_t explosion; // explosion struct
+
 // Punteros a los samples para el audio
 static ALLEGRO_SAMPLE *playerShotSound = NULL;
 static ALLEGRO_SAMPLE *playerDeathSound = NULL;
@@ -137,6 +147,8 @@ static ALLEGRO_SAMPLE *ufoSound = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerShotSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienMovedSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *ufoSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *alienDeathSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *playerDeathSample = NULL;
 
 // keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
@@ -185,16 +197,22 @@ game_state_t front_init() {
 
   // Se crean instancias de samples para el disparo del jugador y para el movimiento de los aliens
   playerShotSample = al_create_sample_instance(playerShotSound);
+  playerDeathSample = al_create_sample_instance(playerDeathSound);
   alienMovedSample = al_create_sample_instance(alienMovedSound);
+  alienDeathSample = al_create_sample_instance(alienDeathSound);
   ufoSample = al_create_sample_instance(ufoSound);
 
   al_attach_sample_instance_to_mixer(playerShotSample, mixer);
+  al_attach_sample_instance_to_mixer(playerDeathSample, mixer);
   al_attach_sample_instance_to_mixer(alienMovedSample, mixer);
+  al_attach_sample_instance_to_mixer(alienDeathSample, mixer);
   al_attach_sample_instance_to_mixer(ufoSample, mixer);
 
   // Se setean los valores predeterminados para cada audio.
   initAudioInstance(playerShotSample, VOLUME_PLAYER_SHOT, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(playerDeathSample, VOLUME_PLAYER_DEATH, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(alienMovedSample, VOLUME_ALIENS_MOVED, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(alienDeathSample, VOLUME_ALIENS_DEATH, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(ufoSample, VOLUME_UFO, ALLEGRO_PLAYMODE_LOOP);
 
   al_set_new_display_flags(ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
@@ -256,17 +274,21 @@ static void kill_all() {
   al_destroy_mixer(mixer);
   // Se matan los procesos relacionados al audio.
   kill_all_instances(
-      3, // Cantidad de instancias a destruir.
+      5, // Cantidad de instancias a destruir.
       playerShotSample,
+      playerDeathSample,
       alienMovedSample,
-      ufoSample);
+      alienDeathSample,
+      ufoSample
+    );
   kill_all_samples(
       5, // Cantidad de samples a destruir.
       playerShotSound,
       playerDeathSound,
       alienDeathSound,
       alienMovedSound,
-      ufoSound);
+      ufoSound
+    );
   al_uninstall_audio();
   sprites_deinit();
 }
@@ -343,7 +365,7 @@ game_state_t game_update(unsigned level) {
     if ( al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME) ) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
-          level_state = back_update(level);
+          level_state = back_update(level, alien_death);
           redraw = true;
           ++frame;
           moveThisFrame = false;
@@ -464,6 +486,15 @@ game_state_t game_update(unsigned level) {
   } else {
     return CLOSED;
   }
+}
+
+static void alien_death(unsigned i, unsigned j){
+  // Play animation
+  explosion.x = aliens_get_x(i, j);
+  explosion.y = aliens_get_y(i, j);
+  explosion.explosion_interval = 5;
+  // Play sound effect
+  al_play_sample_instance(alienDeathSample);
 }
 
 static void draw_mothership() {
