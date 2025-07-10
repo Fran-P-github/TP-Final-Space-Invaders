@@ -827,8 +827,29 @@ static void draw_shield(unsigned shield) {
   unsigned i, j;
   for ( i = 0; i < SHIELD_H; ++i ) {
     for ( j = 0; j < SHIELD_W; ++j ) {
-      if ( shield_get_lives(shield, i, j) )
-        al_draw_filled_rectangle(shield_get_x(shield, i, j), shield_get_y(shield, i, j), shield_get_x(shield, i, j) + SHIELD_BLOCK_W, shield_get_y(shield, i, j) + SHIELD_BLOCK_H, al_map_rgb(255, 255, 255));
+      int lives = shield_get_lives(shield, i, j);
+      if (lives > 0) {
+          // Block coordinates
+          float x = shield_get_x(shield, i, j);
+          float y = shield_get_y(shield, i, j);
+
+          // Draw white block in background
+          al_draw_filled_rectangle(x, y, x + SHIELD_BLOCK_W, y + SHIELD_BLOCK_H, al_map_rgb(255, 255, 255));
+
+          // Draw segments dependeing on lives lost
+          int lost = SHIELD_BLOCK_LIVES - lives;
+          int max_lines = 60;
+          int lines = (lost * max_lines) / SHIELD_BLOCK_LIVES;
+
+          const float SEGMENT_LENGTH = 3.0;
+          const float SEGMENT_THICKNESS = 1.0;
+
+          for(int p = 0; p < lines; ++p) {
+              float px = x + rand_between_f(0, SHIELD_BLOCK_W - SEGMENT_LENGTH);
+              float py = y + rand_between_f(0, SHIELD_BLOCK_H);
+              al_draw_line(px, py, px + SEGMENT_LENGTH, py, al_map_rgb(0, 0, 0), SEGMENT_THICKNESS);
+          }
+      }
     }
   }
 }

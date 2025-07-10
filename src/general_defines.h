@@ -21,7 +21,6 @@
  ******************************************************************************/
 
 #define PLAYER_INITIAL_LIVES 3
-#define SHIELD_BLOCK_LIVES 2
 
 #define MOTHERSHIP_POINTS_SILVER 40
 #define MOTHERSHIP_POINTS_GOLD 60
@@ -50,8 +49,8 @@
 #define MOTHERSHIP_H 60
 #define MOTHERSHIP_MARGIN 0
 
-#define PLAYER_W 80  //10
-#define PLAYER_H 40 //20
+#define PLAYER_W 80
+#define PLAYER_H 40
 #define PLAYER_MARGIN 10 // Que tan separado debe estar de margenes laterales e inferior
 
 #define ALIENS_ROWS 6
@@ -66,7 +65,7 @@
 #define SHOT_H 19//14
 
 #define SHIELDS_CANT 3
-#define SHIELD_BLOCK_LIVES 2
+#define SHIELD_BLOCK_LIVES 3
 #define SHIELD_BLOCK_W 12
 #define SHIELD_BLOCK_H 12
 #define SHIELD_W 7
@@ -104,6 +103,7 @@
 #define SHOT_H 1
 
 #define SHIELDS_CANT 2
+#define SHIELD_BLOCK_LIVES 1
 #define SHIELD_BLOCK_W 1
 #define SHIELD_BLOCK_H 1
 #define SHIELD_W 3
