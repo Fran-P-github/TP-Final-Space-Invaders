@@ -28,7 +28,7 @@
 #define FPS 6
 
 // Player joystick defnitions
-#define JOY_THRESHOLD_SLOW  20
+#define JOY_THRESHOLD_SLOW  50
 #define JOY_THRESHOLD_FAST  100
 #define SLOW_MOVEMENT_WAIT_TIME 0.4
 #define FAST_MOVEMENT_WAIT_TIME 0.1
@@ -54,7 +54,7 @@ typedef enum{
 // Sizes to use font3x5 variables
 #define CHAR_WIDTH 3
 #define CHAR_HEIGHT 5
-#define CHAR_SPACING 1
+#define CHAR_SPACING 1 // Space between letters
 #define LINE_SPACING 1
 
 /*******************************************************************************
@@ -86,7 +86,9 @@ extern const bool playerDied;
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+ // Draws a filled rectangle. Used by all other draw functions
 static void draw_rectangle(int x1, int y1, int x2, int y2);
+
 static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
@@ -96,31 +98,45 @@ static void draw_shield(unsigned shield);
 
 static void wait_button_press();
 static void wait_button_release();
-// Returns: true when going into PAUSE. false otherwise
+
+// Returns true when going into PAUSE. false otherwise
 static bool update_joystick();
+// Returns true when pause condition is trigered: holding button for at least BUTTON_PAUSE_TIME seconds
 static bool check_pause(joyinfo_t joystick);
+
 static movement_x_t movement_read_x(int joystick_x_coordinate);
 static movement_y_t movement_read_y(int joystick_y_coordinate);
 
+// Draws a 3x3 icon to x,y position
 static void draw3x3(const char icon[3][4], unsigned x, unsigned y);
+
+// Draws text to x,y position
 static void draw_text_wrapped(const char* str, int x, int y);
-static void blink_string(char buf[], unsigned size, unsigned x, unsigned y);
+
+// Blinks string in x,y position
+static void blink_string(char buf[], unsigned x, unsigned y);
 
 // Returns true when reaching logo end
 static bool logo_menu_display();
 
+// Returns true after showing last place in leaderboard
 static bool leaderboard_menu_display();
 
+// Show a message at the end of each level
 static void level_end_animation(level_state_t level_state);
+
+// Reads player name (3 letters). Returns to name string. Promt appears in x,y
 static void get_player_name(char name[4], unsigned x, unsigned y);
 
+// Plays game sounds
 static void sounds_update();
 
-#define play_sound_with_duration(sound, duration) \
+// Function to play a sound. Waits duration_ms before playing again
+#define play_sound_with_duration(sound, duration_ms) \
 { \
     static unsigned long long start = 0; \
     double elapsed = (double)(get_millis() - start); \
-    if(elapsed > (duration)){ \
+    if(elapsed > (duration_ms)){ \
         start = get_millis(); \
         playSoundFromMemory((sound), SDL_MIX_MAXVOLUME); \
     } \
@@ -185,6 +201,7 @@ game_state_t game_pause(){
         " * "
     };
 
+    // Draw menu
     disp_clear();
     draw3x3(resume, 1, ARROW_Y+2);
     draw3x3(menu, 6, ARROW_Y+2);
@@ -195,18 +212,19 @@ game_state_t game_pause(){
     draw_text_wrapped(buf, 8, 11);
     disp_update();
 
-    // Wait for button release
+    // Wait for button release before allowing to select any options
     wait_button_release();
 
-    pause_option_t selected = RESUME;
+    pause_option_t selected = RESUME; // Current option pointed by arrow
 
     while (true) {
+        // Read joystick and move arrow
         joyinfo_t js = joy_read();
         movement_x_t pos;
         static movement_x_t prev_pos = NO_MOVE_X;
 
-        if (js.x < -50) pos = MOVE_LEFT_FAST;
-        else if (js.x > 50) pos = MOVE_RIGHT_FAST;
+        if (js.x < -JOY_THRESHOLD_SLOW) pos = MOVE_LEFT_FAST;
+        else if (js.x > JOY_THRESHOLD_SLOW) pos = MOVE_RIGHT_FAST;
         else pos = NO_MOVE_X;
         if(pos != prev_pos){
             if(pos == MOVE_RIGHT_FAST) selected++;
@@ -217,14 +235,14 @@ game_state_t game_pause(){
         }
         prev_pos = pos;
 
-        // Draw options
+        // Draw arrow
         for (int i = 0; i < MENU_OPTIONS; ++i) {
             dcoord_t coord = { .x = ARROW_X+i*ARROW_SPACING, .y = ARROW_Y };
             disp_write(coord, i == selected ? D_ON : D_OFF);
         }
         disp_update();
 
-        // Selección con botón
+        // Selection on button press
         if (js.sw == J_PRESS) {
             wait_button_release();
             disp_clear();
@@ -241,7 +259,8 @@ game_state_t game_pause(){
             }
         }
     }
-    return GAME;
+    
+    return GAME; // Will never be reached
 }
 
 game_state_t menu(){
@@ -270,6 +289,7 @@ game_state_t menu(){
 }
 
 game_state_t game_update(unsigned level){
+    // Initial level config
     level_init(ALIENS_ROWS-1+level/2, ALIENS_COLUMNS-1+level/3, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
     player_reset_on_new_level();
     if(level==0) player_reset_on_new_game();
@@ -283,6 +303,7 @@ game_state_t game_update(unsigned level){
             return PAUSE;
         }
 
+        // New frame detection and game logic
         static unsigned long long frame_start = 0;
         double frame_elapsed = (double)(get_millis() - frame_start) / 1000;
         const double frame_time = 1 / FPS; // Seconds
@@ -291,18 +312,19 @@ game_state_t game_update(unsigned level){
             frame_start = get_millis();
             level_state = back_update(level);
             sounds_update();
+            unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
+            if(alien_column_to_shoot >= 0){
+                alien_try_shoot(alien_column_to_shoot);
+            }
             redraw = true;
         }
 
+        // Draw new frame
         if(redraw){
             redraw = false;
             disp_clear();
             unsigned i, j;
             draw_player_shot();
-            unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
-            if(alien_column_to_shoot >= 0){
-                alien_try_shoot(alien_column_to_shoot);
-            }
             draw_alien_shot();
             for (i=0; i<SHIELDS_CANT; ++i){
                 draw_shield(i);
@@ -335,22 +357,25 @@ game_state_t game_update(unsigned level){
 void endgame(){
     disp_clear();
 
+    // Show plater score
     char score[10];
     snprintf(score, sizeof(score), "%d", player_get_score());
     disp_clear();
-    blink_string(score, strlen(score), 0, 3);
+    blink_string(score, 0, 3);
 
+    // Ask for player name
     draw_text_wrapped("NAME", 0, 3);
     disp_update();
     char name[NAME_LEN+1]; // 3 letters
     get_player_name(name, 2, 10);
     disp_clear();
-    blink_string(name, sizeof(name)-1, 2, 5);
+    blink_string(name, 2, 5);
 
+    // Check hi-scores and save score if it is a new best
     highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
     if( try_insert_score(top_scores, name, player_get_score()) ){
         disp_clear();
-        blink_string("NEW BEST", sizeof("NEW BEST")-1, 0, 3);
+        blink_string("NEW BEST", 0, 3);
     }
     save_scores(top_scores);
 }
@@ -371,10 +396,10 @@ static void sounds_update(){
     }
 
     if(aliensMoved){
-        play_sound_with_duration(alienMovedSound, 40); // TODO: retocar este tiempo para que se escuche mejor el sonido, o cambiar intervalos en el back
+        play_sound_with_duration(alienMovedSound, 40);
     }
 
-    {
+    { // Checks if an alien just died
         static int last_aliens_alive = 0;
         if(!last_aliens_alive) last_aliens_alive = total_aliens_alive();
 
@@ -388,8 +413,8 @@ static void sounds_update(){
 static bool leaderboard_menu_display(){
     static bool show_score = true; // Show TOP number when false
     highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
-    static unsigned current_score = 0;
-    static unsigned cont_this_score = 0;
+    static unsigned current_score = 0; // Score currently shown
+    static unsigned cont_this_score = 0; // Counts up to displays_per_score, to show each score multiple times before going to the next
     const unsigned displays_per_score = 2;
 
     static unsigned long long start = 0;
@@ -409,6 +434,7 @@ static bool leaderboard_menu_display(){
         cont_this_score++;
     }
 
+    // Print score to display
     char buf[5];
     if(show_score) snprintf(buf, sizeof(buf), "%4d", top_scores[current_score].score);
     else snprintf(buf, sizeof(buf), "TOP%d", current_score+1);
@@ -435,7 +461,9 @@ static bool logo_menu_display(){
         "  *   *  **  * *  *   * *   * *     * *       *        ",
         "***** *   *   *   *   * ****  ***** *  *   ***         "
     };
-    static unsigned column = INTRO_LETTERS_WIDTH - 4;
+    
+    // Current first column
+    static unsigned column = INTRO_LETTERS_WIDTH - 8; // -68to start with letters more to the right
 
     static unsigned long long start = 0;
     double elapsed = (double)(get_millis() - start) / 1000;
@@ -470,7 +498,7 @@ static bool logo_menu_display(){
 static void level_end_animation(level_state_t level_state){
     disp_clear();
     char buf[11];
-    int x_offset;
+    int x_offset; // Horizontal offset for message
     if(level_state == PLAYER_WINS){
         snprintf(buf, sizeof(buf), "YOUWIN");
         x_offset = 3;
@@ -494,7 +522,7 @@ static void draw3x3(const char icon[3][4], unsigned x, unsigned y){
     }
 }
 
-static void blink_string(char buf[], unsigned size, unsigned x, unsigned y){
+static void blink_string(char buf[], unsigned x, unsigned y){
     for(unsigned i=0; i<3; ++i){ // Score blinks 3 times
         usleep(300000); // 0.3 sec
         draw_text_wrapped(buf, x, y);
@@ -508,8 +536,8 @@ static void blink_string(char buf[], unsigned size, unsigned x, unsigned y){
 static void get_player_name(char name[4], unsigned x, unsigned y){
     static const char letters[LETTERS_CANT+1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    unsigned index = 0; // Current letter
-    unsigned current_letter = 0;
+    unsigned index = 0; // Current character in name
+    unsigned current_letter = 0; // Current letter in letters array
     movement_y_t prev_movement = NO_MOVE_Y;
 
     name[0] = name[1] = name[2] = name[3] = '\0'; // Clean
@@ -537,7 +565,7 @@ static void get_player_name(char name[4], unsigned x, unsigned y){
         if(js.sw == J_PRESS){
             was_pressed = true;
         }else if(was_pressed && js.sw == J_NOPRESS){
-            name[index++] = letters[current_letter];
+            name[index++] = letters[current_letter]; // Save letter to name, got to next letter
             current_letter = 0;
             was_pressed = false;
         }
@@ -573,7 +601,7 @@ static void draw_text_wrapped(const char *str, int x, int y) {
             }
             x += CHAR_WIDTH + CHAR_SPACING;
         }
-        // Letter (upper case)
+        // Letter. Lower case letters will be printed as upper case
         else if ((c=toupper(c)) >= 'A' && c <= 'Z') {
             const char (*glyph)[4] = LETTER_FONT[c - 'A'];
             for (int i = 0; i < CHAR_HEIGHT; ++i) {
@@ -618,9 +646,9 @@ static bool update_joystick(){
         if(check_pause(joystick)){
             return true;
         }
-        if(playerDied) return false;
+        if(playerDied) return false; // Nothing to check while player is dead
 
-        if(joystick.sw == J_PRESS && player_try_shoot()){
+        if(joystick.sw == J_PRESS && player_try_shoot()){ // Play shot sound if player was allowrd to shoot
             playSoundFromMemory(playerShotSound, SDL_MIX_MAXVOLUME);
         }
 
@@ -630,21 +658,17 @@ static bool update_joystick(){
         double player_elapsed = (double)(get_millis() - player_time_start) / 1000;
         double player_wait_time =   movement == MOVE_LEFT_FAST || movement == MOVE_RIGHT_FAST ? FAST_MOVEMENT_WAIT_TIME :
                                     movement == MOVE_LEFT_SLOW || movement == MOVE_RIGHT_SLOW ? SLOW_MOVEMENT_WAIT_TIME :
-                                    99999;
+                                    99999; // Never to be elapsed
 
         if(movement != prev_movement || player_elapsed > player_wait_time){
             player_time_start = get_millis();
 
             switch(movement){
                 case MOVE_RIGHT_SLOW:
-                        player_move_right();
-                    break;
                 case MOVE_RIGHT_FAST:
                         player_move_right();
                     break;
                 case MOVE_LEFT_SLOW:
-                        player_move_left();
-                    break;
                 case MOVE_LEFT_FAST:
                         player_move_left();
                     break;
@@ -665,12 +689,13 @@ static bool check_pause(joyinfo_t joystick){
         if(!was_pressed) {
             pause_time_start = get_millis();  // Button press just started
         }
+        was_pressed = true;
+
         double pause_elapsed = (double)(get_millis() - pause_time_start) / 1000;
         if(pause_elapsed >= BUTTON_PAUSE_TIME) {
             was_pressed = false;
             return true;  // Game paused
         }
-        was_pressed = true;
     } else {
         was_pressed = false;
     }
@@ -720,7 +745,7 @@ static void draw_rectangle(int x1, int y1, int x2, int y2){
     int i, j;
     for(i = x1; i <= x2; i++){
         for(j = y1; j <= y2; j++){
-            if(i>=0 && j>=0 && i<WORLD_WIDTH && j<WORLD_HEIGHT)
+            if(i>=0 && j>=0 && i<WORLD_WIDTH && j<WORLD_HEIGHT) // Turning on LED out of bounds is an error
                 disp_write((dcoord_t){.x=i, .y=j}, D_ON); // LED {i,j} turned on
         }
     } 
@@ -735,7 +760,7 @@ static void draw_alien(unsigned i, unsigned j){
 }
 
 static void draw_player(){
-    if(!playerDied){
+    if(!playerDied){ // Do not draw while dead
         draw_rectangle(player_get_x(), player_get_y(), player_get_x()+PLAYER_W-1, player_get_y()+PLAYER_H-1);
     }
 }

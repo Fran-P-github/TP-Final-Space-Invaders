@@ -76,7 +76,6 @@ typedef struct {
   int x, y;
   int lives;
   int points; // Point given to player when killed
-  int frame;
 } alien_t;
 
 typedef struct {
@@ -248,10 +247,6 @@ int player_shot_get_y() {
 }
 bool player_shot_is_used() {
   return player_shot.is_used;
-}
-
-int aliens_get_frame(unsigned i, unsigned j){
-  return aliens[i][j].frame;
 }
 
 int aliens_get_x(unsigned i, unsigned j) {
@@ -526,7 +521,6 @@ static void aliens_init(unsigned rows, unsigned cols, unsigned lives) {
       aliens[i][j].y = y;
       aliens[i][j].lives = (i < rows && j < cols) ? lives : 0;
       aliens[i][j].points = ALIENS_POINTS;
-      aliens[i][j].frame = 0;
 
       x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
     }
@@ -737,10 +731,7 @@ static movement_t aliens_update_position(unsigned row) {
 
   aliensMoved = elapsed >= aliens_move_interval;
   if ( elapsed >= aliens_move_interval) {
-
-    for(int i = 0; i < ALIENS_COLUMNS; i++)
-      aliens[row][i].frame = !aliens[row][i].frame; // Cambia de frame solo en la fila que se movio
-
+    
     start = get_millis();
     switch ( movement ) {
       case MOVEMENT_RIGHT:
