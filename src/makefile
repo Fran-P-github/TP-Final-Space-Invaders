@@ -25,7 +25,7 @@ endif
 
 FLAGS += -DPLATFORM=$(DEFINE)
 
-SpaceInvaders: $(OBJS)
+SpaceInvaders: $(OBJS) general_defines.h
 	$(CC) $(FLAGS) $(OBJS) -o SpaceInvaders $(ALFLAGS) $(RBFLAGS)
 
 main.o: main.c general_defines.h back.h front_$(PLATFORM).h

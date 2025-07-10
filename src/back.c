@@ -232,6 +232,9 @@ int mothership_get_y() {
 bool mothership_is_active() {
   return mothership.is_active;
 }
+int mothership_get_points(){
+  return mothership.points;
+}
 
 int player_get_x() {
   return player.x;
@@ -260,6 +263,9 @@ int aliens_get_x(unsigned i, unsigned j) {
 }
 int aliens_get_y(unsigned i, unsigned j) {
   return aliens[i][j].y;
+}
+int aliens_get_points(unsigned i, unsigned j){
+  return aliens[i][j].points;
 }
 bool aliens_is_alive(unsigned i, unsigned j) {
   return aliens[i][j].lives;
@@ -457,8 +463,17 @@ static void mothership_update() {
   if ( !mothership.is_active ) {
     spawn_right = rand() % 2;
 
+    // Select points for mothership
+    int r = rand_between(1, 100); // Random 1 to 100
+    if(r <= 57) {
+        mothership.points = MOTHERSHIP_POINTS_SILVER;  // ~57%
+    } else if(r <= 86) {
+        mothership.points = MOTHERSHIP_POINTS_GOLD;    // ~29%
+    } else {
+        mothership.points = MOTHERSHIP_POINTS_NEON; // ~14%
+    }
+
     mothership.is_active = true;
-    mothership.points = 5 * rand_between(2, 16); // 10 to 80, 5 steps
     mothership.y = MOTHERSHIP_MARGIN;
     if ( spawn_right ) {
       mothership.x = WORLD_WIDTH;
@@ -526,6 +541,16 @@ static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsign
       }else{
         aliens[i][j].type = ALIEN_SMALL;
         aliens[i][j].points = ALIEN_SMALL_POINTS;
+      }
+      
+      // 2% neon, 4% gold, 8%, silver
+      int r = rand_between(1, 100);
+      if(r <= 2) {
+          aliens[i][j].points = ALIEN_POINTS_NEON;
+      } else if(r <= 6) {
+          aliens[i][j].points = ALIEN_POINTS_GOLD;
+      } else if(r <= 14) {
+          aliens[i][j].points = ALIEN_POINTS_SILVER;
       }
 
       aliens[i][j].x = x;
@@ -829,9 +854,10 @@ static void player_shot_update(void (*alienDeath)(unsigned i, unsigned j)) {
     for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
       if ( aliens[i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x + ALIENS_W - 1, aliens[i][j].y + ALIENS_H - 1) ) {
         player_shot.is_used = false;
-        aliens[i][j].lives--;
-        if(aliens[i][j].lives == 0) alienDeath(i, j);
-        player.score += aliens[i][j].points;
+        if(--aliens[i][j].lives == 0){
+          alienDeath(i, j);
+          player.score += aliens[i][j].points;
+        }
         break;
       }
     }
