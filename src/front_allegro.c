@@ -90,6 +90,7 @@ typedef enum {
   UFO_NEON,
   UFO_RETRO,
   UFO_GREY,
+  UFO_TOTAL_COLORS
 } mothership_color_t;
 
 typedef struct{
@@ -105,7 +106,7 @@ typedef struct {
   ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
   ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
   ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];        // 2 tipos de disparos, 6 estados de animacion
-  ALLEGRO_BITMAP *ufo[ALIEN_TOTAL_COLORS][2];                       // 11 colores de naves nodrizas, 2 estados de animacion
+  ALLEGRO_BITMAP *ufo[UFO_TOTAL_COLORS][2];                       // 11 colores de naves nodrizas, 2 estados de animacion
 } sprites_t;
 
 typedef struct{
@@ -679,6 +680,17 @@ game_state_t game_update(unsigned level, bool new_level) {
                   alienColor = ALIEN_RETRO; // Never to be reached
                   break;
               }
+              switch(aliens_get_points(i,j)){
+                case ALIEN_POINTS_SILVER:
+                  alienColor = ALIEN_SILVER;
+                  break;
+                case ALIEN_POINTS_GOLD:
+                  alienColor = ALIEN_GOLD;
+                  break;
+                case ALIEN_POINTS_NEON:
+                  alienColor = ALIEN_NEON;
+                  break;
+              }
               draw_alien(i, j, alienSprite, alienColor, aliensFrame);
             }
           }
@@ -689,7 +701,19 @@ game_state_t game_update(unsigned level, bool new_level) {
 
       if ( mothership_is_active() ) {
         al_play_sample_instance(ufoSample);
-        draw_mothership(ALIEN_GOLD);
+        mothership_color_t color;
+        switch(mothership_get_points()){
+          case MOTHERSHIP_POINTS_SILVER:
+            color = UFO_SILVER;
+            break;
+          case MOTHERSHIP_POINTS_GOLD:
+            color = UFO_GOLD;
+            break;
+          case MOTHERSHIP_POINTS_NEON:
+            color = UFO_NEON;
+            break;
+        }
+        draw_mothership(color);
       } else {
         al_stop_sample_instance(ufoSample);
       }
