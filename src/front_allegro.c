@@ -70,6 +70,20 @@ typedef enum {
     ALIEN_TOTAL_COLORS
 } alien_color_t;
 
+typedef enum {
+  UFO_GREEN = 0,
+  UFO_ORANGE,
+  UFO_PINK,
+  UFO_LPINK,
+  UFO_WHITE,
+  UFO_YELLOW,
+  UFO_GOLD,
+  UFO_SILVER,
+  UFO_NEON,
+  UFO_RETRO,
+  UFO_GREY,
+} mothership_color_t;
+
 typedef struct {
   ALLEGRO_BITMAP *_sheet;
   ALLEGRO_BITMAP *_sheet_shot;
@@ -648,7 +662,7 @@ game_state_t game_update(unsigned level, bool new_level) {
 
       if ( mothership_is_active() ) {
         al_play_sample_instance(ufoSample);
-        draw_mothership();
+        draw_mothership(ALIEN_GOLD);
       } else {
         al_stop_sample_instance(ufoSample);
       }
@@ -675,8 +689,14 @@ static void alien_death(unsigned i, unsigned j){
   al_play_sample_instance(alienDeathSample);
 }
 
-static void draw_mothership() {
-  al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(128, 0, 255));
+static void draw_mothership(mothership_color_t color) {
+  //al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(128, 0, 255));
+  ALLEGRO_BITMAP* ufoSprite = sprites.ufo[color][0];
+  int srcWidth = al_get_bitmap_width(ufoSprite), srcHeight = al_get_bitmap_height(ufoSprite);
+  al_draw_scaled_bitmap(
+    ufoSprite, 0, 0, srcWidth, srcHeight,
+    mothership_get_x(), mothership_get_y(),
+    MOTHERSHIP_W, MOTHERSHIP_H, 0);
 }
 
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame) {
@@ -767,11 +787,21 @@ static void sprites_init() {
   }
 
   // Recorte de la nave nodriza
-  for(int i = 0; i < 3; i++){
-    for(int j = 0; j < 11; j++){
-
+  // 23 es el numero total de sprites
+  #include <stdio.h>
+  bool frame = 0;
+  // 3 filas de sprites
+  int i, j, k;
+  for(j = 0; j < 2; j++){
+    for(k = 0, i = j*5; k+frame < 6 && i < 10; (frame ? (i++,k++) : i), frame = !frame){
+      sprites.ufo[i][frame] = sprite_grab(sprites._sheet, 4-j*4+115*k+(k+frame-j)*95+12*frame, (j*75)+450, 95, 65);
+      //printf("sprites.ufo[%d][%d]: (%d, %d, %d, %d) | k: %d\n", i, frame, 4-j*4+115*k+(k+frame-j)*95+12*frame, (j*75)+450, 95, 65, k);
     }
   }
+  // Agarrar ultimos 2 sprites manualmente...
+  sprites.ufo[10][0] = sprite_grab(sprites._sheet, 1054, 525, 95, 65);
+  sprites.ufo[10][1] = sprite_grab(sprites._sheet, 12, 600, 95, 65);
+
   // Recorte de los frames para las animaciones del disparo
   int xSpacing, ySpacing = 0;
   for(int j = 0; j < SPRITE_SHOT_NUM; j++){
