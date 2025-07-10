@@ -134,8 +134,6 @@ static bool aliens_update(unsigned current_level);
 static void mothership_update();
 static bool shots_update(void (*alienDeath)(unsigned i, unsigned j)); // returns true when aliens hit player, also gets callback function to handle alien death
 
-static int rand_between(int lo, int hi);
-
 // Detects collition between a and b
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2);
 
@@ -217,6 +215,14 @@ unsigned long long get_millis() {
 #endif
 }
 
+int rand_between(int lo, int hi) {
+  return lo + rand() % (hi - lo + 1);
+}
+
+float rand_between_f(float lo, float hi){
+    return lo + ((float)rand() / (float)RAND_MAX) * (hi - lo);
+}
+
 int mothership_get_x() {
   return mothership.x;
 }
@@ -261,17 +267,15 @@ bool aliens_is_alive(unsigned i, unsigned j) {
 int aliens_get_lives(unsigned i, unsigned j) {
   return aliens[i][j].lives;
 }
-double aliens_get_move_interval() {
-  return aliens_move_interval;
-}
 alien_type_t alines_get_type(unsigned i, unsigned j){
   return aliens[i][j].type;
 }
-void aliens_set_move_interval(double interval) {
-  aliens_move_interval = interval;
-}
 int alien_shot_get_x() {
   return alien_shot.x;
+}
+float aliens_get_relative_speed(){
+  return (ALIENS_MOVE_MAX_INTERVAL - aliens_move_interval) /
+           (ALIENS_MOVE_MAX_INTERVAL - ALIENS_MOVE_MIN_INTERVAL);
 }
 int alien_shot_get_y() {
   return alien_shot.y;
@@ -299,19 +303,17 @@ player_t *get_player() {
 alien_t (*get_aliens(void))[ALIENS_ROWS][ALIENS_COLUMNS] {
   return &aliens;
 }
-double *get_aliens_move_interval() {
-  return &aliens_move_interval;
-}
 
 void back_init() {
   srand(time(NULL));
   player_init();
 }
 
-void level_init(unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives) {
+void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives) {
   if(!aliens_lives_min) aliens_lives_min = 1;
   aliens_init(aliens_rows, aliens_cols, aliens_lives_min, aliens_lives_max);
   shields_init(shield_block_lives);
+  update_aliens_speed(level); // Set aliens_move_interval on level start
 }
 
 int get_best_alien_column_to_shoot() {
@@ -476,10 +478,6 @@ static void mothership_update() {
     }
     mothership.x += MOTHERSHIP_DX;
   }
-}
-
-static int rand_between(int lo, int hi) {
-  return lo + rand() % (hi - lo + 1);
 }
 
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2) {

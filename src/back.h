@@ -37,6 +37,8 @@ typedef enum{
  ******************************************************************************/
 
 unsigned long long get_millis();
+int rand_between(int lo, int hi);
+float rand_between_f(float lo, float hi);
 
 void back_init();
 
@@ -45,7 +47,7 @@ level_state_t back_update(unsigned int current_level, void (*alienDeath)(unsigne
 
 // aliens_rows/columns: number of aliens to spawn. ALIENS_ROWS/COLUMNS assumed if a grater number is given
 // For aliens_lives, 1 is assumed if 0 is given
-void level_init(unsigned int aliens_rows, unsigned int aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives);
+void level_init(unsigned current_level, unsigned int aliens_rows, unsigned int aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives);
 
 void player_reset_on_new_level();
 void player_reset_on_new_game();
@@ -69,8 +71,7 @@ alien_type_t alines_get_type(unsigned i, unsigned j);
 int alien_shot_get_x();
 int alien_shot_get_y();
 bool alien_shot_is_used();
-double aliens_get_move_interval();
-void aliens_set_move_interval(double interval);
+float aliens_get_relative_speed();
 int get_best_alien_column_to_shoot(); // Returns column above player, or column above some shield block if no aliens are above player, or -1 if aliens wait to shoot
 unsigned total_aliens_alive();
 
