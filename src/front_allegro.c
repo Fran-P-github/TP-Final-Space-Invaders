@@ -43,6 +43,8 @@
 #define VOLUME_ALIENS_DEATH .3
 #define VOLUME_UFO .1
 // Sprites
+#define ALIEN_SCALE_X 40
+#define ALIEN_SCALE_Y 40
 #define SPRITE_ALIENS_NUM 3
 #define SPRITE_SHOT_FRAMES 6
 #define SPRITE_SHOT_W 3
@@ -753,7 +755,6 @@ static ALLEGRO_COLOR random_star_color() {
     }
 }
 
-
 static void alien_death(unsigned i, unsigned j){
   // Play animation
   explosion.x = aliens_get_x(i, j);
@@ -774,13 +775,13 @@ static void draw_mothership(mothership_color_t color) {
 }
 
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame) {
-  int alienX = aliens_get_x(i, j), alienY = aliens_get_y(i, j);
+  int alienX = aliens_get_x(i, j) - ALIEN_SCALE_X/2, alienY = aliens_get_y(i, j) - ALIEN_SCALE_Y/2;
   ALLEGRO_BITMAP *alienSprite = sprites.aliens[alines_get_type(i,j)][color][aliensFrame];
-  int srcWidth = al_get_bitmap_width(alienSprite);
-  int srcHeight = al_get_bitmap_height(alienSprite);
+  int srcWidth = al_get_bitmap_width(alienSprite), srcHeight = al_get_bitmap_height(alienSprite);
+  int dWidth = ALIENS_W + ALIEN_SCALE_X, dHeight = ALIENS_H + ALIEN_SCALE_Y;
   // Para ver la hitbox
-  // al_draw_rectangle(alienX, alienY, alienX + ALIENS_W, alienY + ALIENS_H, al_map_rgb(255, 0, 0), 1);
-  al_draw_scaled_bitmap(alienSprite, 0, 0, srcWidth, srcHeight, alienX, alienY, ALIENS_W, ALIENS_H, 0);
+  //al_draw_rectangle(aliens_get_x(i, j), aliens_get_y(i, j), aliens_get_x(i, j) + ALIENS_W, aliens_get_y(i, j) + ALIENS_H, al_map_rgb(255, 0, 0), 1);
+  al_draw_scaled_bitmap(alienSprite, 0, 0, srcWidth, srcHeight, alienX, alienY, dWidth, dHeight, 0);
 }
 
 static void draw_player() {
@@ -848,35 +849,31 @@ static void sprites_init() {
   sprites._sheet_shot = al_load_bitmap(SPRITESHEETSHOT);
   init_error(sprites._sheet_shot, "spritesheet_shot");
 
+  // Alien sprites
   int xOffset = 0;
   for(int i = 0; i < ALIEN_TOTAL_COLORS; i++){
-    if(i >= 6) xOffset = 578;
-    sprites.aliens[0][i][0] = sprite_grab(sprites._sheet, xOffset+20 , 22+(i%6)*74, 48, 32);
-    sprites.aliens[0][i][1] = sprite_grab(sprites._sheet, xOffset+104, 22+(i%6)*74, 48, 32);
-    sprites.aliens[1][i][0] = sprite_grab(sprites._sheet, xOffset+188, 22+(i%6)*74, 48, 32);
-    sprites.aliens[1][i][1] = sprite_grab(sprites._sheet, xOffset+272, 22+(i%6)*74, 48, 32);
-    sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+352, 22+(i%6)*74, 48, 32);
-    sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+428, 22+(i%6)*74, 48, 32);
+    if(i >= 6) xOffset = 577;
+    sprites.aliens[0][i][0] = sprite_grab(sprites._sheet, xOffset+8,  4+(i%6)*74, 72, 70); // 20, 22+(i%6)*74, 48, 32
+    sprites.aliens[0][i][1] = sprite_grab(sprites._sheet, xOffset+92,  4+(i%6)*74, 72, 70); // 104, 22...
+    sprites.aliens[1][i][0] = sprite_grab(sprites._sheet, xOffset+176, 4+(i%6)*74, 72, 70);
+    sprites.aliens[1][i][1] = sprite_grab(sprites._sheet, xOffset+260, 4+(i%6)*74, 72, 70);
+    sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+340, 4+(i%6)*74, 72, 70);
+    sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+416, 4+(i%6)*74, 72, 70);
     sprites.aliens_explotion[i] = sprite_grab(sprites._sheet, xOffset+512, 22+(i%6)*74, 48, 32);
   }
 
-  // Recorte de la nave nodriza
-  // 23 es el numero total de sprites
-  #include <stdio.h>
+  // UFO sprites
   bool frame = 0;
-  // 3 filas de sprites
   int i, j, k;
   for(j = 0; j < 2; j++){
     for(k = 0, i = j*5; k+frame < 6 && i < 10; (frame ? (i++,k++) : i), frame = !frame){
       sprites.ufo[i][frame] = sprite_grab(sprites._sheet, 4-j*4+115*k+(k+frame-j)*95+12*frame, (j*75)+450, 95, 65);
-      //printf("sprites.ufo[%d][%d]: (%d, %d, %d, %d) | k: %d\n", i, frame, 4-j*4+115*k+(k+frame-j)*95+12*frame, (j*75)+450, 95, 65, k);
     }
   }
-  // Agarrar ultimos 2 sprites manualmente...
   sprites.ufo[10][0] = sprite_grab(sprites._sheet, 1054, 525, 95, 65);
   sprites.ufo[10][1] = sprite_grab(sprites._sheet, 12, 600, 95, 65);
 
-  // Recorte de los frames para las animaciones del disparo
+  // Shot animations sprites
   int xSpacing, ySpacing = 0;
   for(int j = 0; j < SPRITE_SHOT_NUM; j++){
     xSpacing = 0;

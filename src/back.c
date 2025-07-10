@@ -721,7 +721,7 @@ static movement_t aliens_update_position(unsigned row) {
   int i, j;
   static movement_t movement = MOVEMENT_RIGHT;
   static movement_t movement_post_down = MOVEMENT_LEFT;
-
+  
   int topRow = get_top_alien_row();
   // Check movement direction
   if(movement != MOVEMENT_DOWN)
@@ -747,7 +747,6 @@ static movement_t aliens_update_position(unsigned row) {
 
   aliensMoved = elapsed >= aliens_move_interval;
   if ( elapsed >= aliens_move_interval) {
-    
     start = get_millis();
     switch ( movement ) {
       case MOVEMENT_RIGHT:
