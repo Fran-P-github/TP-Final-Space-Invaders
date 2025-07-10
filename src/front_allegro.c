@@ -50,6 +50,12 @@
 #define SPRITE_SHOT_SPACING 1
 #define SPRITE_SHOT_NUM 2
 
+#define STARS_N ((WORLD_WIDTH / 2) - 1)
+#define STAR_MIN_SPEED 2.2
+#define STAR_MAX_SPEED 8.4
+#define STAR_MARGIN 1.5
+#define STAR_SEPARATION ((WORLD_WIDTH - 2 * STAR_MARGIN) / (STARS_N - 1))
+
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -84,6 +90,12 @@ typedef enum {
   UFO_GREY,
 } mothership_color_t;
 
+typedef struct{
+    float y; // x coordinate depends on star index in array
+    float speed;
+    ALLEGRO_COLOR color;
+} star_t;
+
 typedef struct {
   ALLEGRO_BITMAP *_sheet;
   ALLEGRO_BITMAP *_sheet_shot;
@@ -109,6 +121,13 @@ extern const bool aliensMoved;
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
+
+// Background drawing
+static float get_random_star_speed();
+static void background_init();
+static void background_update();
+static void draw_background();
+static ALLEGRO_COLOR random_star_color();
 
 static void alien_death(unsigned i, unsigned j);
 static void draw_mothership();
@@ -140,6 +159,9 @@ static void kill_all_font(int len, ...);
 /*******************************************************************************
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
+
+
+star_t stars[STARS_N];
 
 static ALLEGRO_TIMER *timer;
 static ALLEGRO_DISPLAY *disp;
@@ -516,9 +538,10 @@ static void init_error(bool state, const char *name) {
 
 game_state_t game_update(unsigned level, bool new_level) {
   if(new_level){ // Restart on new level
-    level_init(ALIENS_ROWS-3 + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
+    level_init(level, ALIENS_ROWS-3 + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
     player_reset_on_new_level();
     if ( level == 0 ) player_reset_on_new_game();
+    background_init();
   }
 
   ALLEGRO_EVENT event;
@@ -535,6 +558,7 @@ game_state_t game_update(unsigned level, bool new_level) {
     if ( al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME) ) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
+          background_update();
           level_state = back_update(level, alien_death);
           redraw = true;
           ++frame;
@@ -608,6 +632,7 @@ game_state_t game_update(unsigned level, bool new_level) {
 
       al_set_target_bitmap(buffer);
       al_clear_to_color(al_map_rgb(0, 0, 0));
+      draw_background();
       al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "Level: %d", level+1); // First level is level 0
       al_draw_textf(default_font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 0, ALLEGRO_ALIGN_CENTER, "%06d", player_get_score());
       al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, WORLD_HEIGHT-16, 0, "Lives: %d", player_get_lives());
@@ -679,6 +704,55 @@ game_state_t game_update(unsigned level, bool new_level) {
     return CLOSED;
   }
 }
+
+static float get_random_star_speed(){
+  float base_speed = rand_between_f(STAR_MIN_SPEED, STAR_MAX_SPEED);
+  float relative = aliens_get_relative_speed(); // in [0, 1]
+
+  // Interpolate between min and full star speed
+  return STAR_MIN_SPEED + (base_speed - STAR_MIN_SPEED) * relative;
+}
+
+static void background_update(){
+  for(int i = 0; i < STARS_N; i++) {
+        stars[i].y += stars[i].speed;
+        if(stars[i].y >= WORLD_HEIGHT) {
+            stars[i].y = 0;
+            stars[i].speed = get_random_star_speed();
+            stars[i].color = random_star_color();
+        }
+    }
+}
+
+static void background_init() {
+    for(int i = 0; i < STARS_N; i++) {
+        stars[i].y = rand_between_f(0, WORLD_HEIGHT);
+        stars[i].speed = get_random_star_speed();
+        stars[i].color = random_star_color();  // Asignar color aleatorio
+    }
+}
+
+static void draw_background() {
+    float star_x = STAR_MARGIN;
+    for(int i = 0; i < STARS_N; i++) {
+        al_draw_pixel(star_x, stars[i].y, stars[i].color);
+        star_x += STAR_SEPARATION;
+    }
+}
+
+static ALLEGRO_COLOR random_star_color() {
+    int r = rand() % 5;  // 5 tipos de estrellas
+
+    switch(r) {
+        case 0: return al_map_rgb_f(1.0, 1.0, 1.0); // Blanco (tipo A)
+        case 1: return al_map_rgb_f(0.8, 0.8, 1.0); // Azul claro (tipo B)
+        case 2: return al_map_rgb_f(1.0, 1.0, 0.6); // Amarillento (tipo G)
+        case 3: return al_map_rgb_f(0.9, 0.7, 1.0); // Violeta suave
+        case 4: return al_map_rgb_f(1.0, 0.9, 0.8); // Naranja pálido (tipo K)
+        default: return al_map_rgb_f(1.0, 1.0, 1.0);
+    }
+}
+
 
 static void alien_death(unsigned i, unsigned j){
   // Play animation
