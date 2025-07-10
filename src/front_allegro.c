@@ -90,7 +90,6 @@ typedef enum {
   UFO_NEON,
   UFO_RETRO,
   UFO_GREY,
-  UFO_TOTAL_COLORS
 } mothership_color_t;
 
 typedef struct{
@@ -106,7 +105,7 @@ typedef struct {
   ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
   ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
   ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];        // 2 tipos de disparos, 6 estados de animacion
-  ALLEGRO_BITMAP *ufo[UFO_TOTAL_COLORS][2];                       // 11 colores de naves nodrizas, 2 estados de animacion
+  ALLEGRO_BITMAP *ufo[ALIEN_TOTAL_COLORS][2];                       // 11 colores de naves nodrizas, 2 estados de animacion
 } sprites_t;
 
 typedef struct{
@@ -680,17 +679,6 @@ game_state_t game_update(unsigned level, bool new_level) {
                   alienColor = ALIEN_RETRO; // Never to be reached
                   break;
               }
-              switch(aliens_get_points(i,j)){
-                case ALIEN_POINTS_SILVER:
-                  alienColor = ALIEN_SILVER;
-                  break;
-                case ALIEN_POINTS_GOLD:
-                  alienColor = ALIEN_GOLD;
-                  break;
-                case ALIEN_POINTS_NEON:
-                  alienColor = ALIEN_NEON;
-                  break;
-              }
               draw_alien(i, j, alienSprite, alienColor, aliensFrame);
             }
           }
@@ -701,19 +689,7 @@ game_state_t game_update(unsigned level, bool new_level) {
 
       if ( mothership_is_active() ) {
         al_play_sample_instance(ufoSample);
-        mothership_color_t color;
-        switch(mothership_get_points()){
-          case MOTHERSHIP_POINTS_SILVER:
-            color = UFO_SILVER;
-            break;
-          case MOTHERSHIP_POINTS_GOLD:
-            color = UFO_GOLD;
-            break;
-          case MOTHERSHIP_POINTS_NEON:
-            color = UFO_NEON;
-            break;
-        }
-        draw_mothership(color);
+        draw_mothership(ALIEN_GOLD);
       } else {
         al_stop_sample_instance(ufoSample);
       }
@@ -809,7 +785,10 @@ static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t co
 }
 
 static void draw_player() {
-  al_draw_filled_rectangle(player_get_x(), player_get_y(), player_get_x() + PLAYER_W, player_get_y() + PLAYER_H, al_map_rgb(0, 255, 0));
+  int srcWidth = al_get_bitmap_width(sprites.ship);
+  int srcHeight = al_get_bitmap_height(sprites.ship);
+  al_draw_scaled_bitmap(sprites.ship, 0, 0, srcWidth, srcHeight, player_get_x(), player_get_y(), PLAYER_W, PLAYER_H, 0);
+ // al_draw_filled_rectangle(player_get_x(), player_get_y(), player_get_x() + PLAYER_W, player_get_y() + PLAYER_H, al_map_rgb(0, 255, 0));
 }
 
 static void draw_alien_shot(unsigned frame, unsigned color) {
@@ -872,6 +851,8 @@ static void sprites_init() {
   init_error(sprites._sheet, "spritesheet");
   sprites._sheet_shot = al_load_bitmap(SPRITESHEETSHOT);
   init_error(sprites._sheet_shot, "spritesheet_shot");
+  sprites.ship = al_load_bitmap(BITMAP_ROUTE("intro/intro_ship.png"));
+  init_error(sprites.ship, "spritesheet_ship");
 
   // Alien sprites
   int xOffset = 0;
@@ -918,4 +899,5 @@ static void sprites_init() {
 static void sprites_deinit() {
   al_destroy_bitmap(sprites._sheet);
   al_destroy_bitmap(sprites._sheet_shot);
+  al_destroy_bitmap(sprites.ship);
 }

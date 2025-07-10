@@ -50,8 +50,8 @@
 #define MOTHERSHIP_H 60
 #define MOTHERSHIP_MARGIN 0
 
-#define PLAYER_W 10
-#define PLAYER_H 20
+#define PLAYER_W 80  //10
+#define PLAYER_H 40 //20
 #define PLAYER_MARGIN 10 // Que tan separado debe estar de margenes laterales e inferior
 
 #define ALIENS_ROWS 6
