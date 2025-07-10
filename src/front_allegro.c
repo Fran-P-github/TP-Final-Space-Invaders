@@ -357,6 +357,7 @@ game_state_t game_update(unsigned level) {
   unsigned long long frame = 0;
   unsigned shotFrame = 0, playerShotColor = 0, alienShotColor = 0;
   bool frameDecrement = false;
+  alien_color alienColor = ALIEN_GOLD;
 
   al_start_timer(timer);
 
@@ -460,13 +461,13 @@ game_state_t game_update(unsigned level) {
           }
           for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
             if ( aliens_is_alive(i, j) ) {
-              draw_alien(i, j, alienSprite, ALIEN_GOLD, aliensFrame);
+              draw_alien(i, j, alienSprite, alienColor, aliensFrame);
             }
           }
         }
       }
 
-      if(explosion.explosion_interval > 0) draw_explosion(frame, ALIEN_GOLD);
+      if(explosion.explosion_interval > 0) draw_explosion(frame, alienColor);
 
       if ( mothership_is_active() ) {
         al_play_sample_instance(ufoSample);
