@@ -77,7 +77,7 @@ typedef struct {
   ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
   ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
   ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];        // 2 tipos de disparos, 6 estados de animacion
-
+  ALLEGRO_BITMAP *ufo[ALIEN_TOTAL_COLORS][2];                       // 11 colores de naves nodrizas, 2 estados de animacion
 } sprites_t;
 
 typedef struct{
@@ -254,6 +254,7 @@ game_state_t menu() {
 
 game_state_t game_pause(unsigned int level) {
     al_stop_timer(timer); // Pause timer while in pause
+    al_stop_sample_instance(ufoSample); // Stop mothership sound
 
     ALLEGRO_FONT *font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 28, 0);
     init_error(font, "Pause menu font");
@@ -501,7 +502,7 @@ static void init_error(bool state, const char *name) {
 
 game_state_t game_update(unsigned level, bool new_level) {
   if(new_level){ // Restart on new level
-    level_init(ALIENS_ROWS + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
+    level_init(ALIENS_ROWS-2 + level / 3, ALIENS_COLUMNS-2 + level / 2, 1 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
     player_reset_on_new_level();
     if ( level == 0 ) player_reset_on_new_game();
   }
@@ -748,6 +749,12 @@ static void sprites_init() {
     sprites.aliens_explotion[i] = sprite_grab(sprites._sheet, xOffset+512, 22+(i%6)*74, 48, 32);
   }
 
+  // Recorte de la nave nodriza
+  for(int i = 0; i < 3; i++){
+    for(int j = 0; j < 11; j++){
+
+    }
+  }
   // Recorte de los frames para las animaciones del disparo
   int xSpacing, ySpacing = 0;
   for(int j = 0; j < SPRITE_SHOT_NUM; j++){
