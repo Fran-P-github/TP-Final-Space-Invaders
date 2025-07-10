@@ -844,11 +844,14 @@ static void draw_shield(unsigned shield) {
           const float SEGMENT_LENGTH = 3.0;
           const float SEGMENT_THICKNESS = 1.0;
 
+          // srand restarted every time for segments not to move
+          srand(0);
           for(int p = 0; p < lines; ++p) {
               float px = x + rand_between_f(0, SHIELD_BLOCK_W - SEGMENT_LENGTH);
               float py = y + rand_between_f(0, SHIELD_BLOCK_H);
               al_draw_line(px, py, px + SEGMENT_LENGTH, py, al_map_rgb(0, 0, 0), SEGMENT_THICKNESS);
           }
+          srand(time(NULL));
       }
     }
   }
