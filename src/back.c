@@ -419,7 +419,6 @@ static bool aliens_update(unsigned current_level) {
     }
   }
   movement_t last_movement;
-  static movement_t prev_last_movement = NO_MOVEMENT;
   if ( (last_movement = aliens_update_position(row_to_move)) != NO_MOVEMENT )
     row_to_move = (row_to_move - 1) >= ALIENS_ROWS ? (ALIENS_ROWS - 1) : (row_to_move - 1);
   // Get next row with alive aliens
@@ -427,10 +426,6 @@ static bool aliens_update(unsigned current_level) {
     row_to_move = (row_to_move - 1) >= ALIENS_ROWS ? ALIENS_ROWS - 1 : (row_to_move - 1);
   }
   if ( last_movement != NO_MOVEMENT ) {
-    if ( last_movement == MOVEMENT_DOWN && prev_last_movement != MOVEMENT_DOWN ) {
-      row_to_move = ALIENS_ROWS - 2;
-    }
-    prev_last_movement = last_movement;
   }
 
   update_aliens_speed(current_level);
@@ -526,10 +521,13 @@ static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsign
     for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
       if(i + 1 > (double)2/3 * rows){
         aliens[i][j].type = ALIEN_FAT;
+        aliens[i][j].points = ALIEN_FAT_POINTS;
       }else if(i + 1 > (double)1/3 * rows){
         aliens[i][j].type = ALIEN_WINGED;
+        aliens[i][j].points = ALIEN_WINGED_POINTS;
       }else{
         aliens[i][j].type = ALIEN_SMALL;
+        aliens[i][j].points = ALIEN_SMALL_POINTS;
       }
 
       aliens[i][j].x = x;
@@ -540,7 +538,6 @@ static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsign
       }else{
         aliens[i][j].lives = 0;
       }
-      aliens[i][j].points = ALIENS_POINTS;
 
       x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
     }

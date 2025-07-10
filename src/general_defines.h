@@ -21,8 +21,11 @@
  ******************************************************************************/
 
 #define PLAYER_INITIAL_LIVES 3
-#define ALIENS_POINTS 5
 #define SHIELD_BLOCK_LIVES 2
+
+#define ALIEN_FAT_POINTS 5
+#define ALIEN_WINGED_POINTS 15
+#define ALIEN_SMALL_POINTS 30
 
 #define RPI 0
 #define ALLEGRO 2
