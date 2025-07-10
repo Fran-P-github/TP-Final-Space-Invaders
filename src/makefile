@@ -26,13 +26,13 @@ main.o: main.c general_defines.h back.h front_$(PLATFORM).h
 front_$(PLATFORM).o: front_$(PLATFORM).c front_$(PLATFORM).h general_defines.h back.h
 	$(CC) $(FLAGS) $(ALFLAGS) -c front_$(PLATFORM).c
 
-back.o: back.c back.h
+back.o: back.c back.h general_defines.h
 	$(CC) $(FLAGS) $(ALFLAGS) -c back.c
 
 menu_$(PLATFORM).o: menu_$(PLATFORM).c menu_$(PLATFORM).h general_defines.h
 	$(CC) $(FLAGS) $(ALFLAGS) -c menu_$(PLATFORM).c
 
-scores.o: scores.h scores.c
+scores.o: scores.h scores.c general_defines.h
 	$(CC) $(FLAGS) -c scores.c
 
 clear:

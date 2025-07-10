@@ -16,15 +16,16 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include "back.h"
+#include <stdbool.h>
+ #include "back.h"
 
 game_state_t front_init();
 
 game_state_t menu();
 
-game_state_t game_update(unsigned int curent_level);
+game_state_t game_update(unsigned int curent_level, bool new_level);
 
-game_state_t game_pause();
+game_state_t game_pause(unsigned int curent_level);
 
 void endgame();
 

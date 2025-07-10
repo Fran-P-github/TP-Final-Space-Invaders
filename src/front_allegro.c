@@ -252,8 +252,91 @@ game_state_t menu() {
   return menu_allegro(disp, timer, queue, default_font, buffer, mixer, &kill_all_bitmaps, &kill_all_instances, &kill_all_samples, &kill_all_font);
 }
 
-game_state_t game_pause() {
-  return GAME;
+game_state_t game_pause(unsigned int level) {
+    al_stop_timer(timer); // Pause timer while in pause
+
+    ALLEGRO_FONT *font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 28, 0);
+    init_error(font, "Pause menu font");
+
+    const int space = WORLD_HEIGHT / 10;
+    const int button_w = WORLD_WIDTH / 3;
+    const int button_h = WORLD_HEIGHT / 12;
+    const int x = WORLD_WIDTH / 2 - button_w / 2;
+    const int start_y = 3 * space;
+
+    const char *labels[] = { "Resume", "Main Menu", "Exit" };
+    ALLEGRO_COLOR colors[] = {
+        al_map_rgb(100, 100, 255),
+        al_map_rgb(100, 255, 100),
+        al_map_rgb(255, 100, 100)
+    };
+
+    ALLEGRO_EVENT ev;
+    bool done = false;
+    game_state_t result = GAME;
+
+    while (!done) {
+        // Draw background
+        al_set_target_bitmap(buffer);
+        al_clear_to_color(al_map_rgb(0, 0, 0));
+
+        // Show player info
+        al_draw_textf(font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space, ALLEGRO_ALIGN_CENTER,
+                      "Score: %d    Lives: %d    Level: %d",
+                      player_get_score(), player_get_lives(), level+1); // First level is level 0
+
+        // Draw buttons
+        for(int i = 0; i < 3; ++i) {
+            int y = start_y + i * (button_h + space / 2);
+            al_draw_filled_rectangle(x, y, x + button_w, y + button_h, colors[i]);
+            al_draw_rectangle(x, y, x + button_w, y + button_h, al_map_rgb(255, 255, 255), 2);
+            al_draw_text(font, al_map_rgb(0, 0, 0), WORLD_WIDTH/2, y + button_h / 4, ALLEGRO_ALIGN_CENTER, labels[i]);
+        }
+
+        // Draw to screen
+        al_set_target_backbuffer(disp);
+        al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0,
+                              al_get_display_width(disp), al_get_display_height(disp), 0);
+        al_flip_display();
+
+        // Wait for event
+        while (al_get_next_event(queue, &ev)) {
+          if (ev.type == ALLEGRO_EVENT_MOUSE_AXES) continue; // Ignore mouse movement
+
+          if (ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+              int mx = ev.mouse.x * WORLD_WIDTH / al_get_display_width(disp);
+              int my = ev.mouse.y * WORLD_HEIGHT / al_get_display_height(disp);
+
+              for(int i = 0; i < 3; ++i) {
+                  int y = start_y + i * (button_h + space / 2);
+                  if (mx >= x && mx <= x + button_w && my >= y && my <= y + button_h) {
+                      switch(i){
+                        case 0:
+                          result = GAME;
+                          break;
+                        case 1:
+                          result = MENU;
+                          break;
+                        case 2:
+                          result = CLOSED;
+                          break;
+                      }
+                      done = true;
+                      break;
+                  }
+              }
+          } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
+              result = GAME;
+              done = true;
+          }
+        }
+    }
+
+    al_destroy_font(font);
+    al_start_timer(timer); // Resume timer after pause
+    al_flush_event_queue(queue); // Flush queue to give it back empty to game_update
+    key[ALLEGRO_KEY_ESCAPE] = 0; // Was used here
+    return result;
 }
 
 void endgame() {
@@ -414,11 +497,12 @@ static void init_error(bool state, const char *name) {
   }
 }
 
-game_state_t game_update(unsigned level) {
-  // level_init(ALIENS_ROWS-3+level/3, ALIENS_COLUMNS-3+level/2, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
-  level_init(ALIENS_ROWS + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
-  player_reset_on_new_level();
-  if ( level == 0 ) player_reset_on_new_game();
+game_state_t game_update(unsigned level, bool new_level) {
+  if(new_level){ // Restart on new level
+    level_init(ALIENS_ROWS + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
+    player_reset_on_new_level();
+    if ( level == 0 ) player_reset_on_new_game();
+  }
 
   ALLEGRO_EVENT event;
   bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;
@@ -443,8 +527,10 @@ game_state_t game_update(unsigned level) {
 
         case ALLEGRO_EVENT_KEY_DOWN:
           key[event.keyboard.keycode] = 1;
-          if ( key[ALLEGRO_KEY_ESCAPE] )
+          if ( key[ALLEGRO_KEY_ESCAPE] ){
             done = true;
+            return PAUSE;
+          }
           if ( key[ALLEGRO_KEY_F] ) {
             fullscreen = !fullscreen;
             al_toggle_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
@@ -506,7 +592,9 @@ game_state_t game_update(unsigned level) {
 
       al_set_target_bitmap(buffer);
       al_clear_to_color(al_map_rgb(0, 0, 0));
-      al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "width: %d height: %d", al_get_display_width(disp), al_get_display_height(disp));
+      al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "Level: %d", level+1); // First level is level 0
+      al_draw_textf(default_font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 0, ALLEGRO_ALIGN_CENTER, "%06d", player_get_score());
+      al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, WORLD_HEIGHT-16, 0, "Lives: %d", player_get_lives());
       unsigned i, j;
       draw_player_shot(shotFrame, playerShotColor);
       unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();

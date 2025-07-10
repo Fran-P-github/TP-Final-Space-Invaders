@@ -180,7 +180,7 @@ game_state_t front_init(){
     return MENU;
 }
 
-game_state_t game_pause(){
+game_state_t game_pause(unsigned int level){ // Level unused here, it is not shown
     const char resume[3][4] = {
         " * ",
         " **",
@@ -289,11 +289,13 @@ game_state_t menu(){
     }
 }
 
-game_state_t game_update(unsigned level){
+game_state_t game_update(unsigned level, bool new_level){
     // Initial level config
-    level_init(ALIENS_ROWS-1+level/2, ALIENS_COLUMNS-1+level/3, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
-    player_reset_on_new_level();
-    if(level==0) player_reset_on_new_game();
+    if(new_level){ // Restart on new level
+        level_init(ALIENS_ROWS-1+level/2, ALIENS_COLUMNS-1+level/3, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
+        player_reset_on_new_level();
+        if ( level == 0 ) player_reset_on_new_game();
+    }
 
     bool redraw = false;
     level_state_t level_state = LEVEL_NOT_DONE;

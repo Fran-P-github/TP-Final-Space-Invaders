@@ -325,6 +325,7 @@ void player_reset_on_new_level() {
 
 void player_reset_on_new_game() {
   player_reset_lives();
+  player.score = 0;
   playerDied = false;
 }
 
