@@ -280,6 +280,8 @@ game_state_t menu() {
   return menu_allegro(disp, timer, queue, default_font, buffer, mixer, &kill_all_bitmaps, &kill_all_instances, &kill_all_samples, &kill_all_font);
 }
 
+// Borders are grey (no hover) and white (hover)
+#define CREATE_BUTTON_GAME_PAUSE(color_normal, color_hover) create_button(color_normal, color_normal, GRADIENT_CENTER, color_hover, color_hover, GRADIENT_CENTER, al_map_rgb(200, 200, 200), al_map_rgb(255,255,255), 4, 4, 0.,0., 0.,button_h+0., button_w+0.,button_h+0., button_w+0.,0.)
 game_state_t game_pause(unsigned int level) {
     al_play_sample_instance(pauseSample); // Play pause sound
     al_stop_timer(timer); // Pause timer while in pause
@@ -289,18 +291,31 @@ game_state_t game_pause(unsigned int level) {
     ALLEGRO_FONT *font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 28, 0);
     init_error(font, "Pause menu font");
 
-    const int space = WORLD_HEIGHT / 10;
+    const int space = WORLD_HEIGHT / 6;
     const int button_w = WORLD_WIDTH / 3;
     const int button_h = WORLD_HEIGHT / 12;
-    const int x = WORLD_WIDTH / 2 - button_w / 2;
     const int start_y = WORLD_HEIGHT / 3; // This is not centered
 
     const char *labels[] = { "Resume", "Main Menu", "Exit" };
-    ALLEGRO_COLOR colors[] = {
-        al_map_rgb(100, 100, 255),
-        al_map_rgb(100, 255, 100),
-        al_map_rgb(255, 100, 100)
+
+    ALLEGRO_COLOR colors[3][2] = {
+      // "Resume" - blue
+      { al_map_rgb(  80,  80, 200), al_map_rgb(120, 120, 255) },
+      // "Main Menu" - green
+      { al_map_rgb(  60, 200,  60), al_map_rgb(100, 255, 100) },
+      // "Exit" - red
+      { al_map_rgb(200,  60,  60), al_map_rgb(255, 100, 100) }
     };
+
+    button_t buttons[3] = {
+      CREATE_BUTTON_GAME_PAUSE(colors[0][0], colors[0][1]),
+      CREATE_BUTTON_GAME_PAUSE(colors[1][0], colors[1][1]),
+      CREATE_BUTTON_GAME_PAUSE(colors[2][0], colors[2][1])
+    };
+    for(int i = 0; i < 3; ++i){
+      buttons[i].position_x = WORLD_WIDTH / 2;
+      buttons[i].position_y = start_y + i * (button_h + space / 2);
+    }
 
     ALLEGRO_EVENT ev;
     bool done = false;
@@ -312,18 +327,17 @@ game_state_t game_pause(unsigned int level) {
 
     while (!done) {
         al_set_target_bitmap(buffer);
+        ALLEGRO_MOUSE_STATE ms; al_get_mouse_state(&ms);
 
-        /*// Show player info
+        // Show player info
         al_draw_textf(font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space, ALLEGRO_ALIGN_CENTER,
                       "Score: %d    Lives: %d    Level: %d",
-                      player_get_score(), player_get_lives(), level+1); // First level is level 0*/
+                      player_get_score(), player_get_lives(), level+1); // First level is level 0
 
         // Draw buttons
         for(int i = 0; i < 3; ++i) {
-            int y = start_y + i * (button_h + space / 2);
-            al_draw_filled_rectangle(x, y, x + button_w, y + button_h, colors[i]);
-            al_draw_rectangle(x, y, x + button_w, y + button_h, al_map_rgb(255, 255, 255), 2);
-            al_draw_text(font, al_map_rgb(0, 0, 0), WORLD_WIDTH/2, y + button_h / 4, ALLEGRO_ALIGN_CENTER, labels[i]);
+            draw_button(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i]);
+            draw_smart_text(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i], font, al_map_rgb(230, 230, 230), al_map_rgb(30, 30, 30), ALLEGRO_ALIGN_CENTER, labels[i]);
         }
 
         // Draw to screen
@@ -337,12 +351,8 @@ game_state_t game_pause(unsigned int level) {
           if (ev.type == ALLEGRO_EVENT_MOUSE_AXES) continue; // Ignore mouse movement
 
           if (ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
-              int mx = ev.mouse.x * WORLD_WIDTH / al_get_display_width(disp);
-              int my = ev.mouse.y * WORLD_HEIGHT / al_get_display_height(disp);
-
               for(int i = 0; i < 3; ++i) {
-                  int y = start_y + i * (button_h + space / 2);
-                  if (mx >= x && mx <= x + button_w && my >= y && my <= y + button_h) {
+                  if (mouse_hover_button(&buttons[i], &ms, al_get_display_width(disp), al_get_display_height(disp))) {
                       switch(i){
                         case 0:
                           result = GAME;
