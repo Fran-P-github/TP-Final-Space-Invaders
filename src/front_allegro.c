@@ -41,6 +41,8 @@
 #define VOLUME_PLAYER_DEATH .3
 #define VOLUME_ALIENS_MOVED .3
 #define VOLUME_ALIENS_DEATH .3
+#define VOLUME_ALIENS_HIT .3
+#define VOLUME_SHIELD_HIT .5
 #define VOLUME_UFO .1
 // Sprites
 #define ALIEN_SCALE_X 40
@@ -131,6 +133,7 @@ static void background_update();
 static void draw_background();
 static ALLEGRO_COLOR random_star_color();
 
+static void shield_hit();
 static void alien_death(unsigned i, unsigned j);
 static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame);
@@ -182,12 +185,16 @@ static ALLEGRO_SAMPLE *playerShotSound = NULL;
 static ALLEGRO_SAMPLE *playerDeathSound = NULL;
 static ALLEGRO_SAMPLE *alienDeathSound = NULL;
 static ALLEGRO_SAMPLE *alienMovedSound = NULL;
+static ALLEGRO_SAMPLE *alienHitSound = NULL;
+static ALLEGRO_SAMPLE *shieldHitSound = NULL;
 static ALLEGRO_SAMPLE *ufoSound = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerShotSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienMovedSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *ufoSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienDeathSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *alienHitSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerDeathSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *shieldHitSample = NULL;
 
 // keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
@@ -221,6 +228,8 @@ game_state_t front_init() {
   playerDeathSound = al_load_sample(AUDIO_PLAYER_DEATH);
   alienDeathSound = al_load_sample(AUDIO_INVADER_DEATH);
   alienMovedSound = al_load_sample(AUDIO_INVADER_MOVED);
+  alienHitSound = al_load_sample(AUDIO_INVADER_HIT);
+  shieldHitSound = al_load_sample(AUDIO_SHIELD_HIT);
   ufoSound = al_load_sample(AUDIO_UFO);
   init_error(playerShotSound, "Audio disparo del jugador.");
   init_error(playerDeathSound, "Audio muerte del jugador.");
@@ -239,12 +248,16 @@ game_state_t front_init() {
   playerDeathSample = al_create_sample_instance(playerDeathSound);
   alienMovedSample = al_create_sample_instance(alienMovedSound);
   alienDeathSample = al_create_sample_instance(alienDeathSound);
+  alienHitSample = al_create_sample_instance(alienHitSound);
+  shieldHitSample = al_create_sample_instance(shieldHitSound);
   ufoSample = al_create_sample_instance(ufoSound);
 
   al_attach_sample_instance_to_mixer(playerShotSample, mixer);
   al_attach_sample_instance_to_mixer(playerDeathSample, mixer);
   al_attach_sample_instance_to_mixer(alienMovedSample, mixer);
   al_attach_sample_instance_to_mixer(alienDeathSample, mixer);
+  al_attach_sample_instance_to_mixer(alienHitSample, mixer);
+  al_attach_sample_instance_to_mixer(shieldHitSample, mixer);
   al_attach_sample_instance_to_mixer(ufoSample, mixer);
 
   // Se setean los valores predeterminados para cada audio.
@@ -252,6 +265,8 @@ game_state_t front_init() {
   initAudioInstance(playerDeathSample, VOLUME_PLAYER_DEATH, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(alienMovedSample, VOLUME_ALIENS_MOVED, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(alienDeathSample, VOLUME_ALIENS_DEATH, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(alienHitSample, VOLUME_ALIENS_HIT, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(shieldHitSample, VOLUME_SHIELD_HIT, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(ufoSample, VOLUME_UFO, ALLEGRO_PLAYMODE_LOOP);
 
   al_set_new_display_flags(ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
@@ -561,7 +576,7 @@ game_state_t game_update(unsigned level, bool new_level) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
           background_update();
-          level_state = back_update(level, alien_death);
+          level_state = back_update(level, alien_death, shield_hit);
           redraw = true;
           ++frame;
           moveThisFrame = false;
@@ -753,6 +768,10 @@ static ALLEGRO_COLOR random_star_color() {
         case 4: return al_map_rgb_f(1.0, 0.9, 0.8); // Naranja pálido (tipo K)
         default: return al_map_rgb_f(1.0, 1.0, 1.0);
     }
+}
+
+static void shield_hit(){
+  al_play_sample_instance(shieldHitSample);
 }
 
 static void alien_death(unsigned i, unsigned j){

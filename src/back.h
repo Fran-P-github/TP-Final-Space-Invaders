@@ -43,7 +43,7 @@ float rand_between_f(float lo, float hi);
 void back_init();
 
 // First level is level 0
-level_state_t back_update(unsigned int current_level, void (*alienDeath)(unsigned i, unsigned j));
+level_state_t back_update(unsigned int current_level, void (*alienDeath)(unsigned i, unsigned j), void (*shieldHit)(void));
 
 // aliens_rows/columns: number of aliens to spawn. ALIENS_ROWS/COLUMNS assumed if a grater number is given
 // For aliens_lives, 1 is assumed if 0 is given

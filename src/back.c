@@ -132,7 +132,7 @@ static void shield_init(unsigned shield, int x, int y, unsigned lives); // Inits
 
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
-static bool shots_update(void (*alienDeath)(unsigned i, unsigned j)); // returns true when aliens hit player, also gets callback function to handle alien death
+static bool shots_update(void (*alienDeath)(unsigned i, unsigned j), void (*shieldHit)(void)); // returns true when aliens hit player, also gets callback function to handle alien death
 
 // Detects collition between a and b
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2);
@@ -141,7 +141,7 @@ static bool should_spawn_mothership(double elapsed_time);
 
 // Call for shots to update
 static void player_shot_update(void (*alienDeath)(unsigned i, unsigned j)); // alienDeath callback function (depends on platform, allegro plays explosion animation and sound)
-static bool alien_shot_update(); // returns true when aliens hit player
+static bool alien_shot_update(void (*shieldHit)(void)); // returns true when aliens hit player
 
 // Move player
 static void player_move(int x, int y);
@@ -354,10 +354,10 @@ void player_move_left() {
     player_move(-PLAYER_DX, 0);
 }
 
-level_state_t back_update(unsigned current_level, void (*alienDeath)(unsigned i, unsigned j)) {
+level_state_t back_update(unsigned current_level, void (*alienDeath)(unsigned i, unsigned j), void (*shieldHit)(void)) {
   static unsigned long long player_death_start = MAX_ULL; // Variable is MAX_ULL while player is not in death state
   
-  if(shots_update(alienDeath)){
+  if(shots_update(alienDeath, shieldHit)){
     if(player.lives <= 0) return ALIENS_WIN;
 
     player_death_start = get_millis();
@@ -447,9 +447,9 @@ static bool aliens_update(unsigned current_level) {
   return false;
 }
 
-static bool shots_update(void (*alienDeath)(unsigned i, unsigned j)) {
+static bool shots_update(void (*alienDeath)(unsigned i, unsigned j), void (*shieldHit)(void)) {
   player_shot_update(alienDeath);
-  return alien_shot_update();
+  return alien_shot_update(shieldHit);
 }
 
 static void mothership_update() {
@@ -883,7 +883,7 @@ static void player_shot_update(void (*alienDeath)(unsigned i, unsigned j)) {
     player_shot.is_used = false;
 }
 
-static bool alien_shot_update() {
+static bool alien_shot_update(void (*shieldHit)(void)) {
   if ( !alien_shot.is_used ) return false;
 
   alien_shot.y += SHOT_DY_ALIEN;
@@ -900,6 +900,7 @@ static bool alien_shot_update() {
           if ( shields[k][i][j].lives && collide(alien_shot.x, alien_shot.y, alien_shot.x + SHOT_W - 1, alien_shot.y + SHOT_H - 1, shields[k][i][j].x, shields[k][i][j].y, shields[k][i][j].x + SHIELD_BLOCK_W - 1, shields[k][i][j].y + SHIELD_BLOCK_H - 1) ) {
             alien_shot.is_used = false;
             shields[k][i][j].lives--;
+            shieldHit();
             break;
           }
         }
