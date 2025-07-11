@@ -155,7 +155,6 @@ static void initAudioInstance(ALLEGRO_SAMPLE_INSTANCE *instance, float volume, A
 
 static void init_error(bool state, const char *name);
 
-static void kill_all();
 static void kill_all_instances(int len, ...);
 static void kill_all_samples(int len, ...);
 static void kill_all_bitmaps(int len, ...);
@@ -399,7 +398,7 @@ game_state_t game_pause(unsigned int level) {
     return result;
 }
 
-void endgame() {
+game_state_t endgame() {
     char name[NAME_LEN + 1] = "";
     int name_len = 0;
     int score = player_get_score();
@@ -468,17 +467,12 @@ void endgame() {
     al_rest(3.0); // Wait in final mesage screen
 
     al_destroy_font(font_endgame);
-    kill_all();
+    
+    return MENU;
 }
 
-/*******************************************************************************
- *******************************************************************************
-                        LOCAL FUNCTION DEFINITIONS
- *******************************************************************************
- ******************************************************************************/
-
 // Complete...
-static void kill_all() {
+void front_deinit() {
   al_destroy_display(disp);
   al_destroy_timer(timer);
   al_destroy_event_queue(queue);
@@ -504,6 +498,12 @@ static void kill_all() {
   al_uninstall_audio();
   sprites_deinit();
 }
+
+/*******************************************************************************
+ *******************************************************************************
+                        LOCAL FUNCTION DEFINITIONS
+ *******************************************************************************
+ ******************************************************************************/
 
 // Funcion para matar todos los audio samples cargados.
 static void kill_all_samples(int len, ...) {
@@ -763,7 +763,7 @@ game_state_t game_update(unsigned level, bool new_level) {
   if ( level_state == PLAYER_WINS ) {
     return GAME;
   } else {
-    return CLOSED;
+    return ENDGAME;
   }
 }
 

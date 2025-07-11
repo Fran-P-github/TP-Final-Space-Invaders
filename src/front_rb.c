@@ -250,6 +250,7 @@ game_state_t game_pause(unsigned int level){ // Level unused here, it is not sho
         if (js.sw == J_PRESS) {
             wait_button_release();
             disp_clear();
+            disp_update();
             switch(selected){
                 case RESUME:
                     return GAME;
@@ -356,11 +357,11 @@ game_state_t game_update(unsigned level, bool new_level){
     if(level_state == PLAYER_WINS){
         return GAME;
     }else{
-        return CLOSED;
+        return ENDGAME;
     }
 }
 
-void endgame(){
+game_state_t endgame(){
     disp_clear();
 
     // Show plater score
@@ -384,6 +385,14 @@ void endgame(){
         blink_string("NEW BEST", 0, 3);
     }
     save_scores(top_scores);
+
+    disp_clear();
+    disp_update();
+    return MENU;
+}
+
+void front_deinit(){
+    
 }
 
 /*******************************************************************************

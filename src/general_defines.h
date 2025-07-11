@@ -141,7 +141,8 @@ typedef enum { CLOSED = 0,
                MENU,
                GAME,
                GAME_CRAZY,
-               PAUSE } game_state_t;
+               PAUSE,
+               ENDGAME } game_state_t;
 
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE

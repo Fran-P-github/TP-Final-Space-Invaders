@@ -12,6 +12,8 @@ game_state_t game_update(unsigned int curent_level, bool new_level);
 
 game_state_t game_pause(unsigned int curent_level);
 
-void endgame();
+game_state_t endgame();
+
+void front_deinit();
 
 #endif // _FRONT_H_

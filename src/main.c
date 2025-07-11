@@ -81,12 +81,15 @@ int main(){
       case PAUSE:
         state = game_pause(level);
         break;
+        case ENDGAME:
+        state = endgame();
+        break;
       case CLOSED:
         break;
     }
   }
 
-  endgame();
+  front_deinit();
 
   return 0;
 }
