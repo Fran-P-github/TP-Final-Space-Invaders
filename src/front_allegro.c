@@ -134,6 +134,9 @@ static void background_update();
 static void draw_background();
 static ALLEGRO_COLOR random_star_color();
 
+// HUD drawing
+static void draw_hud(unsigned level, ALLEGRO_FONT* font);
+
 static void shield_hit();
 static void alien_death(unsigned i, unsigned j);
 static void draw_mothership();
@@ -562,6 +565,7 @@ game_state_t game_update(unsigned level, bool new_level) {
     background_init();
   }
 
+  ALLEGRO_FONT *hud_font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 26, 0);
   ALLEGRO_EVENT event;
   bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;
   level_state_t level_state = LEVEL_NOT_DONE;
@@ -651,9 +655,10 @@ game_state_t game_update(unsigned level, bool new_level) {
       al_set_target_bitmap(buffer);
       al_clear_to_color(al_map_rgb(0, 0, 0));
       draw_background();
-      al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "Level: %d", level+1); // First level is level 0
-      al_draw_textf(default_font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 0, ALLEGRO_ALIGN_CENTER, "%06d", player_get_score());
-      al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, WORLD_HEIGHT-16, 0, "Lives: %d", player_get_lives());
+
+      // HUD
+      draw_hud(level, hud_font);
+
       unsigned i, j;
       draw_player_shot(shotFrame, playerShotColor);
       unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
@@ -760,6 +765,20 @@ game_state_t game_update(unsigned level, bool new_level) {
   } else {
     return CLOSED;
   }
+}
+
+static void draw_hud(unsigned level, ALLEGRO_FONT* font){
+  // Level
+  al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 0, 0, "Level: %d", level+1); // First level is level 0
+
+  // Score
+  al_draw_textf(font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 0, ALLEGRO_ALIGN_CENTER, "%06d", player_get_score());
+  
+  // Lives
+  int srcWidth = al_get_bitmap_width(sprites.ship);
+  int srcHeight = al_get_bitmap_height(sprites.ship);
+  al_draw_scaled_bitmap(sprites.ship, 0, 0, srcWidth, srcHeight, 30, WORLD_HEIGHT-30, PLAYER_W/1.5, PLAYER_H/1.5, 0);
+  al_draw_textf(font, al_map_rgb(255, 255, 255), 5, WORLD_HEIGHT-30, 0, "%d", player_get_lives());
 }
 
 static float get_random_star_speed(){
