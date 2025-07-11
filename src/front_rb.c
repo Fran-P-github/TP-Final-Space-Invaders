@@ -7,7 +7,7 @@
  ******************************************************************************/
 
 // Program modules
-#include "front_rb.h"
+#include "front.h"
 #include "general_defines.h"
 #include "back.h"
 #include "font_3x5.h"
@@ -90,6 +90,7 @@ extern const bool playerDied;
 static void draw_rectangle(int x1, int y1, int x2, int y2);
 
 static void alien_death(unsigned i, unsigned j); // Es un callback que se usa en back_update() (en allegro para reproducir sonido y mostrar explosion, en rb para sonido)
+static void shield_hit();  // Otro callback
 static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
@@ -154,6 +155,7 @@ static Audio *playerShotSound = NULL;
 static Audio *playerDeathSound = NULL;
 static Audio *alienDeathSound = NULL;
 static Audio *alienMovedSound = NULL;
+static Audio *shieldHitSound = NULL;
 
 /*******************************************************************************
                         GLOBAL FUNCTION DEFINITIONS
@@ -175,6 +177,7 @@ game_state_t front_init(){
     alienDeathSound = createAudio(AUDIO_INVADER_DEATH, 0, SDL_MIX_MAXVOLUME);
     alienMovedSound = createAudio(AUDIO_INVADER_MOVED, 0, SDL_MIX_MAXVOLUME);
     mothershipMusic = createAudio(AUDIO_UFO, 0, SDL_MIX_MAXVOLUME);
+    shieldHitSound = createAudio(AUDIO_SHIELD_HIT, 0, SDL_MIX_MAXVOLUME);
     bgMusic = createAudio(GAME_BG_MUSIC, 0, SDL_MIX_MAXVOLUME);
 
     return MENU;
@@ -313,7 +316,7 @@ game_state_t game_update(unsigned level, bool new_level){
         if(frame_elapsed >= frame_time){
             ++frame;
             frame_start = get_millis();
-            level_state = back_update(level, alien_death);
+            level_state = back_update(level, alien_death, shield_hit);
             sounds_update();
             unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
             if(alien_column_to_shoot >= 0){
@@ -753,6 +756,10 @@ static void draw_rectangle(int x1, int y1, int x2, int y2){
                 disp_write((dcoord_t){.x=i, .y=j}, D_ON); // LED {i,j} turned on
         }
     } 
+}
+
+static void shield_hit(){
+  playSoundFromMemory(shieldHitSound, SDL_MIX_MAXVOLUME);
 }
 
 // Queda medio feo que sea algo aparte de la funcion sounds_update()

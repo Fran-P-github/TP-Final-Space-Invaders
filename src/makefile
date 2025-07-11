@@ -7,7 +7,7 @@ endif
 
 CC := gcc
 FLAGS := -Wall
-OBJS := main.o front_$(PLATFORM).o back.o scores.o
+OBJS := main.o front.o back.o scores.o
 
 ifeq ($(PLATFORM), allegro)
 OBJS += menu_allegro.o
@@ -28,11 +28,11 @@ FLAGS += -DPLATFORM=$(DEFINE)
 SpaceInvaders: $(OBJS) general_defines.h
 	$(CC) $(FLAGS) $(OBJS) -o SpaceInvaders $(ALFLAGS) $(RBFLAGS)
 
-main.o: main.c general_defines.h back.h front_$(PLATFORM).h
+main.o: main.c general_defines.h back.h front.h
 	$(CC) $(FLAGS) -c main.c
 
-front_$(PLATFORM).o: front_$(PLATFORM).c front_$(PLATFORM).h general_defines.h back.h
-	$(CC) $(FLAGS) -c front_$(PLATFORM).c
+front.o: front_$(PLATFORM).c front.h general_defines.h back.h
+	$(CC) $(FLAGS) -c front_$(PLATFORM).c -o front.o
 
 back.o: back.c back.h general_defines.h
 	$(CC) $(FLAGS) -c back.c

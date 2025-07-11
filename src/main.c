@@ -14,11 +14,7 @@
  ******************************************************************************/
 
 #include "general_defines.h"
-#if PLATFORM == ALLEGRO
-#include "front_allegro.h"
-#elif PLATFORM == RPI
-#include "front_rb.h"
-#endif
+#include "front.h"
 
 /*******************************************************************************
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS

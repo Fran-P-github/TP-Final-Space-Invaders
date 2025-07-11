@@ -1,5 +1,5 @@
-#ifndef _FRONT_RB_H_
-#define _FRONT_RB_H_
+#ifndef _FRONT_H_
+#define _FRONT_H_
 
 #include <stdbool.h>
 #include "general_defines.h"
@@ -14,4 +14,4 @@ game_state_t game_pause(unsigned int curent_level);
 
 void endgame();
 
-#endif // _FRONT_RB_H_
+#endif // _FRONT_H_

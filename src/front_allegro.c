@@ -25,7 +25,7 @@
 
 #include "back.h"
 #include "scores.h"
-#include "front_allegro.h"
+#include "front.h"
 #include "general_defines.h"
 #include "menu_allegro.h"
 
