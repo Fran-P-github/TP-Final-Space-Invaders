@@ -22,20 +22,20 @@
 
 #define MSJ_ERR_INIT "Error with setup: "
 
-#define DRAW draw_frame(display, buffer);
-#define BUFFER al_set_target_bitmap(buffer);
-#define CLEAR al_clear_to_color(al_map_rgb(0, 0, 0));
-#define CLEAR_A al_clear_to_color(al_map_rgba(0, 0, 0, 0));
+#define DRAW draw_frame(display, buffer)
+#define BUFFER al_set_target_bitmap(buffer)
+#define CLEAR al_clear_to_color(al_map_rgb(0, 0, 0))
+#define CLEAR_A al_clear_to_color(al_map_rgba(0, 0, 0, 0))
 
 #define ERRCHECK(obj, txt) \
-  if ( must_setup(obj, txt) == CLOSED ) return CLOSED;
+  if ( must_setup(obj, txt) == CLOSED ) return CLOSED
 
 #define DRAW_BACKGROUND                                          \
   al_draw_bitmap(intro_background_frames[counter_1++], 0, 0, 0); \
-  if ( counter_1 == 300 ) counter_1 = 0;
+  if ( counter_1 == 300 ) counter_1 = 0
 
 #define DRAW_FLASH                                                                                    \
-  if ( counter_2 && !flag_1.bit.b0 ) {                                                                \
+  if ( counter_2 && flash_enable ) {                                                                  \
     al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(255, 255, 255, counter_2)); \
     if ( counter_2 > 0 ) counter_2 -= 10;                                                             \
     if ( counter_2 < 0 ) counter_2 = 0;                                                               \
@@ -43,20 +43,26 @@
 
 #define DRAW_SHIP_CURSOR                                                                                                                                                                        \
   al_draw_scaled_rotated_bitmap(intro_ship.sprite, intro_ship.cx, intro_ship.cy, mouse.x *WORLD_WIDTH / screen_width, mouse.y * WORLD_HEIGHT / screen_height, 0.5, 0.15 + Accel_y, Accel_x, 0); \
-  al_draw_filled_polygon(intro_ship.trail, 10, al_map_rgba(255, 255, 255, 200));
+  al_draw_filled_polygon(intro_ship.trail, 10, al_map_rgba(255, 255, 255, 200))
 
 #define DRAW_LOGO \
-  al_draw_scaled_rotated_bitmap(intro_logo, al_get_bitmap_width(intro_logo) / 2, al_get_bitmap_height(intro_logo) / 2, WORLD_WIDTH / 2, WORLD_HEIGHT / 4, 1, 1, 0, 0);
+  al_draw_scaled_rotated_bitmap(intro_logo, al_get_bitmap_width(intro_logo) / 2, al_get_bitmap_height(intro_logo) / 2, WORLD_WIDTH / 2, WORLD_HEIGHT / 4, 1, 1, 0, 0)
 
 #define CURSOR_UPDATE                                                                             \
   trail_accel(intro_ship.trail, mouse.x, mouse.y, mouse_x, mouse_y, screen_width, screen_height); \
-  cursor_accel(&mouse, &mouse_x, &mouse_y, &Accel_x, &Accel_y);
+  cursor_accel(&mouse, &mouse_x, &mouse_y, &Accel_x, &Accel_y)
 
 #define REDRAW      \
   if ( redraw ) {   \
     DRAW;           \
     redraw = false; \
   }
+
+#define DRAW_BUTTON(button) draw_button(&mouse_hover_button, &mouse, screen_width, screen_height, &(button))
+
+#define BUTTON_TEXT(button, txt) draw_smart_text(&mouse_hover_button, &mouse, screen_width, screen_height, &(button), font_supercharge, color_black, color_white, ALLEGRO_ALIGN_RIGHT, (txt))
+
+#define MOUSE_HOVER(button) mouse_hover_button(&(button), &mouse, screen_width, screen_height)
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -68,6 +74,9 @@ enum clicks { LEFT_CLICK = 1,
 
 typedef enum choice { INTRO = 10,
                       MENU_MAIN,
+                      MENU_SETTINGS,
+                      MENU_SCORE,
+                      MENU_CREDITS,
                       PLAY,
                       QUIT } choice_t;
 
@@ -85,36 +94,13 @@ typedef struct {
 } ship_t;
 
 typedef struct {
-  char b0 : 1;
-  char b1 : 1;
-  char b2 : 1;
-  char b3 : 1;
-  char b4 : 1;
-  char b5 : 1;
-  char b6 : 1;
-  char b7 : 1;
-} flag_bit_t;
-
-typedef struct {
-  char d0 : 2;
-  char d1 : 2;
-  char d2 : 2;
-  char d3 : 2;
-} flag_dibit_t;
-
-typedef union {
-  flag_bit_t bit;
-  flag_dibit_t dibit;
-} flag_t;
-
-typedef struct {
   float *coords;
   unsigned short int vertex;
 } polygon_t;
 
 typedef struct {
   ALLEGRO_BITMAP *sprite[2];
-  unsigned int size_y, size_x;
+  float size_y, size_x;
   int position_y, position_x;
   char valid;
 } button_t;
@@ -139,6 +125,8 @@ static void draw_rectangle_gradient(float center_x, float center_y, float radius
 static button_t create_button(ALLEGRO_COLOR color_1, ALLEGRO_COLOR color_2, gradient_mode_t gradient, ALLEGRO_COLOR color_hover_1, ALLEGRO_COLOR color_hover_2, gradient_mode_t gradient_hover, ALLEGRO_COLOR color_trace_1, ALLEGRO_COLOR color_trace_2, float line_width, unsigned short int vertex_count, ...);
 static bool mouse_hover_button(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float size_x, float size_y);
 static void kill_all_button(int count, ...);
+static void draw_button(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button);
+static void draw_smart_text(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, char *text);
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -179,10 +167,29 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   button_t button_start;
   button_t button_play;
-/*************************PRE-LOOP*****************************/
+  button_t button_settings;
+  button_t button_scoreboard;
+  button_t button_credits;
+  button_t button_exit;
+
   char intro_background_path[64];
 
   short int counter_1, counter_2, counter_3, screen_width, screen_height, mouse_x, mouse_y;
+
+  float button_slide_1; //, button_slide_2, button_slide_3;
+
+  bool redraw;
+  bool fullscreen;
+  bool flash_enable;
+  bool menu_enable;
+  bool menu_buttons_enable;
+  bool menu_slide_done;
+
+  /*
+  counter_1 is used for the background frames loop
+  counter_2 is used both for the initial "flashbang" and the background dark cover
+  counter_3 is used for the sliding menu window
+  */
 
   float main_menu_window[] = {WORLD_WIDTH, 0, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH, 0};
 
@@ -192,14 +199,22 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   ship_t intro_ship = {0, 0, 0, 0, {0}, NULL};
 
-  flag_t flag_1 = {0};
-
   choice_t select = INTRO;
 
-  bool redraw = false;
-  bool fullscreen = al_get_display_flags(display) & ALLEGRO_FULLSCREEN_WINDOW;
+  redraw = 0;
+  fullscreen = al_get_display_flags(display) & ALLEGRO_FULLSCREEN_WINDOW;
+  flash_enable = 1;
+  menu_enable = 0;
+  menu_buttons_enable = 0;
 
   float Accel_x = 0, Accel_y = 0;
+
+  ALLEGRO_COLOR color_white = al_map_rgb(255, 255, 255);
+  ALLEGRO_COLOR color_black = al_map_rgb(0, 0, 0);
+  ALLEGRO_COLOR color_button_left = al_map_rgba(50, 50, 50, 180);
+  ALLEGRO_COLOR color_button_right = al_map_rgba(45, 0, 160, 240);
+  ALLEGRO_COLOR color_button_hover_right = al_map_rgba(70, 0, 255, 240);
+  ALLEGRO_COLOR color_button_hover_left = al_map_rgba(255, 255, 255, 180);
 
   /**************************************************************/
 
@@ -210,11 +225,23 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   sample_instance2 = al_create_sample_instance(NULL);
   if ( must_setup(sample_instance2, "sample Instance") == CLOSED ) return CLOSED;
 
-  button_start = create_button(al_map_rgb(255, 125, 0), al_map_rgb(200, 0, 220), GRADIENT_CENTER, al_map_rgb(255, 0, 0), al_map_rgb(0, 0, 0), GRADIENT_CENTER, al_map_rgb(50, 50, 50), al_map_rgb(255, 255, 255), 4.0, 4, 50., 0., 0., 100., 200., 100., 250., 0.);
+  button_start = create_button(al_map_rgb(255, 125, 0), al_map_rgb(200, 0, 220), GRADIENT_CENTER, al_map_rgb(255, 0, 0), al_map_rgb(0, 0, 0), GRADIENT_CENTER, color_black, color_white, 4.0, 4, 50., 0., 0., 100., 200., 100., 250., 0.);
   if ( must_setup(button_start.valid, "Start button") == CLOSED ) return CLOSED;
 
-  button_play = create_button(al_map_rgba(50, 50, 50, 127), al_map_rgba(10, 10, 10, 255), GRADIENT_LEFT_TO_RIGHT, al_map_rgb(70, 0, 255), al_map_rgba(50, 50, 50, 127), GRADIENT_CENTER, al_map_rgb(0, 0, 0), al_map_rgb(127, 127, 127), 5.0, 5, 0.0, 0.0, 25.0, 25.0, 0.0, 50.0, 350.0, 50.0, 350.0, 0.0);
+  button_play = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, 16.0, 0.0, 0.0, 45.0, 350.0, 45.0, 350.0, 0.0);
   if ( must_setup(button_play.valid, "Play button") == CLOSED ) return CLOSED;
+
+  button_settings = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, 16.0, 0.0, 0.0, 45.0, 370.0, 45.0, 370.0, 0.0);
+  if ( must_setup(button_settings.valid, "Settings button") == CLOSED ) return CLOSED;
+
+  button_scoreboard = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, 16.0, 0.0, 0.0, 45.0, 390.0, 45.0, 390.0, 0.0);
+  if ( must_setup(button_scoreboard.valid, "Settings button") == CLOSED ) return CLOSED;
+
+  button_exit = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, 0.0, 0.0, 0.0, 45.0, 195.0, 45.0, 195.0, 0.0);
+  if ( must_setup(button_exit.valid, "Exit button") == CLOSED ) return CLOSED;
+
+  button_credits = create_button(color_button_right, color_button_left, GRADIENT_LEFT_TO_RIGHT, color_button_hover_right, color_button_hover_left, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, 16.0, 0.0, 0.0, 45.0, 195.0, 45.0, 195.0, 0.0);
+  if ( must_setup(button_credits.valid, "Credits button") == CLOSED ) return CLOSED;
 
   al_attach_sample_instance_to_mixer(sample_instance, al_get_default_mixer());
   al_attach_sample_instance_to_mixer(sample_instance2, al_get_default_mixer());
@@ -257,7 +284,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   /***********************FIRST PHASE****************************/
 
-  intro_anim(default_font, logo_sound, intro_part1, buffer, display, sample_instance, intro_ship.sprite);
+  // intro_anim(default_font, logo_sound, intro_part1, buffer, display, sample_instance, intro_ship.sprite);
 
   al_play_sample_instance(sample_instance2);
 
@@ -273,8 +300,20 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   button_start.position_x = WORLD_WIDTH / 2;
   button_start.position_y = WORLD_HEIGHT * (3. / 5);
 
-  button_play.position_x = WORLD_WIDTH * 0.75;
-  button_play.position_y = WORLD_HEIGHT * 0.2;
+  // button_play.position_x = WORLD_WIDTH * 0.75;
+  button_play.position_y = WORLD_HEIGHT * 0.15;
+
+  // button_settings.position_x = WORLD_WIDTH * 0.74;
+  button_settings.position_y = WORLD_HEIGHT * 0.25;
+
+  // button_scoreboard.position_x = WORLD_WIDTH * 0.73;
+  button_scoreboard.position_y = WORLD_HEIGHT * 0.35;
+
+  // button_exit.position_x = WORLD_WIDTH * 0.83;
+  button_exit.position_y = WORLD_HEIGHT * 0.45;
+
+  // button_credits.position_x = WORLD_WIDTH * 0.61;
+  button_credits.position_y = WORLD_HEIGHT * 0.45;
 
   screen_width = al_get_display_width(display);
   screen_height = al_get_display_height(display);
@@ -348,10 +387,13 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
           case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
 
             al_get_mouse_state(&mouse);
-            if ( mouse_hover_button(&button_start, &mouse, screen_width, screen_height) && mouse.buttons & LEFT_CLICK ) {
+            if ( MOUSE_HOVER(button_start) && mouse.buttons & LEFT_CLICK ) {
+              button_slide_1 = 1;
               select = MENU_MAIN;
               counter_2 = 0;
-              flag_1.bit.b0 = 1;
+              flash_enable = 0;
+              menu_enable = 1;
+              menu_slide_done = 0;
               counter_3 = 15;
               al_show_mouse_cursor(display);
             }
@@ -370,7 +412,6 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
         switch ( menu_event.type ) {
 
           case ALLEGRO_EVENT_TIMER:
-
             BUFFER;
             CLEAR;
 
@@ -381,40 +422,69 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
             DRAW_LOGO;
 
             al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(0, 0, 0, counter_2));
-            if ( counter_2 < 150 && !flag_1.bit.b1 )
+            if ( counter_2 < 150 && menu_enable )
               counter_2 += 15;
-            else if ( counter_2 > 0 && flag_1.bit.b1 )
+            else if ( counter_2 > 0 && !menu_enable && menu_slide_done )
               counter_2 -= 15;
 
-            if ( counter_3 && !flag_1.bit.b1 ) {
+            if ( counter_3 && menu_enable ) {
               main_menu_window[0] = WORLD_WIDTH * (1 - (1. / 2) / (counter_3));
               main_menu_window[2] = WORLD_WIDTH * (1 - (7. / 10) / (counter_3--));
 
             }
 
-            else if ( counter_3 && flag_1.bit.b1 ) {
+            else if ( counter_3 && !menu_enable && menu_slide_done ) {
               main_menu_window[0] = WORLD_WIDTH * (1. / 2 + (1. / 2) / (counter_3));
               main_menu_window[2] = WORLD_WIDTH * (3. / 10 + (7. / 10) / (counter_3--));
             }
             al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));
 
-            if ( !counter_3 && !flag_1.bit.b1 ) flag_1.bit.b2 = 1;
+            if ( !counter_3 && menu_enable ) menu_buttons_enable = 1;
 
-            if ( !counter_3 && flag_1.bit.b2 ) {
+            if ( menu_buttons_enable || !menu_enable ) {
 
-              if ( !mouse_hover_button(&button_play, &mouse, screen_width, screen_height) ) {
-                al_draw_scaled_rotated_bitmap(button_play.sprite[0], button_play.size_x / 2, button_play.size_y / 2, button_play.position_x, button_play.position_y, 1, 1, 0, 0);
-              } else {
-                al_draw_scaled_rotated_bitmap(button_play.sprite[1], button_play.size_x / 2, button_play.size_y / 2, button_play.position_x, button_play.position_y, 1, 1, 0, 0);
+              if ( !menu_slide_done ) {
+                button_play.position_x = (WORLD_WIDTH * 0.75) * (1 + 1 / button_slide_1);
+                button_settings.position_x = (WORLD_WIDTH * 0.74) * (1 + 1 / button_slide_1);
+                button_scoreboard.position_x = (WORLD_WIDTH * 0.73) * (1 + 1 / button_slide_1);
+                button_exit.position_x = (WORLD_WIDTH * 0.83) * (1 + 1 / button_slide_1);
+                button_credits.position_x = (WORLD_WIDTH * 0.61) * (1 + 1 / button_slide_1);
+
+                if ( menu_buttons_enable ) {
+                  if ( button_slide_1 < 100 )
+                    button_slide_1 += 5;
+                  else if ( button_slide_1 < 200 )
+                    button_slide_1 += 20;
+                  else
+                    menu_slide_done = 1;
+                } else {
+                  if ( button_slide_1 > 101 )
+                    button_slide_1 -= 20;
+                  else if ( button_slide_1 > 1 )
+                    button_slide_1 -= 5;
+                  else
+                    menu_slide_done = 1;
+                }
               }
 
-              al_draw_multiline_textf(font_supercharge, al_map_rgb(255, 255, 255), button_play.position_x + button_play.size_x * 0.5 - 24, button_play.position_y - 12, button_play.size_x, 12, ALLEGRO_ALIGN_RIGHT, "Take off!");
+              DRAW_BUTTON(button_play);
+              DRAW_BUTTON(button_settings);
+              DRAW_BUTTON(button_scoreboard);
+              DRAW_BUTTON(button_exit);
+              DRAW_BUTTON(button_credits);
+
+              BUTTON_TEXT(button_play, "Take off!");
+              BUTTON_TEXT(button_settings, "Settings");
+              BUTTON_TEXT(button_scoreboard, "Scoreboard");
+              BUTTON_TEXT(button_exit, "Quit game");
+              BUTTON_TEXT(button_credits, "Credits");
             }
 
-            if ( counter_2 <= 0 && flag_1.bit.b1 && !counter_3 ) {
+            if ( counter_2 <= 0 && !menu_enable && !counter_3 ) {
+
               select = INTRO;
               counter_2 = 0;
-              flag_1.bit.b1 = 0;
+              // menu_enable = 0;
               al_hide_mouse_cursor(display);
               CURSOR_UPDATE;
             }
@@ -423,17 +493,32 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
           case ALLEGRO_EVENT_KEY_DOWN:
             if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE ) {
-              flag_1.bit.b1 = 1;
-              flag_1.bit.b2 = 0;
+              menu_enable = 0;
+              menu_buttons_enable = 0;
+              menu_slide_done = 0;
               counter_3 = 15;
             }
             break;
 
           case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
             al_get_mouse_state(&mouse);
-            if ( mouse_hover_button(&button_play, &mouse, screen_width, screen_height) ) select = PLAY;
+            if ( mouse.buttons && LEFT_CLICK ) {
+              if ( MOUSE_HOVER(button_play) )
+                select = PLAY;
+              else if ( MOUSE_HOVER(button_settings) )
+                ; // select = MENU_SETTINGS;
+              else if ( MOUSE_HOVER(button_scoreboard) )
+                ;
+              else if ( MOUSE_HOVER(button_credits) )
+                ;
+              else if ( MOUSE_HOVER(button_exit) )
+                select = QUIT;
+            }
         }
 
+        break;
+
+      case MENU_SETTINGS:
         break;
 
       default:
@@ -452,7 +537,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   (*kill_all_samples)(3, logo_sound, intro_part1, intro_part2);
   (*kill_all_instances)(2, sample_instance, sample_instance2);
   (*kill_all_font)(3, font_cartesian, font_supercharge, font_toreks);
-  kill_all_button(1, &button_start);
+  kill_all_button(6, &button_start, &button_play, &button_settings, &button_scoreboard, &button_credits, &button_exit);
 
   al_stop_timer(timer);
 
@@ -461,7 +546,6 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   /****************************RETURN****************************/
 
   al_hide_mouse_cursor(display);
-  
 
   if ( select == QUIT ) return CLOSED;
   return GAME;
@@ -738,8 +822,8 @@ button_t create_button(ALLEGRO_COLOR color_1, ALLEGRO_COLOR color_2, gradient_mo
   float min_x, max_x, min_y, max_y;
 
   for ( counter_1 = 0; counter_1 < vertex_count; counter_1++ ) {
-    vertex[2 * counter_1] = va_arg(vertex_list, double) + line_width + 1;
-    vertex[2 * counter_1 + 1] = va_arg(vertex_list, double) + line_width + 1;
+    vertex[2 * counter_1] = va_arg(vertex_list, double) + line_width * 0.5 + (line_width <= 0 ? 0.1 : 0);
+    vertex[2 * counter_1 + 1] = va_arg(vertex_list, double) + line_width * 0.5 + (line_width <= 0 ? 0.1 : 0);
 
     if ( !counter_1 ) {
       min_x = vertex[2 * counter_1];
@@ -755,8 +839,8 @@ button_t create_button(ALLEGRO_COLOR color_1, ALLEGRO_COLOR color_2, gradient_mo
     if ( max_y < vertex[2 * counter_1 + 1] ) max_y = vertex[2 * counter_1 + 1];
   }
 
-  button.size_x = (max_x - min_x) + 2 * (line_width + 1);
-  button.size_y = (max_y - min_y) + 2 * (line_width + 1);
+  button.size_x = (max_x - min_x) + (line_width);
+  button.size_y = (max_y - min_y) + (line_width);
 
   va_end(vertex_list);
 
@@ -876,4 +960,34 @@ bool mouse_hover_button(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float size
   int position_x = mouse->x * (WORLD_WIDTH / size_x);
   int position_y = mouse->y * (WORLD_HEIGHT / size_y);
   return (position_x >= (button->position_x - button->size_x / 2) && position_x <= (button->position_x + button->size_x / 2) && position_y >= (button->position_y - button->size_y / 2) && position_y <= (button->position_y + button->size_y / 2));
+}
+
+void draw_button(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button) {
+  if ( mouse_hover(button, mouse, screen_width, screen_height) )
+    al_draw_bitmap(button->sprite[1], button->position_x - (button->size_x * 0.5), button->position_y - (button->size_y * 0.5), 0);
+  else
+    al_draw_bitmap(button->sprite[0], button->position_x - (button->size_x * 0.5), button->position_y - (button->size_y * 0.5), 0);
+}
+
+void draw_smart_text(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, char *text) {
+  ALLEGRO_COLOR color_text;
+  float position_y = button->position_y - (al_get_font_line_height(font) >> 1);
+  float position_x;
+  if ( mouse_hover(button, mouse, screen_width, screen_height) )
+    color_text = color_hover;
+  else
+    color_text = color_default;
+
+  switch ( alignment ) {
+    case ALLEGRO_ALIGN_LEFT:
+      position_x = button->position_x - button->size_x * 0.5 + al_get_font_line_height(font);
+      break;
+    case ALLEGRO_ALIGN_RIGHT:
+      position_x = button->position_x + button->size_x * 0.5 - al_get_font_line_height(font);
+      break;
+    default:
+      position_x = button->position_x;
+      break;
+  }
+  al_draw_text(font, color_text, position_x, position_y, alignment, text);
 }
