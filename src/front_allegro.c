@@ -385,6 +385,8 @@ game_state_t game_pause(unsigned int level) {
 }
 
 game_state_t endgame() {
+    game_state_t result;
+
     char name[NAME_LEN + 1] = "";
     int name_len = 0;
     int score = player_get_score();
@@ -400,10 +402,11 @@ game_state_t endgame() {
 
     bool done = false;
     unsigned frame = 0;
+    ALLEGRO_EVENT ev;
     al_flush_event_queue(queue);
     while (!done) {
-        ALLEGRO_EVENT ev;
         al_wait_for_event(queue, &ev);
+        if (ev.type == ALLEGRO_EVENT_MOUSE_AXES) continue; // Ignore mouse movement
         if(ev.type == ALLEGRO_EVENT_TIMER) frame++;
 
         // Redraw
@@ -455,11 +458,85 @@ game_state_t endgame() {
     al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0); 
     al_flip_display();
 
-    al_rest(3.0); // Wait in final mesage screen
+    // Show buttons to decide what to do next
+    al_show_mouse_cursor(disp);
+    const int space = WORLD_WIDTH / 6;
+    const int button_w = WORLD_WIDTH / 4.5;
+    const int button_h = WORLD_HEIGHT / 12;
+    const int start_x = WORLD_WIDTH / 2 - space - button_w / 2;
+
+    const char *labels[] = { "Replay", "Main Menu", "Exit" };
+
+    ALLEGRO_COLOR colors[3][2] = {
+      // "Replay" - blue
+      { al_map_rgb(  80,  80, 200), al_map_rgb(120, 120, 255) },
+      // "Main Menu" - green
+      { al_map_rgb(  60, 200,  60), al_map_rgb(100, 255, 100) },
+      // "Exit" - red
+      { al_map_rgb(200,  60,  60), al_map_rgb(255, 100, 100) }
+    };
+
+    button_t buttons[3] = { // Buttons will hace the same format as the ones in pause menu
+      CREATE_BUTTON_GAME_PAUSE(colors[0][0], colors[0][1]),
+      CREATE_BUTTON_GAME_PAUSE(colors[1][0], colors[1][1]),
+      CREATE_BUTTON_GAME_PAUSE(colors[2][0], colors[2][1])
+    };
+    for(int i = 0; i < 3; ++i){
+      buttons[i].position_x = start_x + i * (button_w + space / 2);
+      buttons[i].position_y = WORLD_HEIGHT - WORLD_HEIGHT / 6;
+    }
+    
+    done = false;
+    while (!done) {
+        al_set_target_bitmap(buffer);
+        ALLEGRO_MOUSE_STATE ms; al_get_mouse_state(&ms);
+
+        // Draw buttons
+        for(int i = 0; i < 3; ++i) {
+            draw_button(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i]);
+            draw_smart_text(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i], font_endgame, al_map_rgb(230, 230, 230), al_map_rgb(30, 30, 30), ALLEGRO_ALIGN_CENTER, labels[i]);
+        }
+
+        // Draw to screen
+        al_set_target_backbuffer(disp);
+        al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0,
+                              al_get_display_width(disp), al_get_display_height(disp), 0);
+        al_flip_display();
+
+        // Wait for event
+        while (al_get_next_event(queue, &ev)) {
+          if (ev.type == ALLEGRO_EVENT_MOUSE_AXES) continue; // Ignore mouse movement
+
+          if (ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+              for(int i = 0; i < 3; ++i) {
+                  if (mouse_hover_button(&buttons[i], &ms, al_get_display_width(disp), al_get_display_height(disp))) {
+                      switch(i){
+                        case 0:
+                          result = GAME;
+                          break;
+                        case 1:
+                          result = MENU;
+                          break;
+                        case 2:
+                          result = CLOSED;
+                          break;
+                      }
+                      done = true;
+                      break;
+                  }
+              }
+          } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
+              result = GAME;
+              done = true;
+          }
+        }
+    }
 
     al_destroy_font(font_endgame);
-    
-    return MENU;
+    al_hide_mouse_cursor(disp);
+    al_clear_to_color(al_map_rgb(0,0,0));
+    al_flip_display();
+    return result;
 }
 
 // Complete...
