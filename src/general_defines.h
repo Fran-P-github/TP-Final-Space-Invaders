@@ -131,8 +131,8 @@
 #define GAME_BG_MUSIC "../assets/Audio/gameBackground.wav"
 #define AUDIO_MENU_SONG "../assets/Audio/menuSong.wav"
 #define AUDIO_PAUSE "../assets/Audio/pauseSound.wav"
-#define SPRITESHEET2 "../sprites/spritesheet2.png"
-#define SPRITESHEETSHOT "../sprites/alienshot.png"
+#define SPRITESHEET2 "../assets/sprites/alien_and_ufo_sprites.png"
+#define SPRITESHEETSHOT "../assets/sprites/shot_animations.png"
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
