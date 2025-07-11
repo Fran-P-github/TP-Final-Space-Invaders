@@ -58,6 +58,15 @@
     redraw = false; \
   }
 
+#define DRAW_BUTTON(button) draw_button(&mouse, screen_width, screen_height, &(button))
+// Wrapper for drawing the button. Simpler and quicker
+
+#define BUTTON_TEXT(button, txt) draw_smart_text(&mouse, screen_width, screen_height, &(button), font_supercharge, color_black, color_white, ALLEGRO_ALIGN_RIGHT, (txt))
+// Wrapper for drawing text over a certain button
+
+#define MOUSE_HOVER(button) mouse_hover_button(&(button), &mouse, screen_width, screen_height)
+// Wrapper to detect where the mouse is hovering over
+
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
@@ -939,14 +948,14 @@ bool mouse_hover_button(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float size
   return (position_x >= (button->position_x - button->size_x / 2) && position_x <= (button->position_x + button->size_x / 2) && position_y >= (button->position_y - button->size_y / 2) && position_y <= (button->position_y + button->size_y / 2));
 }
 
-void draw_button(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h),*/ ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button) {
+void draw_button(ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button) {
   if ( mouse_hover_button(button, mouse, screen_width, screen_height) )
     al_draw_bitmap(button->sprite[1], button->position_x - (button->size_x * 0.5), button->position_y - (button->size_y * 0.5), 0);
   else
     al_draw_bitmap(button->sprite[0], button->position_x - (button->size_x * 0.5), button->position_y - (button->size_y * 0.5), 0);
 }
 
-void draw_smart_text(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h),*/ ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, char *text) {
+void draw_smart_text(ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, const char *text) {
   ALLEGRO_COLOR color_text;
   float position_y = button->position_y - (al_get_font_line_height(font) >> 1);
   float position_x;
@@ -967,4 +976,8 @@ void draw_smart_text(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE
       break;
   }
   al_draw_text(font, color_text, position_x, position_y, alignment, text);
+}
+
+void insert_description(ALLEGRO_FONT *font, ALLEGRO_COLOR color, const char *text) {
+  al_draw_multiline_text(font, color, 0.6 * WORLD_WIDTH, 0.6 * WORLD_HEIGHT, 0.4 * WORLD_HEIGHT, al_get_font_line_height(font), 0, text);
 }
