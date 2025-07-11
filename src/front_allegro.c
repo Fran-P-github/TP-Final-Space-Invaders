@@ -648,7 +648,7 @@ game_state_t game_update(unsigned level, bool new_level) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
           background_update();
-          level_state = back_update(level, alien_death, alien_hit, shield_hit);
+          level_state = back_update(level, alien_death, alien_hit);
           redraw = true;
           ++frame;
           moveThisFrame = false;
@@ -738,6 +738,9 @@ game_state_t game_update(unsigned level, bool new_level) {
       draw_alien_shot(shotFrame, alienShotColor);
       for ( int x = 0; x < SHIELDS_CANT; x++ ) {
         draw_shield(x);
+      }
+      if(shieldWasHit){
+        shield_hit();
       }
       draw_player();
 
