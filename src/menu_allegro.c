@@ -80,9 +80,7 @@ typedef enum choice { INTRO = 10,
                       PLAY,
                       QUIT } choice_t;
 
-typedef enum gradient_mode { GRADIENT_CENTER = 20,
-                             GRADIENT_TOP_TO_BOTTOM,
-                             GRADIENT_LEFT_TO_RIGHT } gradient_mode_t;
+
 
 typedef struct {
   int px;           // X position
@@ -98,12 +96,7 @@ typedef struct {
   unsigned short int vertex;
 } polygon_t;
 
-typedef struct {
-  ALLEGRO_BITMAP *sprite[2];
-  float size_y, size_x;
-  int position_y, position_x;
-  char valid;
-} button_t;
+
 
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
@@ -118,15 +111,9 @@ static void intro_anim(ALLEGRO_FONT *dfont, ALLEGRO_SAMPLE *s_logo, ALLEGRO_SAMP
 static void draw_frame(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *buffer);
 static void cursor_accel(ALLEGRO_MOUSE_STATE *mouse, short int *mouse_old_x, short int *mouse_old_y, float *accel_x, float *Accel_y);
 static void trail_accel(float *polygon, int new_x, int new_y, int old_x, int old_y, int width, int height);
-static void draw_rectangle_gradient(float center_x, float center_y, float radius_x, float radius_y, gradient_mode_t mode, ALLEGRO_COLOR color_1, ALLEGRO_COLOR color_2, int steps);
 // static polygon_t assign_polygon(unsigned int vertex_count, ...);
 // static void draw_polygon(polygon_t *polygon, ALLEGRO_COLOR color, float trace);
 // static void kill_all_polygon(unsigned int count, ...);
-static button_t create_button(ALLEGRO_COLOR color_1, ALLEGRO_COLOR color_2, gradient_mode_t gradient, ALLEGRO_COLOR color_hover_1, ALLEGRO_COLOR color_hover_2, gradient_mode_t gradient_hover, ALLEGRO_COLOR color_trace_1, ALLEGRO_COLOR color_trace_2, float line_width, unsigned short int vertex_count, ...);
-static bool mouse_hover_button(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float size_x, float size_y);
-static void kill_all_button(int count, ...);
-static void draw_button(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button);
-static void draw_smart_text(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, char *text);
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
