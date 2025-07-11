@@ -700,7 +700,23 @@ game_state_t game_update(unsigned level, bool new_level) {
         }
       }
 
-      if(explosion.explosion_interval > 0) draw_explosion(frame, ALIEN_NEON);
+      if(explosion.explosion_interval > 0){
+        alien_color_t color;
+        switch(explosion.explosion_interval){
+          case 5:
+          case 4:
+            color = ALIEN_ORANGE;
+            break;
+          case 3:
+          case 2:
+            color = ALIEN_WHITE;
+            break;
+          case 1:
+            color = ALIEN_GREY;
+            break;
+        }
+        draw_explosion(frame, color);
+      }
 
       if ( mothership_is_active() ) {
         al_play_sample_instance(ufoSample);
