@@ -77,6 +77,11 @@
     {'*', '*', ' ', ' ', ' ', '*', '*'}}
 #define SHIELD_TO_PLAYER_MARGIN 40
 
+typedef enum {
+  ALIEN_EXPLOSION = 0,
+  UFO_EXPLOSION
+} explosion_type_t;
+
 #elif PLATFORM == RPI
 
 #define FRAME_RATE 1
