@@ -58,12 +58,6 @@
     redraw = false; \
   }
 
-#define DRAW_BUTTON(button) draw_button(&mouse_hover_button, &mouse, screen_width, screen_height, &(button))
-
-#define BUTTON_TEXT(button, txt) draw_smart_text(&mouse_hover_button, &mouse, screen_width, screen_height, &(button), font_supercharge, color_black, color_white, ALLEGRO_ALIGN_RIGHT, (txt))
-
-#define MOUSE_HOVER(button) mouse_hover_button(&(button), &mouse, screen_width, screen_height)
-
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
@@ -80,8 +74,6 @@ typedef enum choice { INTRO = 10,
                       PLAY,
                       QUIT } choice_t;
 
-
-
 typedef struct {
   int px;           // X position
   int py;           // Y position
@@ -95,8 +87,6 @@ typedef struct {
   float *coords;
   unsigned short int vertex;
 } polygon_t;
-
-
 
 /*******************************************************************************
  * VARIABLES WITH GLOBAL SCOPE
@@ -949,18 +939,18 @@ bool mouse_hover_button(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float size
   return (position_x >= (button->position_x - button->size_x / 2) && position_x <= (button->position_x + button->size_x / 2) && position_y >= (button->position_y - button->size_y / 2) && position_y <= (button->position_y + button->size_y / 2));
 }
 
-void draw_button(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button) {
-  if ( mouse_hover(button, mouse, screen_width, screen_height) )
+void draw_button(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h),*/ ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button) {
+  if ( mouse_hover_button(button, mouse, screen_width, screen_height) )
     al_draw_bitmap(button->sprite[1], button->position_x - (button->size_x * 0.5), button->position_y - (button->size_y * 0.5), 0);
   else
     al_draw_bitmap(button->sprite[0], button->position_x - (button->size_x * 0.5), button->position_y - (button->size_y * 0.5), 0);
 }
 
-void draw_smart_text(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, char *text) {
+void draw_smart_text(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h),*/ ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, char *text) {
   ALLEGRO_COLOR color_text;
   float position_y = button->position_y - (al_get_font_line_height(font) >> 1);
   float position_x;
-  if ( mouse_hover(button, mouse, screen_width, screen_height) )
+  if ( mouse_hover_button(button, mouse, screen_width, screen_height) )
     color_text = color_hover;
   else
     color_text = color_default;
