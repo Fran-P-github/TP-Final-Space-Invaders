@@ -585,6 +585,7 @@ game_state_t game_update(unsigned level, bool new_level) {
   level_state_t level_state = LEVEL_NOT_DONE;
   unsigned long long frame = 0;
   unsigned shotFrame = 0, playerShotColor = 0, alienShotColor = 0;
+  int explosionOpacity = 255;
   bool frameDecrement = false;
 
   al_start_timer(timer);
@@ -641,34 +642,32 @@ game_state_t game_update(unsigned level, bool new_level) {
       moveThisFrame = true;
     }
 
-    // Player death
-    if(playerDied){
-      al_play_sample_instance(playerDeathSample);
-    }
-
-    // Reproduce el sonido cuando los aliens se mueven (si siguen vivos) se aprovecha el "laziness" de c.
+    // Plays sound effect whenever the aliens move.
     if ( total_aliens_alive() && aliensMoved )
       al_play_sample_instance(alienMovedSample);
 
-    // Para el sonido del disparo cuando se hace muy seguido
+    // Stops player shot sound effect on collition
     if ( !player_shot_is_used() && shotMade ) {
       al_stop_sample_instance(playerShotSample);
       shotMade = false;
     }
 
     if ( redraw ) {
-      // Manejo de frames para las animaciones de disparo (alien y jugador)
+      // Shot animation frames handling (both alien and player)
       if(frame%3 == 0){
         if(shotFrame >= SPRITE_SHOT_FRAMES - 1) frameDecrement = true;
         else if (shotFrame <= 0) frameDecrement = false;
         frameDecrement ? shotFrame-- : shotFrame++;
         alienShotColor += 40;
         playerShotColor += 30;
+        explosionOpacity -= 40;
       }
-      // Maximos valores de color para el disparo del jugador
+      if(!playerDied) explosionOpacity = 255;
+      else if(explosionOpacity <= 0) explosionOpacity = 0;
+      // Max color value for player shot
       if(!player_shot_is_used()) playerShotColor = 0;
       else if(playerShotColor >= 255) playerShotColor = 255;
-      // Maximos valores de color para el disparo del alien
+      // Max color value for alien shot
       if(!alien_shot_is_used()) alienShotColor = 0;
       else if(alienShotColor >= 255) alienShotColor = 255;
       redraw = false;
@@ -691,6 +690,20 @@ game_state_t game_update(unsigned level, bool new_level) {
         draw_shield(x);
       }
       draw_player();
+
+      // Player death
+      if(playerDied){
+        ALLEGRO_BITMAP* sprite = sprites.aliens_explotion[ALIEN_SILVER];
+        int srcWidth = al_get_bitmap_width(sprite), srcHeight = al_get_bitmap_height(sprite);
+        al_draw_tinted_scaled_bitmap(
+          sprite,
+          al_map_rgba(255, 255, 255, explosionOpacity),
+          0, 0, srcWidth, srcHeight,
+          player_get_x(), player_get_y(), PLAYER_W, PLAYER_H,
+          0
+        );
+        al_play_sample_instance(playerDeathSample);
+      }
 
       {
         int alienSprite = SPRITE_ALIENS_NUM;
