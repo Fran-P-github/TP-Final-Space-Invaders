@@ -185,6 +185,7 @@ static ALLEGRO_SAMPLE *alienMovedSound = NULL;
 static ALLEGRO_SAMPLE *alienHitSound = NULL;
 static ALLEGRO_SAMPLE *shieldHitSound = NULL;
 static ALLEGRO_SAMPLE *ufoSound = NULL;
+static ALLEGRO_SAMPLE *pauseSound = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerShotSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienMovedSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *ufoSample = NULL;
@@ -192,6 +193,7 @@ static ALLEGRO_SAMPLE_INSTANCE *alienDeathSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienHitSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerDeathSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *shieldHitSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *pauseSample = NULL;
 
 // keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
@@ -214,6 +216,7 @@ game_state_t front_init() {
   init_error(al_init_video_addon(), "Allegro Videos");
   init_error(al_install_audio(), "Allegro Audio");
   init_error(al_init_acodec_addon(), "Allegro Audio Codec");
+  al_set_blender(ALLEGRO_ADD, ALLEGRO_ALPHA, ALLEGRO_INVERSE_ALPHA);
 
   al_reserve_samples(AUDIO_SAMPLES);
   init_error(al_init_image_addon(), "Allegro Image Addon");
@@ -228,11 +231,13 @@ game_state_t front_init() {
   alienHitSound = al_load_sample(AUDIO_INVADER_HIT);
   shieldHitSound = al_load_sample(AUDIO_SHIELD_HIT);
   ufoSound = al_load_sample(AUDIO_UFO);
+  pauseSound = al_load_sample(AUDIO_PAUSE);
   init_error(playerShotSound, "Audio disparo del jugador.");
   init_error(playerDeathSound, "Audio muerte del jugador.");
   init_error(alienDeathSound, "Audio muerte del alien.");
   init_error(playerDeathSound, "Audio muerte del jugador.");
   init_error(ufoSound, "Audio del OVNI.");
+  init_error(pauseSound, "Pause audio.");
 
   // Se crea el mixer
   mixer = al_create_mixer(44100, ALLEGRO_AUDIO_DEPTH_FLOAT32, ALLEGRO_CHANNEL_CONF_2);
@@ -248,6 +253,7 @@ game_state_t front_init() {
   alienHitSample = al_create_sample_instance(alienHitSound);
   shieldHitSample = al_create_sample_instance(shieldHitSound);
   ufoSample = al_create_sample_instance(ufoSound);
+  pauseSample = al_create_sample_instance(pauseSound);
 
   al_attach_sample_instance_to_mixer(playerShotSample, mixer);
   al_attach_sample_instance_to_mixer(playerDeathSample, mixer);
@@ -256,6 +262,7 @@ game_state_t front_init() {
   al_attach_sample_instance_to_mixer(alienHitSample, mixer);
   al_attach_sample_instance_to_mixer(shieldHitSample, mixer);
   al_attach_sample_instance_to_mixer(ufoSample, mixer);
+  al_attach_sample_instance_to_mixer(pauseSample, mixer);
 
   // Se setean los valores predeterminados para cada audio.
   initAudioInstance(playerShotSample, VOLUME_PLAYER_SHOT, ALLEGRO_PLAYMODE_ONCE);
@@ -303,6 +310,7 @@ game_state_t menu() {
 }
 
 game_state_t game_pause(unsigned int level) {
+    al_play_sample_instance(pauseSample); // Play pause sound
     al_stop_timer(timer); // Pause timer while in pause
     al_stop_sample_instance(ufoSample); // Stop mothership sound
 
@@ -313,7 +321,7 @@ game_state_t game_pause(unsigned int level) {
     const int button_w = WORLD_WIDTH / 3;
     const int button_h = WORLD_HEIGHT / 12;
     const int x = WORLD_WIDTH / 2 - button_w / 2;
-    const int start_y = 3 * space;
+    const int start_y = WORLD_HEIGHT / 3; // This is not centered
 
     const char *labels[] = { "Resume", "Main Menu", "Exit" };
     ALLEGRO_COLOR colors[] = {
@@ -326,15 +334,17 @@ game_state_t game_pause(unsigned int level) {
     bool done = false;
     game_state_t result = GAME;
 
-    while (!done) {
-        // Draw background
-        al_set_target_bitmap(buffer);
-        al_clear_to_color(al_map_rgb(0, 0, 0));
+    // Draw background
+    al_set_target_bitmap(buffer);    
+    al_draw_filled_rectangle(0, 0, WORLD_WIDTH-1, WORLD_HEIGHT-1, al_map_rgba(0, 0, 0, 128));
 
-        // Show player info
+    while (!done) {
+        al_set_target_bitmap(buffer);
+
+        /*// Show player info
         al_draw_textf(font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space, ALLEGRO_ALIGN_CENTER,
                       "Score: %d    Lives: %d    Level: %d",
-                      player_get_score(), player_get_lives(), level+1); // First level is level 0
+                      player_get_score(), player_get_lives(), level+1); // First level is level 0*/
 
         // Draw buttons
         for(int i = 0; i < 3; ++i) {
@@ -389,6 +399,7 @@ game_state_t game_pause(unsigned int level) {
     memset(key, 0, sizeof(key)); // Clear keys mask for going back to game
     al_clear_to_color(al_map_rgb(0, 0, 0)); // Clear screen on exit
     al_flip_display();
+    al_play_sample_instance(pauseSample); // Play pause sound
     return result;
 }
 
@@ -474,20 +485,22 @@ void front_deinit() {
   al_destroy_mixer(mixer);
   // Se matan los procesos relacionados al audio.
   kill_all_instances(
-      5, // Cantidad de instancias a destruir.
+      6, // Cantidad de instancias a destruir.
       playerShotSample,
       playerDeathSample,
       alienMovedSample,
       alienDeathSample,
-      ufoSample
+      ufoSample,
+      pauseSample
     );
   kill_all_samples(
-      5, // Cantidad de samples a destruir.
+      6, // Cantidad de samples a destruir.
       playerShotSound,
       playerDeathSound,
       alienDeathSound,
       alienMovedSound,
-      ufoSound
+      ufoSound,
+      pauseSound
     );
   al_uninstall_audio();
   sprites_deinit();

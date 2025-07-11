@@ -149,6 +149,7 @@ static Audio *playerDeathSound = NULL;
 static Audio *alienDeathSound = NULL;
 static Audio *alienMovedSound = NULL;
 static Audio *shieldHitSound = NULL;
+static Audio *pauseSound = NULL;
 
 /*******************************************************************************
                         GLOBAL FUNCTION DEFINITIONS
@@ -171,12 +172,15 @@ game_state_t front_init(){
     alienMovedSound = createAudio(AUDIO_INVADER_MOVED, 0, SDL_MIX_MAXVOLUME);
     mothershipMusic = createAudio(AUDIO_UFO, 0, SDL_MIX_MAXVOLUME);
     shieldHitSound = createAudio(AUDIO_SHIELD_HIT, 0, SDL_MIX_MAXVOLUME);
+    pauseSound = createAudio(AUDIO_PAUSE, 0, SDL_MIX_MAXVOLUME);
     bgMusic = createAudio(GAME_BG_MUSIC, 0, SDL_MIX_MAXVOLUME);
 
     return MENU;
 }
 
 game_state_t game_pause(unsigned int level){ // Level unused here, it is not shown
+    playSoundFromMemory(pauseSound, SDL_MIX_MAXVOLUME);
+
     const char resume[3][4] = {
         " * ",
         " **",
@@ -214,6 +218,7 @@ game_state_t game_pause(unsigned int level){ // Level unused here, it is not sho
 
     pause_option_t selected = RESUME; // Current option pointed by arrow
 
+    game_state_t ret;
     while (true) {
         // Read joystick and move arrow
         joyinfo_t js = joy_read();
@@ -242,23 +247,25 @@ game_state_t game_pause(unsigned int level){ // Level unused here, it is not sho
         // Selection on button press
         if (js.sw == J_PRESS) {
             wait_button_release();
-            disp_clear();
-            disp_update();
             switch(selected){
                 case RESUME:
-                    return GAME;
+                    ret = GAME;
                     break;
                 case HOME:
-                    return MENU;
+                    ret = MENU;
                     break;
                 case EXIT:
-                    return CLOSED;
+                    ret = CLOSED;
                     break;
             }
+            break;
         }
     }
     
-    return GAME; // Will never be reached
+    disp_clear();
+    disp_update();
+    playSoundFromMemory(pauseSound, SDL_MIX_MAXVOLUME);
+    return ret;
 }
 
 game_state_t menu(){
