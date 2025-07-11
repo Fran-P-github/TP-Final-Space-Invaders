@@ -33,6 +33,12 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
+#define INIT_SOUND(p, sample, volume, playmode, mixer)    \
+  p = al_create_sample_instance(al_load_sample(sample));  \
+  init_error(p, #p);                                      \
+  al_attach_sample_instance_to_mixer(p, mixer);           \
+  initAudioInstance(p, volume, playmode);
+
 #define MSJ_ERR_INIT "Problema al inicializar: "
 #define AUDIO_SAMPLES 16
 #define MAX_EVENT_WAIT_TIME 0.001
@@ -45,6 +51,7 @@
 #define VOLUME_SHIELD_HIT .5
 #define VOLUME_UFO .1
 #define VOLUME_UFO_DEATH .3
+#define VOLUME_PAUSE .5
 // Sprites
 #define ALIEN_SCALE_X 40
 #define ALIEN_SCALE_Y 40
@@ -181,15 +188,6 @@ static sprites_t sprites;
 explosion_t explosion; // explosion struct
 
 // Punteros a los samples para el audio
-static ALLEGRO_SAMPLE *playerShotSound = NULL;
-static ALLEGRO_SAMPLE *playerDeathSound = NULL;
-static ALLEGRO_SAMPLE *alienDeathSound = NULL;
-static ALLEGRO_SAMPLE *alienMovedSound = NULL;
-static ALLEGRO_SAMPLE *alienHitSound = NULL;
-static ALLEGRO_SAMPLE *shieldHitSound = NULL;
-static ALLEGRO_SAMPLE *ufoSound = NULL;
-static ALLEGRO_SAMPLE *ufoDeathSound = NULL;
-static ALLEGRO_SAMPLE *pauseSound = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerShotSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienMovedSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *ufoSample = NULL;
@@ -228,62 +226,23 @@ game_state_t front_init() {
 
   sprites_init();
 
-  // Se cargan los archivos de audio
-  playerShotSound = al_load_sample(AUDIO_PLAYER_SHOT);
-  playerDeathSound = al_load_sample(AUDIO_PLAYER_DEATH);
-  alienDeathSound = al_load_sample(AUDIO_INVADER_DEATH);
-  alienMovedSound = al_load_sample(AUDIO_INVADER_MOVED);
-  alienHitSound = al_load_sample(AUDIO_INVADER_HIT);
-  shieldHitSound = al_load_sample(AUDIO_SHIELD_HIT);
-  ufoSound = al_load_sample(AUDIO_UFO);
-  ufoDeathSound = al_load_sample(AUDIO_UFO_DEATH);
-  pauseSound = al_load_sample(AUDIO_PAUSE);
-  init_error(playerShotSound, "Audio disparo del jugador.");
-  init_error(playerDeathSound, "Audio muerte del jugador.");
-  init_error(alienDeathSound, "Audio muerte del alien.");
-  init_error(alienHitSound, "Audio golpe a alien.");
-  init_error(alienMovedSound, "Audio movimiento de alien.");
-  init_error(shieldHitSound, "Audio golpe a escudo.");
-  init_error(ufoSound, "Audio del OVNI.");
-  init_error(ufoDeathSound, "Audio muerte del OVNI.");
-  init_error(pauseSound, "Pause audio.");
-
   // Se crea el mixer
   mixer = al_create_mixer(44100, ALLEGRO_AUDIO_DEPTH_FLOAT32, ALLEGRO_CHANNEL_CONF_2);
   init_error(mixer, "Mixer");
   // Se adjunta el mixer creado al mixer principal.
   al_attach_mixer_to_mixer(mixer, al_get_default_mixer());
 
-  // Se crean instancias de samples para el disparo del jugador y para el movimiento de los aliens
-  playerShotSample = al_create_sample_instance(playerShotSound);
-  playerDeathSample = al_create_sample_instance(playerDeathSound);
-  alienMovedSample = al_create_sample_instance(alienMovedSound);
-  alienDeathSample = al_create_sample_instance(alienDeathSound);
-  alienHitSample = al_create_sample_instance(alienHitSound);
-  shieldHitSample = al_create_sample_instance(shieldHitSound);
-  ufoDeathSample = al_create_sample_instance(ufoDeathSound);
-  ufoSample = al_create_sample_instance(ufoSound);
-  pauseSample = al_create_sample_instance(pauseSound);
+  // Se cargan los archivos de audio
+  INIT_SOUND(playerShotSample, AUDIO_PLAYER_SHOT, VOLUME_PLAYER_SHOT, ALLEGRO_PLAYMODE_ONCE, mixer)
+  INIT_SOUND(playerDeathSample, AUDIO_PLAYER_DEATH, VOLUME_PLAYER_DEATH, ALLEGRO_PLAYMODE_ONCE, mixer)
+  INIT_SOUND(alienDeathSample, AUDIO_INVADER_DEATH, VOLUME_ALIENS_DEATH, ALLEGRO_PLAYMODE_ONCE, mixer)
+  INIT_SOUND(alienMovedSample, AUDIO_INVADER_MOVED, VOLUME_ALIENS_MOVED, ALLEGRO_PLAYMODE_ONCE, mixer)
+  INIT_SOUND(alienHitSample, AUDIO_INVADER_HIT, VOLUME_ALIENS_HIT, ALLEGRO_PLAYMODE_ONCE, mixer)
+  INIT_SOUND(shieldHitSample, AUDIO_SHIELD_HIT, VOLUME_SHIELD_HIT, ALLEGRO_PLAYMODE_ONCE, mixer)
+  INIT_SOUND(ufoDeathSample, AUDIO_UFO_DEATH, VOLUME_UFO_DEATH, ALLEGRO_PLAYMODE_ONCE, mixer)
+  INIT_SOUND(ufoSample, AUDIO_UFO, VOLUME_UFO, ALLEGRO_PLAYMODE_LOOP, mixer)
+  INIT_SOUND(pauseSample, AUDIO_PAUSE, VOLUME_PAUSE, ALLEGRO_PLAYMODE_ONCE, mixer)
 
-  al_attach_sample_instance_to_mixer(playerShotSample, mixer);
-  al_attach_sample_instance_to_mixer(playerDeathSample, mixer);
-  al_attach_sample_instance_to_mixer(alienMovedSample, mixer);
-  al_attach_sample_instance_to_mixer(alienDeathSample, mixer);
-  al_attach_sample_instance_to_mixer(alienHitSample, mixer);
-  al_attach_sample_instance_to_mixer(shieldHitSample, mixer);
-  al_attach_sample_instance_to_mixer(ufoSample, mixer);
-  al_attach_sample_instance_to_mixer(ufoDeathSample, mixer);
-  al_attach_sample_instance_to_mixer(pauseSample, mixer);
-
-  // Se setean los valores predeterminados para cada audio.
-  initAudioInstance(playerShotSample, VOLUME_PLAYER_SHOT, ALLEGRO_PLAYMODE_ONCE);
-  initAudioInstance(playerDeathSample, VOLUME_PLAYER_DEATH, ALLEGRO_PLAYMODE_ONCE);
-  initAudioInstance(alienMovedSample, VOLUME_ALIENS_MOVED, ALLEGRO_PLAYMODE_ONCE);
-  initAudioInstance(alienDeathSample, VOLUME_ALIENS_DEATH, ALLEGRO_PLAYMODE_ONCE);
-  initAudioInstance(alienHitSample, VOLUME_ALIENS_HIT, ALLEGRO_PLAYMODE_ONCE);
-  initAudioInstance(shieldHitSample, VOLUME_SHIELD_HIT, ALLEGRO_PLAYMODE_ONCE);
-  initAudioInstance(ufoDeathSample, VOLUME_UFO_DEATH, ALLEGRO_PLAYMODE_ONCE);
-  initAudioInstance(ufoSample, VOLUME_UFO, ALLEGRO_PLAYMODE_LOOP);
 
   al_set_new_display_flags(ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
 
@@ -502,7 +461,7 @@ void front_deinit() {
   al_destroy_mixer(mixer);
   // Se matan los procesos relacionados al audio.
   kill_all_instances(
-      8, // Cantidad de instancias a destruir.
+      9, // Cantidad de instancias a destruir.
       playerShotSample,
       playerDeathSample,
       alienMovedSample,
@@ -512,18 +471,6 @@ void front_deinit() {
       ufoDeathSample,
       ufoSample,
       pauseSample
-    );
-  kill_all_samples(
-      8, // Cantidad de samples a destruir.
-      playerShotSound,
-      playerDeathSound,
-      alienDeathSound,
-      alienMovedSound,
-      alienHitSound,
-      shieldHitSound,
-      ufoDeathSound,
-      ufoSound,
-      pauseSound
     );
   al_uninstall_audio();
   sprites_deinit();
