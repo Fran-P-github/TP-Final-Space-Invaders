@@ -79,10 +79,14 @@ typedef enum{
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+#define MSJ_ERR_INIT "Problema al inicializar: "
+static void init_error(bool state, const char *name);
+
  // Draws a filled rectangle. Used by all other draw functions
 static void draw_rectangle(int x1, int y1, int x2, int y2);
 
-static void alien_death(unsigned i, unsigned j); // Es un callback que se usa en back_update() (en allegro para reproducir sonido y mostrar explosion, en rb para sonido)
+static void alien_hit();
+static void alien_death(int i, int j, explosion_type_t unused); // Es un callback que se usa en back_update() (en allegro para reproducir sonido y mostrar explosion, en rb para sonido)
 static void shield_hit();  // Otro callback
 static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j);
@@ -142,11 +146,12 @@ static void sounds_update();
  ******************************************************************************/
 
 // Audio sounds
-static Audio *bgMusic = NULL;
+#define INIT_SOUND(p, route) p = createAudio(route, 0, SDL_MIX_MAXVOLUME); init_error(p, #p);
 static Audio *mothershipMusic = NULL;
 static Audio *playerShotSound = NULL;
 static Audio *playerDeathSound = NULL;
 static Audio *alienDeathSound = NULL;
+static Audio *alienHitSound = NULL;
 static Audio *alienMovedSound = NULL;
 static Audio *shieldHitSound = NULL;
 static Audio *pauseSound = NULL;
@@ -165,15 +170,15 @@ game_state_t front_init(){
     disp_clear();
     disp_update();
 
-    initAudio();
-    playerShotSound = createAudio(AUDIO_PLAYER_SHOT, 0, SDL_MIX_MAXVOLUME);
-    playerDeathSound = createAudio(AUDIO_PLAYER_DEATH, 0, SDL_MIX_MAXVOLUME);
-    alienDeathSound = createAudio(AUDIO_INVADER_DEATH, 0, SDL_MIX_MAXVOLUME);
-    alienMovedSound = createAudio(AUDIO_INVADER_MOVED, 0, SDL_MIX_MAXVOLUME);
-    mothershipMusic = createAudio(AUDIO_UFO, 0, SDL_MIX_MAXVOLUME);
-    shieldHitSound = createAudio(AUDIO_SHIELD_HIT, 0, SDL_MIX_MAXVOLUME);
-    pauseSound = createAudio(AUDIO_PAUSE, 0, SDL_MIX_MAXVOLUME);
-    bgMusic = createAudio(GAME_BG_MUSIC, 0, SDL_MIX_MAXVOLUME);
+    init_error(initAudio(), "Audio library");
+    INIT_SOUND(playerShotSound, AUDIO_PLAYER_SHOT);
+    INIT_SOUND(playerDeathSound, AUDIO_PLAYER_DEATH);
+    INIT_SOUND(alienDeathSound, AUDIO_INVADER_DEATH);
+    INIT_SOUND(alienHitSound, AUDIO_INVADER_HIT);
+    INIT_SOUND(alienMovedSound, AUDIO_INVADER_MOVED);
+    INIT_SOUND(mothershipMusic, AUDIO_UFO);
+    INIT_SOUND(shieldHitSound, AUDIO_SHIELD_HIT);
+    INIT_SOUND(pauseSound, AUDIO_PAUSE);
 
     return MENU;
 }
@@ -317,7 +322,7 @@ game_state_t game_update(unsigned level, bool new_level){
         if(frame_elapsed >= frame_time){
             ++frame;
             frame_start = get_millis();
-            level_state = back_update(level, alien_death, shield_hit);
+            level_state = back_update(level, alien_death, alien_hit, shield_hit);
             sounds_update();
             unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
             if(alien_column_to_shoot >= 0){
@@ -392,7 +397,14 @@ game_state_t endgame(){
 }
 
 void front_deinit(){
-    
+    freeAudio(mothershipMusic);
+    freeAudio(playerShotSound);
+    freeAudio(playerDeathSound);
+    freeAudio(alienDeathSound);
+    freeAudio(alienHitSound);
+    freeAudio(alienMovedSound);
+    freeAudio(shieldHitSound);
+    freeAudio(pauseSound);
 }
 
 /*******************************************************************************
@@ -771,9 +783,13 @@ static void shield_hit(){
   playSoundFromMemory(shieldHitSound, SDL_MIX_MAXVOLUME);
 }
 
+static void alien_hit(){
+  playSoundFromMemory(alienHitSound, SDL_MIX_MAXVOLUME);
+}
+
 // Queda medio feo que sea algo aparte de la funcion sounds_update()
 // pero necesitamos usar el callback para mostrar animacion y sonido en allegro
-static void alien_death(unsigned i, unsigned j){
+static void alien_death(int i, int j, explosion_type_t unused){
     // Reproducir sonido cuando el alien se muere... (los indices i y j no sirven en este caso)
     playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
 }
@@ -810,5 +826,12 @@ static void draw_shield(unsigned shield){
             draw_rectangle(shield_get_x(shield,i,j), shield_get_y(shield,i,j), shield_get_x(shield,i,j)+SHIELD_BLOCK_W-1, shield_get_y(shield,i,j)+SHIELD_BLOCK_H-1);
         }
     }
+}
+
+static void init_error(bool state, const char *name) {
+  if ( !state ) {
+    fprintf(stderr, "%s%s\n", MSJ_ERR_INIT, name);
+    exit(-1);
+  }
 }
 
