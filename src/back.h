@@ -32,6 +32,11 @@ typedef enum{
   ALIEN_SMALL
 } alien_type_t;
 
+typedef enum {
+  ALIEN_EXPLOSION = 0,
+  UFO_EXPLOSION
+} explosion_type_t;
+
 /*******************************************************************************
  * EXTERN VARIABLES
  ******************************************************************************/

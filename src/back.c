@@ -378,10 +378,11 @@ level_state_t back_update(unsigned current_level, void (*alienDeath)(int x, int 
   }
 
   double elapsed = (double) (get_millis() - player_death_start);
-  //if(player_death_start != MAX_ULL) player.x += PLAYER_OFFSET_WHEN_DEAD;
   if(elapsed <= 700) return LEVEL_NOT_DONE;
   if(player_death_start != MAX_ULL){
+    bool shot_before = player_shot.is_used; // player_reset_on_new_level will set player_shot.is_used to false, we undo that
     player_reset_on_new_level();
+    player_shot.is_used = shot_before;
     player_death_start = MAX_ULL;
   }
 
@@ -390,7 +391,7 @@ level_state_t back_update(unsigned current_level, void (*alienDeath)(int x, int 
 
 // Returns: true if shot was available when called, false otherwise
 bool player_try_shoot() {
-  if ( player_shot.is_used ) return false;
+  if ( player_shot.is_used || playerDied ) return false;
 
   player_shot.is_used = true;
   player_shot.x = player.x + PLAYER_W / 2 - SHOT_W / 2;
