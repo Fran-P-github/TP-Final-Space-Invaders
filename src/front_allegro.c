@@ -414,24 +414,42 @@ game_state_t endgame() {
     init_error(font_endgame, "Endgame font");
     const int space_between_lines = WORLD_HEIGHT/8;
 
-    al_set_target_bitmap(buffer);
-    al_clear_to_color(al_map_rgb(0, 0, 0));
-    al_draw_textf(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space_between_lines, ALLEGRO_ALIGN_CENTER,
-                  "Score: %d", score);
-    al_draw_text(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 2*space_between_lines, ALLEGRO_ALIGN_CENTER,
-                  "Enter your name:");
-    al_set_target_backbuffer(disp);
-    al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0); 
-    al_flip_display();
+    // Capture of last game screen, with transparency
+    ALLEGRO_BITMAP *background = al_create_bitmap(WORLD_WIDTH, WORLD_HEIGHT);
+    al_set_target_bitmap(background);
+    al_draw_bitmap(buffer, 0, 0, 0);
 
     bool done = false;
+    unsigned frame = 0;
+    al_flush_event_queue(queue);
     while (!done) {
         ALLEGRO_EVENT ev;
         al_wait_for_event(queue, &ev);
-        al_set_target_bitmap(buffer);
+        if(ev.type == ALLEGRO_EVENT_TIMER) frame++;
 
+        // Redraw
+        al_set_target_bitmap(buffer);
+        al_draw_bitmap(background, 0, 0, 0);
+        al_draw_filled_rectangle(0, 0, WORLD_WIDTH-1, WORLD_HEIGHT-1, al_map_rgba(0, 0, 0, 160));
+        if(frame > FRAME_RATE)
+          al_draw_text(font_endgame, al_map_rgb(200, 30, 30), WORLD_WIDTH/2, space_between_lines, ALLEGRO_ALIGN_CENTER, "GAME     OVER");
+        if(frame > 2*FRAME_RATE)
+          al_draw_textf(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 2*space_between_lines, ALLEGRO_ALIGN_CENTER,
+                      "Score: %d", score);
+        if(frame > 3*FRAME_RATE)
+          al_draw_text(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 3*space_between_lines, ALLEGRO_ALIGN_CENTER,
+                      "Enter your name:");
+        al_draw_text(font_endgame, al_map_rgb(255, 255, 0), WORLD_WIDTH/2, 4*space_between_lines, ALLEGRO_ALIGN_CENTER,
+                      name);
+        al_set_target_backbuffer(disp);
+        al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0);
+        al_flip_display();
+
+        if(frame < 3*FRAME_RATE) continue;
+
+        // Get keyboard input
         if (ev.type == ALLEGRO_EVENT_KEY_CHAR) {
-            if (ev.keyboard.keycode == ALLEGRO_KEY_ENTER) {
+            if (ev.keyboard.keycode == ALLEGRO_KEY_ENTER && name[0]) {
                 done = true;
             } else if (ev.keyboard.keycode == ALLEGRO_KEY_BACKSPACE && name_len > 0) {
                 name[--name_len] = '\0';
@@ -439,31 +457,18 @@ game_state_t endgame() {
                 name[name_len++] = ev.keyboard.unichar;
                 name[name_len] = '\0';
             }
-
-            // Redraw
-            al_clear_to_color(al_map_rgb(0, 0, 0));
-            al_draw_textf(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space_between_lines, ALLEGRO_ALIGN_CENTER,
-                          "Score: %d", score);
-            al_draw_text(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 2*space_between_lines, ALLEGRO_ALIGN_CENTER,
-                          "Enter your name:");
-            al_draw_text(font_endgame, al_map_rgb(255, 255, 0), WORLD_WIDTH/2, 3*space_between_lines, ALLEGRO_ALIGN_CENTER,
-                          name);
-            
-            al_set_target_backbuffer(disp);
-            al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0);
-            al_flip_display();
         }
     }
 
     // Show final message
     al_set_target_bitmap(buffer);
     al_clear_to_color(al_map_rgb(0, 0, 0));
-    al_draw_textf(font_endgame, al_map_rgb(0, 255, 0), WORLD_WIDTH/2, space_between_lines, ALLEGRO_ALIGN_CENTER,
+    al_draw_textf(font_endgame, al_map_rgb(0, 255, 0), WORLD_WIDTH/2, 2*space_between_lines, ALLEGRO_ALIGN_CENTER,
                   "Thanks for playing, %s!", name);
     // Check hi-scores and save score if it is a new best
     highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
     if( try_insert_score(top_scores, name, player_get_score()) ){
-        al_draw_text(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 2*space_between_lines, ALLEGRO_ALIGN_CENTER,
+        al_draw_text(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 3*space_between_lines, ALLEGRO_ALIGN_CENTER,
                   "Congratulations! You just made a new best");
     }
     save_scores(top_scores);
