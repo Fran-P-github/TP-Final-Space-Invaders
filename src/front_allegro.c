@@ -41,9 +41,10 @@
 #define VOLUME_PLAYER_DEATH .3
 #define VOLUME_ALIENS_MOVED .3
 #define VOLUME_ALIENS_DEATH .3
-#define VOLUME_ALIENS_HIT .3
+#define VOLUME_ALIENS_HIT .5
 #define VOLUME_SHIELD_HIT .5
 #define VOLUME_UFO .1
+#define VOLUME_UFO_DEATH .3
 // Sprites
 #define ALIEN_SCALE_X 40
 #define ALIEN_SCALE_Y 40
@@ -187,10 +188,12 @@ static ALLEGRO_SAMPLE *alienMovedSound = NULL;
 static ALLEGRO_SAMPLE *alienHitSound = NULL;
 static ALLEGRO_SAMPLE *shieldHitSound = NULL;
 static ALLEGRO_SAMPLE *ufoSound = NULL;
+static ALLEGRO_SAMPLE *ufoDeathSound = NULL;
 static ALLEGRO_SAMPLE *pauseSound = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerShotSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienMovedSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *ufoSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *ufoDeathSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienDeathSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienHitSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerDeathSample = NULL;
@@ -233,12 +236,16 @@ game_state_t front_init() {
   alienHitSound = al_load_sample(AUDIO_INVADER_HIT);
   shieldHitSound = al_load_sample(AUDIO_SHIELD_HIT);
   ufoSound = al_load_sample(AUDIO_UFO);
+  ufoDeathSound = al_load_sample(AUDIO_UFO_DEATH);
   pauseSound = al_load_sample(AUDIO_PAUSE);
   init_error(playerShotSound, "Audio disparo del jugador.");
   init_error(playerDeathSound, "Audio muerte del jugador.");
   init_error(alienDeathSound, "Audio muerte del alien.");
-  init_error(playerDeathSound, "Audio muerte del jugador.");
+  init_error(alienHitSound, "Audio golpe a alien.");
+  init_error(alienMovedSound, "Audio movimiento de alien.");
+  init_error(shieldHitSound, "Audio golpe a escudo.");
   init_error(ufoSound, "Audio del OVNI.");
+  init_error(ufoDeathSound, "Audio muerte del OVNI.");
   init_error(pauseSound, "Pause audio.");
 
   // Se crea el mixer
@@ -254,6 +261,7 @@ game_state_t front_init() {
   alienDeathSample = al_create_sample_instance(alienDeathSound);
   alienHitSample = al_create_sample_instance(alienHitSound);
   shieldHitSample = al_create_sample_instance(shieldHitSound);
+  ufoDeathSample = al_create_sample_instance(ufoDeathSound);
   ufoSample = al_create_sample_instance(ufoSound);
   pauseSample = al_create_sample_instance(pauseSound);
 
@@ -264,6 +272,7 @@ game_state_t front_init() {
   al_attach_sample_instance_to_mixer(alienHitSample, mixer);
   al_attach_sample_instance_to_mixer(shieldHitSample, mixer);
   al_attach_sample_instance_to_mixer(ufoSample, mixer);
+  al_attach_sample_instance_to_mixer(ufoDeathSample, mixer);
   al_attach_sample_instance_to_mixer(pauseSample, mixer);
 
   // Se setean los valores predeterminados para cada audio.
@@ -273,6 +282,7 @@ game_state_t front_init() {
   initAudioInstance(alienDeathSample, VOLUME_ALIENS_DEATH, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(alienHitSample, VOLUME_ALIENS_HIT, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(shieldHitSample, VOLUME_SHIELD_HIT, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(ufoDeathSample, VOLUME_UFO_DEATH, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(ufoSample, VOLUME_UFO, ALLEGRO_PLAYMODE_LOOP);
 
   al_set_new_display_flags(ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
@@ -492,20 +502,26 @@ void front_deinit() {
   al_destroy_mixer(mixer);
   // Se matan los procesos relacionados al audio.
   kill_all_instances(
-      6, // Cantidad de instancias a destruir.
+      8, // Cantidad de instancias a destruir.
       playerShotSample,
       playerDeathSample,
       alienMovedSample,
       alienDeathSample,
+      alienHitSample,
+      shieldHitSample,
+      ufoDeathSample,
       ufoSample,
       pauseSample
     );
   kill_all_samples(
-      6, // Cantidad de samples a destruir.
+      8, // Cantidad de samples a destruir.
       playerShotSound,
       playerDeathSound,
       alienDeathSound,
       alienMovedSound,
+      alienHitSound,
+      shieldHitSound,
+      ufoDeathSound,
       ufoSound,
       pauseSound
     );
@@ -883,7 +899,10 @@ static void alien_death(int x, int y, explosion_type_t explosionType){
   explosion.type = explosionType;
   explosion.explosion_interval = 5;
   // Play sound effect
-  al_play_sample_instance(alienDeathSample);
+  if(explosionType == ALIEN_EXPLOSION)
+    al_play_sample_instance(alienDeathSample);
+  else if(explosionType == UFO_EXPLOSION)
+    al_play_sample_instance(ufoDeathSample);
 }
 
 static void draw_mothership(mothership_color_t color) {
