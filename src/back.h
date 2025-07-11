@@ -33,6 +33,16 @@ typedef enum{
 } alien_type_t;
 
 /*******************************************************************************
+ * EXTERN VARIABLES
+ ******************************************************************************/
+
+// Not to be added in back.c
+#ifndef _IS_BACK_C_
+extern const bool aliensMoved;
+extern const bool playerDied;
+#endif
+
+/*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 

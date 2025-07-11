@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define _IS_BACK_C_
 #include "back.h"
 
 /*******************************************************************************
@@ -378,7 +379,7 @@ level_state_t back_update(unsigned current_level, void (*alienDeath)(unsigned i,
 
   double elapsed = (double) (get_millis() - player_death_start);
   //if(player_death_start != MAX_ULL) player.x += PLAYER_OFFSET_WHEN_DEAD;
-  if(elapsed <= 800) return LEVEL_NOT_DONE;
+  if(elapsed <= 700) return LEVEL_NOT_DONE;
   if(player_death_start != MAX_ULL){
     player_reset_on_new_level();
     player_death_start = MAX_ULL;
@@ -644,6 +645,8 @@ static int get_top_alien_row() {
 }*/
 
 static int get_alien_column_above_player() {
+  if(playerDied) return -1;
+
   for ( unsigned j = 0; j < ALIENS_COLUMNS; ++j ) {
     int row = lowest_alien_alive_index(j);
     if ( !aliens[row][j].lives ) continue;

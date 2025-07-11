@@ -118,12 +118,6 @@ typedef struct{
 }explosion_t;
 
 /*******************************************************************************
- * VARIABLES WITH GLOBAL SCOPE
- ******************************************************************************/
-
-extern const bool aliensMoved;
-
-/*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
@@ -625,6 +619,11 @@ game_state_t game_update(unsigned level, bool new_level) {
       moveThisFrame = true;
     }
 
+    // Player death
+    if(playerDied){
+      al_play_sample_instance(playerDeathSample);
+    }
+
     // Reproduce el sonido cuando los aliens se mueven (si siguen vivos) se aprovecha el "laziness" de c.
     if ( total_aliens_alive() && aliensMoved )
       al_play_sample_instance(alienMovedSample);
@@ -863,6 +862,7 @@ static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t co
 }
 
 static void draw_player() {
+  if(playerDied) return;
   int srcWidth = al_get_bitmap_width(sprites.ship);
   int srcHeight = al_get_bitmap_height(sprites.ship);
   al_draw_scaled_bitmap(sprites.ship, 0, 0, srcWidth, srcHeight, player_get_x(), player_get_y(), PLAYER_W, PLAYER_H, 0);
