@@ -51,7 +51,7 @@
 
 #define PLAYER_W 80
 #define PLAYER_H 40
-#define PLAYER_MARGIN 10 // Que tan separado debe estar de margenes laterales e inferior
+#define PLAYER_MARGIN 10 // Distance from side and bottom edges
 
 #define ALIENS_ROWS 6
 #define ALIENS_COLUMNS 10
@@ -59,10 +59,10 @@
 #define ALIENS_VERTICAL_SEPARATION 18
 #define ALIENS_W 40
 #define ALIENS_H 32
-#define ALIENS_MARGIN 50 // Que tan separados del borde superior
+#define ALIENS_MARGIN 50 // Distance from top edge
 
-#define SHOT_W 8//4
-#define SHOT_H 19//14
+#define SHOT_W 8
+#define SHOT_H 19
 
 #define SHIELDS_CANT 3
 #define SHIELD_BLOCK_LIVES 3
@@ -89,7 +89,7 @@
 
 #define PLAYER_W 3
 #define PLAYER_H 1
-#define PLAYER_MARGIN 0 // Que tan separado debe estar de margenes laterales e inferior
+#define PLAYER_MARGIN 0 // Distance from side and bottom edges
 
 #define ALIENS_ROWS 2
 #define ALIENS_COLUMNS 3
@@ -97,7 +97,7 @@
 #define ALIENS_VERTICAL_SEPARATION 1
 #define ALIENS_W 2
 #define ALIENS_H 2
-#define ALIENS_MARGIN 2 // Que tan separados del borde superior
+#define ALIENS_MARGIN 2 // Distance from top edge
 
 #define SHOT_W 1
 #define SHOT_H 1
@@ -120,7 +120,7 @@
 #define BITMAP_ROUTE(s) "../assets/Bitmap/"s
 #define FONT_ROUTE(s) "../assets/Font/"s
 
-// Audio files (Son los mismos independientemente de la plataforma)
+// Audio files (Same across all platforms)
 #define AUDIO_PLAYER_SHOT "../assets/Audio/shoot.wav"
 #define AUDIO_PLAYER_DEATH "../assets/Audio/playerkilled.wav"
 #define AUDIO_INVADER_DEATH "../assets/Audio/invaderkilled.wav"

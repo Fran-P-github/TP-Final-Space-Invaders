@@ -18,13 +18,13 @@ typedef struct {
     int score;
 } highscore_t;
 
-// Carga el top 10 desde el archivo
+// Loads the top scores from the file
 void load_scores(highscore_t top_scores[]);
 
-// Guarda el top 10 en el archivo
+// Saves the top scores to the file
 void save_scores(const highscore_t top_scores[]);
 
-// Inserta un nuevo puntaje si corresponde, devuelve true si entra al top
+// Inserts a new score if applicable, returns true if it makes it into the top
 bool try_insert_score(highscore_t top_scores[], const char *name, int score);
 
 #endif // SCORES_H

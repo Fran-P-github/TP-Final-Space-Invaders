@@ -64,7 +64,7 @@
 
 #endif
 
-// VARIABLE GLOBAL Y PUBLICA
+// GLOBAL AND PUBLIC VARIABLES
 bool aliensMoved; // Variable para reproducir el sonido cuando se mueven los aliens
 bool playerDied;
 
@@ -517,17 +517,17 @@ static bool should_spawn_mothership(double elapsed_time) {
 
   double probability = elapsed_time * rate;
 
-  // Limita al máximo
+  // Clamp to the maximum 
   if ( probability > max_prob )
     probability = max_prob;
 
-  // Genera número entre 0 y 1
+  //generates a number between 0 and 1
   double r = (double) rand() / RAND_MAX;
 
   return r < probability;
 }
 
-#define FIRST_ALIEN_X_COORDINATE ((WORLD_WIDTH - (cols * ALIENS_W + (cols - 1) * ALIENS_HORIZONTAL_SEPARATION)) / 2) //+250) //+250 para que empieze mas a la derecha y testear mas facil
+#define FIRST_ALIEN_X_COORDINATE ((WORLD_WIDTH - (cols * ALIENS_W + (cols - 1) * ALIENS_HORIZONTAL_SEPARATION)) / 2)
 static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsigned lives_max) {
   unsigned i, j;
   int x = FIRST_ALIEN_X_COORDINATE;
@@ -657,13 +657,13 @@ static int get_alien_column_above_player() {
     int px1 = player.x;
     int px2 = px1 + PLAYER_W - 1;
 
-    // Si hay intersección horizontal entre alien y jugador
+    // If there is horizontal overlap between alien and player
     if ( !(ax2 < px1 || ax1 > px2) ) {
       return j;
     }
   }
 
-  return -1; // Ningún alien está justo encima
+  return -1; // No alien is above player
 }
 
 static int get_alien_column_above_shield() {
@@ -682,16 +682,16 @@ static int get_alien_column_above_shield() {
           int sx1 = shields[s][y][x].x;
           int sx2 = sx1 + SHIELD_BLOCK_W - 1;
 
-          // Si hay superposición horizontal
+          // If there is horizontal overlap
           if ( !(ax2 < sx1 || ax1 > sx2) ) {
-            return j; // Columna de alien sobre escudo
+            return j; // Alien column overlapping with a shield
           }
         }
       }
     }
   }
 
-  return -1; // No hay ninguna columna sobre escudos
+  return -1; // No column overlapping with shields
 }
 
 unsigned total_aliens_alive() {
@@ -732,13 +732,13 @@ static void update_aliens_speed(unsigned level) {
 
   double alive_ratio = (double) alive / total;
 
-  // Cuanto menos aliens, más rápido. También aumenta con el nivel.
+  // The fewer aliens there are, the faster they move. Also increases with level.
   aliens_move_interval = ALIENS_MOVE_MAX_INTERVAL * alive_ratio;
 
-  // Aplicar escalado con el nivel (aumenta la velocidad base)
-  aliens_move_interval /= (1 + 1. * level); // 20% más rápido por nivel
+  // Apply scaling based on level (increases base speed)
+  aliens_move_interval /= (1 + 1. * level); // 20% faster per level
 
-  // Limitar al mínimo
+  // Clamp to the minimum
   if ( aliens_move_interval < ALIENS_MOVE_MIN_INTERVAL )
     aliens_move_interval = ALIENS_MOVE_MIN_INTERVAL;
 }
