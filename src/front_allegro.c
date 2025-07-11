@@ -24,7 +24,8 @@
 #include <stdio.h>
 
 #include "back.h"
-#include "front_allegro.h"
+#include "scores.h"
+#include "front.h"
 #include "general_defines.h"
 #include "menu_allegro.h"
 
@@ -37,15 +38,27 @@
 #define MAX_EVENT_WAIT_TIME 0.001
 // Floats para el volumen de los efectos de sonido
 #define VOLUME_PLAYER_SHOT .1
+#define VOLUME_PLAYER_DEATH .3
 #define VOLUME_ALIENS_MOVED .3
+#define VOLUME_ALIENS_DEATH .3
+#define VOLUME_ALIENS_HIT .3
+#define VOLUME_SHIELD_HIT .5
 #define VOLUME_UFO .1
 // Sprites
+#define ALIEN_SCALE_X 40
+#define ALIEN_SCALE_Y 40
 #define SPRITE_ALIENS_NUM 3
 #define SPRITE_SHOT_FRAMES 6
 #define SPRITE_SHOT_W 3
 #define SPRITE_SHOT_H 12
 #define SPRITE_SHOT_SPACING 1
 #define SPRITE_SHOT_NUM 2
+
+#define STARS_N ((WORLD_WIDTH / 2) - 1)
+#define STAR_MIN_SPEED 2.2
+#define STAR_MAX_SPEED 8.4
+#define STAR_MARGIN 1.5
+#define STAR_SEPARATION ((WORLD_WIDTH - 2 * STAR_MARGIN) / (STARS_N - 1))
 
 
 /*******************************************************************************
@@ -65,7 +78,28 @@ typedef enum {
     ALIEN_SILVER,
     ALIEN_RETRO,
     ALIEN_TOTAL_COLORS
-} alien_color;
+} alien_color_t;
+
+typedef enum {
+  UFO_GREEN = 0,
+  UFO_ORANGE,
+  UFO_PINK,
+  UFO_LPINK,
+  UFO_WHITE,
+  UFO_YELLOW,
+  UFO_GOLD,
+  UFO_SILVER,
+  UFO_NEON,
+  UFO_RETRO,
+  UFO_GREY,
+  UFO_TOTAL_COLORS
+} mothership_color_t;
+
+typedef struct{
+    float y; // x coordinate depends on star index in array
+    float speed;
+    ALLEGRO_COLOR color;
+} star_t;
 
 typedef struct {
   ALLEGRO_BITMAP *_sheet;
@@ -73,26 +107,41 @@ typedef struct {
   ALLEGRO_BITMAP *ship;
   ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
   ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
-  ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];
-
+  ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];        // 2 tipos de disparos, 6 estados de animacion
+  ALLEGRO_BITMAP *ufo[UFO_TOTAL_COLORS][2];                       // 11 colores de naves nodrizas, 2 estados de animacion
 } sprites_t;
 
-/*******************************************************************************
- * VARIABLES WITH GLOBAL SCOPE
- ******************************************************************************/
-
-extern const bool aliensMoved;
+typedef struct{
+  int x;
+  int y;
+  int explosion_interval;
+  explosion_type_t type;
+}explosion_t;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static void draw_mothership();
-static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color);
+// Background drawing
+static float get_random_star_speed();
+static void background_init();
+static void background_update();
+static void draw_background();
+static ALLEGRO_COLOR random_star_color();
+
+// HUD drawing
+static void draw_hud(unsigned level, ALLEGRO_FONT* font);
+
+static void shield_hit();
+static void alien_hit();
+static void alien_death(int x, int y, explosion_type_t explosionType);
+static void draw_mothership(mothership_color_t color);
+static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame);
 static void draw_player();
 static void draw_player_shot(unsigned frame, unsigned color);
 static void draw_alien_shot(unsigned frame, unsigned color);
 static void draw_shield(unsigned shield);
+static void draw_explosion(unsigned frame, unsigned color);
 static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h);
 static void sprites_init();
 static void sprites_deinit();
@@ -102,7 +151,6 @@ static void initAudioInstance(ALLEGRO_SAMPLE_INSTANCE *instance, float volume, A
 
 static void init_error(bool state, const char *name);
 
-static void kill_all();
 static void kill_all_instances(int len, ...);
 static void kill_all_samples(int len, ...);
 static void kill_all_bitmaps(int len, ...);
@@ -116,6 +164,9 @@ static void kill_all_font(int len, ...);
  * STATIC VARIABLES AND CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+
+star_t stars[STARS_N];
+
 static ALLEGRO_TIMER *timer;
 static ALLEGRO_DISPLAY *disp;
 static ALLEGRO_EVENT_QUEUE *queue;
@@ -126,15 +177,25 @@ static ALLEGRO_MIXER *mixer;
 // Sprites
 static sprites_t sprites;
 
+explosion_t explosion; // explosion struct
+
 // Punteros a los samples para el audio
 static ALLEGRO_SAMPLE *playerShotSound = NULL;
 static ALLEGRO_SAMPLE *playerDeathSound = NULL;
 static ALLEGRO_SAMPLE *alienDeathSound = NULL;
 static ALLEGRO_SAMPLE *alienMovedSound = NULL;
+static ALLEGRO_SAMPLE *alienHitSound = NULL;
+static ALLEGRO_SAMPLE *shieldHitSound = NULL;
 static ALLEGRO_SAMPLE *ufoSound = NULL;
+static ALLEGRO_SAMPLE *pauseSound = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *playerShotSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienMovedSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *ufoSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *alienDeathSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *alienHitSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *playerDeathSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *shieldHitSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *pauseSample = NULL;
 
 // keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
@@ -157,6 +218,7 @@ game_state_t front_init() {
   init_error(al_init_video_addon(), "Allegro Videos");
   init_error(al_install_audio(), "Allegro Audio");
   init_error(al_init_acodec_addon(), "Allegro Audio Codec");
+  al_set_blender(ALLEGRO_ADD, ALLEGRO_ALPHA, ALLEGRO_INVERSE_ALPHA);
 
   al_reserve_samples(AUDIO_SAMPLES);
   init_error(al_init_image_addon(), "Allegro Image Addon");
@@ -168,12 +230,16 @@ game_state_t front_init() {
   playerDeathSound = al_load_sample(AUDIO_PLAYER_DEATH);
   alienDeathSound = al_load_sample(AUDIO_INVADER_DEATH);
   alienMovedSound = al_load_sample(AUDIO_INVADER_MOVED);
+  alienHitSound = al_load_sample(AUDIO_INVADER_HIT);
+  shieldHitSound = al_load_sample(AUDIO_SHIELD_HIT);
   ufoSound = al_load_sample(AUDIO_UFO);
+  pauseSound = al_load_sample(AUDIO_PAUSE);
   init_error(playerShotSound, "Audio disparo del jugador.");
   init_error(playerDeathSound, "Audio muerte del jugador.");
   init_error(alienDeathSound, "Audio muerte del alien.");
   init_error(playerDeathSound, "Audio muerte del jugador.");
   init_error(ufoSound, "Audio del OVNI.");
+  init_error(pauseSound, "Pause audio.");
 
   // Se crea el mixer
   mixer = al_create_mixer(44100, ALLEGRO_AUDIO_DEPTH_FLOAT32, ALLEGRO_CHANNEL_CONF_2);
@@ -183,16 +249,30 @@ game_state_t front_init() {
 
   // Se crean instancias de samples para el disparo del jugador y para el movimiento de los aliens
   playerShotSample = al_create_sample_instance(playerShotSound);
+  playerDeathSample = al_create_sample_instance(playerDeathSound);
   alienMovedSample = al_create_sample_instance(alienMovedSound);
+  alienDeathSample = al_create_sample_instance(alienDeathSound);
+  alienHitSample = al_create_sample_instance(alienHitSound);
+  shieldHitSample = al_create_sample_instance(shieldHitSound);
   ufoSample = al_create_sample_instance(ufoSound);
+  pauseSample = al_create_sample_instance(pauseSound);
 
   al_attach_sample_instance_to_mixer(playerShotSample, mixer);
+  al_attach_sample_instance_to_mixer(playerDeathSample, mixer);
   al_attach_sample_instance_to_mixer(alienMovedSample, mixer);
+  al_attach_sample_instance_to_mixer(alienDeathSample, mixer);
+  al_attach_sample_instance_to_mixer(alienHitSample, mixer);
+  al_attach_sample_instance_to_mixer(shieldHitSample, mixer);
   al_attach_sample_instance_to_mixer(ufoSample, mixer);
+  al_attach_sample_instance_to_mixer(pauseSample, mixer);
 
   // Se setean los valores predeterminados para cada audio.
   initAudioInstance(playerShotSample, VOLUME_PLAYER_SHOT, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(playerDeathSample, VOLUME_PLAYER_DEATH, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(alienMovedSample, VOLUME_ALIENS_MOVED, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(alienDeathSample, VOLUME_ALIENS_DEATH, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(alienHitSample, VOLUME_ALIENS_HIT, ALLEGRO_PLAYMODE_ONCE);
+  initAudioInstance(shieldHitSample, VOLUME_SHIELD_HIT, ALLEGRO_PLAYMODE_ONCE);
   initAudioInstance(ufoSample, VOLUME_UFO, ALLEGRO_PLAYMODE_LOOP);
 
   al_set_new_display_flags(ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
@@ -231,22 +311,180 @@ game_state_t menu() {
   return menu_allegro(disp, timer, queue, default_font, buffer, mixer, &kill_all_bitmaps, &kill_all_instances, &kill_all_samples, &kill_all_font);
 }
 
-game_state_t game_pause() {
-  return GAME;
+game_state_t game_pause(unsigned int level) {
+    al_play_sample_instance(pauseSample); // Play pause sound
+    al_stop_timer(timer); // Pause timer while in pause
+    al_stop_sample_instance(ufoSample); // Stop mothership sound
+    al_show_mouse_cursor(disp);
+
+    ALLEGRO_FONT *font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 28, 0);
+    init_error(font, "Pause menu font");
+
+    const int space = WORLD_HEIGHT / 10;
+    const int button_w = WORLD_WIDTH / 3;
+    const int button_h = WORLD_HEIGHT / 12;
+    const int x = WORLD_WIDTH / 2 - button_w / 2;
+    const int start_y = WORLD_HEIGHT / 3; // This is not centered
+
+    const char *labels[] = { "Resume", "Main Menu", "Exit" };
+    ALLEGRO_COLOR colors[] = {
+        al_map_rgb(100, 100, 255),
+        al_map_rgb(100, 255, 100),
+        al_map_rgb(255, 100, 100)
+    };
+
+    ALLEGRO_EVENT ev;
+    bool done = false;
+    game_state_t result = GAME;
+
+    // Draw background
+    al_set_target_bitmap(buffer);    
+    al_draw_filled_rectangle(0, 0, WORLD_WIDTH-1, WORLD_HEIGHT-1, al_map_rgba(0, 0, 0, 128));
+
+    while (!done) {
+        al_set_target_bitmap(buffer);
+
+        /*// Show player info
+        al_draw_textf(font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space, ALLEGRO_ALIGN_CENTER,
+                      "Score: %d    Lives: %d    Level: %d",
+                      player_get_score(), player_get_lives(), level+1); // First level is level 0*/
+
+        // Draw buttons
+        for(int i = 0; i < 3; ++i) {
+            int y = start_y + i * (button_h + space / 2);
+            al_draw_filled_rectangle(x, y, x + button_w, y + button_h, colors[i]);
+            al_draw_rectangle(x, y, x + button_w, y + button_h, al_map_rgb(255, 255, 255), 2);
+            al_draw_text(font, al_map_rgb(0, 0, 0), WORLD_WIDTH/2, y + button_h / 4, ALLEGRO_ALIGN_CENTER, labels[i]);
+        }
+
+        // Draw to screen
+        al_set_target_backbuffer(disp);
+        al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0,
+                              al_get_display_width(disp), al_get_display_height(disp), 0);
+        al_flip_display();
+
+        // Wait for event
+        while (al_get_next_event(queue, &ev)) {
+          if (ev.type == ALLEGRO_EVENT_MOUSE_AXES) continue; // Ignore mouse movement
+
+          if (ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+              int mx = ev.mouse.x * WORLD_WIDTH / al_get_display_width(disp);
+              int my = ev.mouse.y * WORLD_HEIGHT / al_get_display_height(disp);
+
+              for(int i = 0; i < 3; ++i) {
+                  int y = start_y + i * (button_h + space / 2);
+                  if (mx >= x && mx <= x + button_w && my >= y && my <= y + button_h) {
+                      switch(i){
+                        case 0:
+                          result = GAME;
+                          break;
+                        case 1:
+                          result = MENU;
+                          break;
+                        case 2:
+                          result = CLOSED;
+                          break;
+                      }
+                      done = true;
+                      break;
+                  }
+              }
+          } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
+              result = GAME;
+              done = true;
+          }
+        }
+    }
+
+    al_destroy_font(font);
+    al_start_timer(timer); // Resume timer after pause
+    al_flush_event_queue(queue); // Flush queue to give it back empty to game_update
+    al_clear_to_color(al_map_rgb(0, 0, 0)); // Clear screen on exit
+    al_flip_display();
+    al_play_sample_instance(pauseSample); // Play pause sound
+    return result;
 }
 
-void endgame() {
-  kill_all();
-}
+game_state_t endgame() {
+    char name[NAME_LEN + 1] = "";
+    int name_len = 0;
+    int score = player_get_score();
 
-/*******************************************************************************
- *******************************************************************************
-                        LOCAL FUNCTION DEFINITIONS
- *******************************************************************************
- ******************************************************************************/
+    ALLEGRO_FONT *font_endgame = al_load_ttf_font(FONT_ROUTE("toreks-font/Toreks_regular.ttf"), 32, 0);
+    init_error(font_endgame, "Endgame font");
+    const int space_between_lines = WORLD_HEIGHT/8;
+
+    // Capture of last game screen, with transparency
+    ALLEGRO_BITMAP *background = al_create_bitmap(WORLD_WIDTH, WORLD_HEIGHT);
+    al_set_target_bitmap(background);
+    al_draw_bitmap(buffer, 0, 0, 0);
+
+    bool done = false;
+    unsigned frame = 0;
+    al_flush_event_queue(queue);
+    while (!done) {
+        ALLEGRO_EVENT ev;
+        al_wait_for_event(queue, &ev);
+        if(ev.type == ALLEGRO_EVENT_TIMER) frame++;
+
+        // Redraw
+        al_set_target_bitmap(buffer);
+        al_draw_bitmap(background, 0, 0, 0);
+        al_draw_filled_rectangle(0, 0, WORLD_WIDTH-1, WORLD_HEIGHT-1, al_map_rgba(0, 0, 0, 160));
+        if(frame > FRAME_RATE)
+          al_draw_text(font_endgame, al_map_rgb(200, 30, 30), WORLD_WIDTH/2, space_between_lines, ALLEGRO_ALIGN_CENTER, "GAME     OVER");
+        if(frame > 2*FRAME_RATE)
+          al_draw_textf(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 2*space_between_lines, ALLEGRO_ALIGN_CENTER,
+                      "Score: %d", score);
+        if(frame > 3*FRAME_RATE)
+          al_draw_text(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 3*space_between_lines, ALLEGRO_ALIGN_CENTER,
+                      "Enter your name:");
+        al_draw_text(font_endgame, al_map_rgb(255, 255, 0), WORLD_WIDTH/2, 4*space_between_lines, ALLEGRO_ALIGN_CENTER,
+                      name);
+        al_set_target_backbuffer(disp);
+        al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0);
+        al_flip_display();
+
+        if(frame < 3*FRAME_RATE) continue;
+
+        // Get keyboard input
+        if (ev.type == ALLEGRO_EVENT_KEY_CHAR) {
+            if (ev.keyboard.keycode == ALLEGRO_KEY_ENTER && name[0]) {
+                done = true;
+            } else if (ev.keyboard.keycode == ALLEGRO_KEY_BACKSPACE && name_len > 0) {
+                name[--name_len] = '\0';
+            } else if (name_len < NAME_LEN && ev.keyboard.unichar >= 32 && ev.keyboard.unichar <= 126) {
+                name[name_len++] = ev.keyboard.unichar;
+                name[name_len] = '\0';
+            }
+        }
+    }
+
+    // Show final message
+    al_set_target_bitmap(buffer);
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_draw_textf(font_endgame, al_map_rgb(0, 255, 0), WORLD_WIDTH/2, 2*space_between_lines, ALLEGRO_ALIGN_CENTER,
+                  "Thanks for playing, %s!", name);
+    // Check hi-scores and save score if it is a new best
+    highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
+    if( try_insert_score(top_scores, name, player_get_score()) ){
+        al_draw_text(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 3*space_between_lines, ALLEGRO_ALIGN_CENTER,
+                  "Congratulations! You just made a new best");
+    }
+    save_scores(top_scores);
+    al_set_target_backbuffer(disp);
+    al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0); 
+    al_flip_display();
+
+    al_rest(3.0); // Wait in final mesage screen
+
+    al_destroy_font(font_endgame);
+    
+    return MENU;
+}
 
 // Complete...
-static void kill_all() {
+void front_deinit() {
   al_destroy_display(disp);
   al_destroy_timer(timer);
   al_destroy_event_queue(queue);
@@ -254,20 +492,32 @@ static void kill_all() {
   al_destroy_mixer(mixer);
   // Se matan los procesos relacionados al audio.
   kill_all_instances(
-      3, // Cantidad de instancias a destruir.
+      6, // Cantidad de instancias a destruir.
       playerShotSample,
+      playerDeathSample,
       alienMovedSample,
-      ufoSample);
+      alienDeathSample,
+      ufoSample,
+      pauseSample
+    );
   kill_all_samples(
-      5, // Cantidad de samples a destruir.
+      6, // Cantidad de samples a destruir.
       playerShotSound,
       playerDeathSound,
       alienDeathSound,
       alienMovedSound,
-      ufoSound);
+      ufoSound,
+      pauseSound
+    );
   al_uninstall_audio();
   sprites_deinit();
 }
+
+/*******************************************************************************
+ *******************************************************************************
+                        LOCAL FUNCTION DEFINITIONS
+ *******************************************************************************
+ ******************************************************************************/
 
 // Funcion para matar todos los audio samples cargados.
 static void kill_all_samples(int len, ...) {
@@ -321,12 +571,15 @@ static void init_error(bool state, const char *name) {
   }
 }
 
-game_state_t game_update(unsigned level) {
-  // level_init(ALIENS_ROWS-3+level/3, ALIENS_COLUMNS-3+level/2, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
-  level_init(ALIENS_ROWS + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
-  player_reset_on_new_level();
-  if ( level == 0 ) player_reset_on_new_game();
+game_state_t game_update(unsigned level, bool new_level) {
+  if(new_level){ // Restart on new level
+    level_init(level, ALIENS_ROWS-3 + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
+    player_reset_on_new_level();
+    if ( level == 0 ) player_reset_on_new_game();
+    background_init();
+  }
 
+  ALLEGRO_FONT *hud_font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 26, 0);
   ALLEGRO_EVENT event;
   bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;
   level_state_t level_state = LEVEL_NOT_DONE;
@@ -335,13 +588,16 @@ game_state_t game_update(unsigned level) {
   bool frameDecrement = false;
 
   al_start_timer(timer);
+  al_hide_mouse_cursor(disp);
+  memset(key, 0, sizeof(key)); // Clear keys mask for going back to game
 
   while ( !done && level_state == LEVEL_NOT_DONE ) {
     // Procesamiento de eventos
     if ( al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME) ) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
-          level_state = back_update(level);
+          background_update();
+          level_state = back_update(level, alien_death, alien_hit, shield_hit);
           redraw = true;
           ++frame;
           moveThisFrame = false;
@@ -349,8 +605,10 @@ game_state_t game_update(unsigned level) {
 
         case ALLEGRO_EVENT_KEY_DOWN:
           key[event.keyboard.keycode] = 1;
-          if ( key[ALLEGRO_KEY_ESCAPE] )
+          if ( key[ALLEGRO_KEY_ESCAPE] ){
             done = true;
+            return PAUSE;
+          }
           if ( key[ALLEGRO_KEY_F] ) {
             fullscreen = !fullscreen;
             al_toggle_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
@@ -383,6 +641,11 @@ game_state_t game_update(unsigned level) {
       moveThisFrame = true;
     }
 
+    // Player death
+    if(playerDied){
+      al_play_sample_instance(playerDeathSample);
+    }
+
     // Reproduce el sonido cuando los aliens se mueven (si siguen vivos) se aprovecha el "laziness" de c.
     if ( total_aliens_alive() && aliensMoved )
       al_play_sample_instance(alienMovedSample);
@@ -396,7 +659,7 @@ game_state_t game_update(unsigned level) {
     if ( redraw ) {
       // Manejo de frames para las animaciones de disparo (alien y jugador)
       if(frame%3 == 0){
-        if(shotFrame >= SPRITE_SHOT_NUM) frameDecrement = true;
+        if(shotFrame >= SPRITE_SHOT_FRAMES - 1) frameDecrement = true;
         else if (shotFrame <= 0) frameDecrement = false;
         frameDecrement ? shotFrame-- : shotFrame++;
         alienShotColor += 40;
@@ -412,7 +675,11 @@ game_state_t game_update(unsigned level) {
 
       al_set_target_bitmap(buffer);
       al_clear_to_color(al_map_rgb(0, 0, 0));
-      al_draw_textf(default_font, al_map_rgb(255, 255, 255), 0, 0, 0, "width: %d height: %d", al_get_display_width(disp), al_get_display_height(disp));
+      draw_background();
+
+      // HUD
+      draw_hud(level, hud_font);
+
       unsigned i, j;
       draw_player_shot(shotFrame, playerShotColor);
       unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
@@ -427,8 +694,8 @@ game_state_t game_update(unsigned level) {
 
       {
         int alienSprite = SPRITE_ALIENS_NUM;
-        // static unsigned char aliensFrame = 0;
-        // if(aliensMoved) aliensFrame = !aliensFrame;
+        static unsigned char aliensFrame = 0;
+        if(aliensMoved) aliensFrame = !aliensFrame;
 
         for ( i = 0; i < ALIENS_ROWS; ++i ) {
           if ( alienSprite > 0 && i % 2 == 0 ) {
@@ -436,17 +703,81 @@ game_state_t game_update(unsigned level) {
           }
           for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
             if ( aliens_is_alive(i, j) ) {
-              draw_alien(i, j, alienSprite, ALIEN_GOLD);
+              alien_color_t alienColor;
+              switch(aliens_get_lives(i, j)){
+                case 1:
+                  alienColor = ALIEN_LPINK;
+                  break;
+                case 2:
+                  alienColor = ALIEN_YELLOW;
+                  break;
+                case 3:
+                  alienColor = ALIEN_ORANGE;
+                  break;
+                case 4:
+                  alienColor = ALIEN_GREEN;
+                  break;
+                default:
+                  alienColor = ALIEN_RETRO; // Never to be reached
+                  break;
+              }
+              switch(aliens_get_points(i,j)){
+                case ALIEN_POINTS_SILVER:
+                  alienColor = ALIEN_SILVER;
+                  break;
+                case ALIEN_POINTS_GOLD:
+                  alienColor = ALIEN_GOLD;
+                  break;
+                case ALIEN_POINTS_NEON:
+                  alienColor = ALIEN_NEON;
+                  break;
+              }
+              draw_alien(i, j, alienSprite, alienColor, aliensFrame);
             }
           }
         }
       }
 
-      if ( mothership_is_active() ) {
-        al_play_sample_instance(ufoSample);
-        draw_mothership();
-      } else {
-        al_stop_sample_instance(ufoSample);
+      if(explosion.type == ALIEN_EXPLOSION && explosion.explosion_interval > 0){
+        alien_color_t color;
+        switch(explosion.explosion_interval){
+          case 5:
+          case 4:
+            color = ALIEN_ORANGE;
+            break;
+          case 3:
+          case 2:
+            color = ALIEN_WHITE;
+            break;
+          case 1:
+            color = ALIEN_GREY;
+            break;
+        }
+        draw_explosion(frame, color);
+      }
+
+      {
+        mothership_color_t color;
+        if ( mothership_is_active() ) {
+          al_play_sample_instance(ufoSample);
+          switch(mothership_get_points()){
+            case MOTHERSHIP_POINTS_SILVER:
+              color = UFO_SILVER;
+              break;
+            case MOTHERSHIP_POINTS_GOLD:
+              color = UFO_GOLD;
+              break;
+            case MOTHERSHIP_POINTS_NEON:
+              color = UFO_NEON;
+              break;
+          }
+          draw_mothership(color);
+        } else {
+          al_stop_sample_instance(ufoSample);
+          if(explosion.type == UFO_EXPLOSION && explosion.explosion_interval > 0){
+            draw_explosion(frame, color);
+          }
+        }
       }
 
       al_set_target_backbuffer(disp);
@@ -458,27 +789,116 @@ game_state_t game_update(unsigned level) {
   if ( level_state == PLAYER_WINS ) {
     return GAME;
   } else {
-    return CLOSED;
+    return ENDGAME;
   }
 }
 
-static void draw_mothership() {
-  al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(128, 0, 255));
+static void draw_hud(unsigned level, ALLEGRO_FONT* font){
+  // Level
+  al_draw_textf(font, al_map_rgb(255, 255, 255), 0, 0, 0, "Level: %d", level+1); // First level is level 0
+
+  // Score
+  al_draw_textf(font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 0, ALLEGRO_ALIGN_CENTER, "%06d", player_get_score());
+  
+  // Lives
+  int srcWidth = al_get_bitmap_width(sprites.ship);
+  int srcHeight = al_get_bitmap_height(sprites.ship);
+  al_draw_scaled_bitmap(sprites.ship, 0, 0, srcWidth, srcHeight, 30, WORLD_HEIGHT-30, PLAYER_W/1.5, PLAYER_H/1.5, 0);
+  al_draw_textf(font, al_map_rgb(255, 255, 255), 5, WORLD_HEIGHT-30, 0, "%d", player_get_lives());
 }
 
-static void draw_alien(unsigned i, unsigned j, unsigned sprite, unsigned color) {
-  int alienX = aliens_get_x(i, j), alienY = aliens_get_y(i, j);
-  int aliensFrame = aliens_get_frame(i, j);
-  ALLEGRO_BITMAP *alienSprite = sprites.aliens[sprite][color][aliensFrame];
-  int srcWidth = al_get_bitmap_width(alienSprite);
-  int srcHeight = al_get_bitmap_height(alienSprite);
+static float get_random_star_speed(){
+  float base_speed = rand_between_f(STAR_MIN_SPEED, STAR_MAX_SPEED);
+  float relative = aliens_get_relative_speed(); // in [0, 1]
+
+  // Interpolate between min and full star speed
+  return STAR_MIN_SPEED + (base_speed - STAR_MIN_SPEED) * relative;
+}
+
+static void background_update(){
+  for(int i = 0; i < STARS_N; i++) {
+        stars[i].y += stars[i].speed;
+        if(stars[i].y >= WORLD_HEIGHT) {
+            stars[i].y = 0;
+            stars[i].speed = get_random_star_speed();
+            stars[i].color = random_star_color();
+        }
+    }
+}
+
+static void background_init() {
+    for(int i = 0; i < STARS_N; i++) {
+        stars[i].y = rand_between_f(0, WORLD_HEIGHT);
+        stars[i].speed = get_random_star_speed();
+        stars[i].color = random_star_color();  // Asignar color aleatorio
+    }
+}
+
+static void draw_background() {
+    float star_x = STAR_MARGIN;
+    for(int i = 0; i < STARS_N; i++) {
+        al_draw_pixel(star_x, stars[i].y, stars[i].color);
+        star_x += STAR_SEPARATION;
+    }
+}
+
+static ALLEGRO_COLOR random_star_color() {
+    int r = rand() % 5;  // 5 tipos de estrellas
+
+    switch(r) {
+        case 0: return al_map_rgb_f(1.0, 1.0, 1.0); // Blanco (tipo A)
+        case 1: return al_map_rgb_f(0.8, 0.8, 1.0); // Azul claro (tipo B)
+        case 2: return al_map_rgb_f(1.0, 1.0, 0.6); // Amarillento (tipo G)
+        case 3: return al_map_rgb_f(0.9, 0.7, 1.0); // Violeta suave
+        case 4: return al_map_rgb_f(1.0, 0.9, 0.8); // Naranja pálido (tipo K)
+        default: return al_map_rgb_f(1.0, 1.0, 1.0);
+    }
+}
+
+static void shield_hit(){
+  al_play_sample_instance(shieldHitSample);
+}
+
+static void alien_hit(){
+  al_play_sample_instance(alienHitSample);
+}
+
+static void alien_death(int x, int y, explosion_type_t explosionType){
+  // Play animation
+  explosion.x = x;
+  explosion.y = y;
+  explosion.type = explosionType;
+  explosion.explosion_interval = 5;
+  // Play sound effect
+  al_play_sample_instance(alienDeathSample);
+}
+
+static void draw_mothership(mothership_color_t color) {
+  //al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(128, 0, 255));
+  ALLEGRO_BITMAP* ufoSprite = sprites.ufo[color][0];
+  int srcWidth = al_get_bitmap_width(ufoSprite), srcHeight = al_get_bitmap_height(ufoSprite);
+  al_draw_scaled_bitmap(
+    ufoSprite, 0, 0, srcWidth, srcHeight,
+    mothership_get_x(), mothership_get_y(),
+    MOTHERSHIP_W, MOTHERSHIP_H, 0);
+}
+
+static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame) {
+  int alienX = aliens_get_x(i, j) - ALIEN_SCALE_X/2, alienY = aliens_get_y(i, j) - ALIEN_SCALE_Y/2;
+  ALLEGRO_BITMAP *alienSprite = sprites.aliens[alines_get_type(i,j)][color][aliensFrame];
+  int srcWidth = al_get_bitmap_width(alienSprite), srcHeight = al_get_bitmap_height(alienSprite);
+  int dWidth = ALIENS_W + ALIEN_SCALE_X, dHeight = ALIENS_H + ALIEN_SCALE_Y;
   // Para ver la hitbox
-  // al_draw_rectangle(alienX, alienY, alienX + ALIENS_W, alienY + ALIENS_H, al_map_rgb(255, 0, 0), 1);
-  al_draw_scaled_bitmap(alienSprite, 0, 0, srcWidth, srcHeight, alienX, alienY, ALIENS_W, ALIENS_H, 0);
+  //al_draw_rectangle(aliens_get_x(i, j), aliens_get_y(i, j), aliens_get_x(i, j) + ALIENS_W, aliens_get_y(i, j) + ALIENS_H, al_map_rgb(255, 0, 0), 1);
+  al_draw_scaled_bitmap(alienSprite, 0, 0, srcWidth, srcHeight, alienX, alienY, dWidth, dHeight, 0);
 }
 
 static void draw_player() {
-  al_draw_filled_rectangle(player_get_x(), player_get_y(), player_get_x() + PLAYER_W, player_get_y() + PLAYER_H, al_map_rgb(0, 255, 0));
+  if(playerDied) return;
+  int srcWidth = al_get_bitmap_width(sprites.ship);
+  int srcHeight = al_get_bitmap_height(sprites.ship);
+  al_draw_scaled_bitmap(sprites.ship, 0, 0, srcWidth, srcHeight, player_get_x(), player_get_y(), PLAYER_W, PLAYER_H, 0);
+ // al_draw_filled_rectangle(player_get_x(), player_get_y(), player_get_x() + PLAYER_W, player_get_y() + PLAYER_H, al_map_rgb(0, 255, 0));
 }
 
 static void draw_alien_shot(unsigned frame, unsigned color) {
@@ -517,10 +937,55 @@ static void draw_shield(unsigned shield) {
   unsigned i, j;
   for ( i = 0; i < SHIELD_H; ++i ) {
     for ( j = 0; j < SHIELD_W; ++j ) {
-      if ( shield_get_lives(shield, i, j) )
-        al_draw_filled_rectangle(shield_get_x(shield, i, j), shield_get_y(shield, i, j), shield_get_x(shield, i, j) + SHIELD_BLOCK_W, shield_get_y(shield, i, j) + SHIELD_BLOCK_H, al_map_rgb(255, 255, 255));
+      int lives = shield_get_lives(shield, i, j);
+      if (lives > 0) {
+          // Block coordinates
+          float x = shield_get_x(shield, i, j);
+          float y = shield_get_y(shield, i, j);
+
+          // Draw white block in background
+          al_draw_filled_rectangle(x, y, x + SHIELD_BLOCK_W, y + SHIELD_BLOCK_H, al_map_rgb(255, 255, 255));
+
+          // Draw segments dependeing on lives lost
+          int lost = SHIELD_BLOCK_LIVES - lives;
+          int max_lines = 60;
+          int lines = (lost * max_lines) / SHIELD_BLOCK_LIVES;
+
+          const float SEGMENT_LENGTH = 3.0;
+          const float SEGMENT_THICKNESS = 1.0;
+
+          // srand restarted every time for segments not to move
+          srand(0);
+          for(int p = 0; p < lines; ++p) {
+              float px = x + rand_between_f(0, SHIELD_BLOCK_W - SEGMENT_LENGTH);
+              float py = y + rand_between_f(0, SHIELD_BLOCK_H);
+              al_draw_line(px, py, px + SEGMENT_LENGTH, py, al_map_rgb(0, 0, 0), SEGMENT_THICKNESS);
+          }
+          srand(time(NULL));
+      }
     }
   }
+}
+
+static void draw_explosion(unsigned frame, unsigned color){
+  ALLEGRO_BITMAP* sprite = NULL;
+  int width, height;
+  switch(explosion.type){
+    case ALIEN_EXPLOSION:
+      sprite = sprites.aliens_explotion[color];
+      width = ALIENS_W;
+      height = ALIENS_H;
+      break;
+    case UFO_EXPLOSION:
+      sprite = sprites.ufo[color][1];
+      width = MOTHERSHIP_W;
+      height = MOTHERSHIP_H;
+      break;
+  }
+  int srcWidth = al_get_bitmap_width(sprite);
+  int srcHeight = al_get_bitmap_height(sprite);
+  al_draw_scaled_bitmap(sprite, 0, 0, srcWidth, srcHeight, explosion.x, explosion.y, width, height, 0);
+  if(frame % 2) explosion.explosion_interval--;
 }
 
 static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h) {
@@ -534,19 +999,34 @@ static void sprites_init() {
   init_error(sprites._sheet, "spritesheet");
   sprites._sheet_shot = al_load_bitmap(SPRITESHEETSHOT);
   init_error(sprites._sheet_shot, "spritesheet_shot");
+  sprites.ship = al_load_bitmap(BITMAP_ROUTE("intro/intro_ship.png"));
+  init_error(sprites.ship, "spritesheet_ship");
 
+  // Alien sprites
   int xOffset = 0;
   for(int i = 0; i < ALIEN_TOTAL_COLORS; i++){
-    if(i >= 6) xOffset = 578;
-    sprites.aliens[0][i][0] = sprite_grab(sprites._sheet, xOffset+20 , 22+(i%6)*74, 48, 32);
-    sprites.aliens[0][i][1] = sprite_grab(sprites._sheet, xOffset+104, 22+(i%6)*74, 48, 32);
-    sprites.aliens[1][i][0] = sprite_grab(sprites._sheet, xOffset+188, 22+(i%6)*74, 48, 32);
-    sprites.aliens[1][i][1] = sprite_grab(sprites._sheet, xOffset+272, 22+(i%6)*74, 48, 32);
-    sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+352, 22+(i%6)*74, 48, 32);
-    sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+428, 22+(i%6)*74, 48, 32);
+    if(i >= 6) xOffset = 577;
+    sprites.aliens[0][i][0] = sprite_grab(sprites._sheet, xOffset+8,  4+(i%6)*74, 72, 70); // 20, 22+(i%6)*74, 48, 32
+    sprites.aliens[0][i][1] = sprite_grab(sprites._sheet, xOffset+92,  4+(i%6)*74, 72, 70); // 104, 22...
+    sprites.aliens[1][i][0] = sprite_grab(sprites._sheet, xOffset+176, 4+(i%6)*74, 72, 70);
+    sprites.aliens[1][i][1] = sprite_grab(sprites._sheet, xOffset+260, 4+(i%6)*74, 72, 70);
+    sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+340, 4+(i%6)*74, 72, 70);
+    sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+416, 4+(i%6)*74, 72, 70);
+    sprites.aliens_explotion[i] = sprite_grab(sprites._sheet, xOffset+512, 22+(i%6)*74, 48, 32);
   }
 
-  // Recorte de los frames para las animaciones del disparo
+  // UFO sprites
+  bool frame = 0;
+  int i, j, k;
+  for(j = 0; j < 2; j++){
+    for(k = 0, i = j*5; k+frame < 6 && i < 10; (frame ? (i++,k++) : i), frame = !frame){
+      sprites.ufo[i][frame] = sprite_grab(sprites._sheet, 4-j*4+115*k+(k+frame-j)*95+12*frame, (j*75)+450, 95, 65);
+    }
+  }
+  sprites.ufo[10][0] = sprite_grab(sprites._sheet, 1054, 525, 95, 65);
+  sprites.ufo[10][1] = sprite_grab(sprites._sheet, 12, 600, 95, 65);
+
+  // Shot animations sprites
   int xSpacing, ySpacing = 0;
   for(int j = 0; j < SPRITE_SHOT_NUM; j++){
     xSpacing = 0;
@@ -567,4 +1047,5 @@ static void sprites_init() {
 static void sprites_deinit() {
   al_destroy_bitmap(sprites._sheet);
   al_destroy_bitmap(sprites._sheet_shot);
+  al_destroy_bitmap(sprites.ship);
 }

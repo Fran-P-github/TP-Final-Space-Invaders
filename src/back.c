@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define _IS_BACK_C_
 #include "back.h"
 
 /*******************************************************************************
@@ -75,7 +76,7 @@ typedef struct {
   int x, y;
   int lives;
   int points; // Point given to player when killed
-  int frame;
+  alien_type_t type;
 } alien_t;
 
 typedef struct {
@@ -124,7 +125,7 @@ typedef struct {
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives);
+static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives_min, unsigned lives_max);
 static void player_init();
 static void player_reset_lives();
 static void shields_init(unsigned lives);
@@ -132,9 +133,7 @@ static void shield_init(unsigned shield, int x, int y, unsigned lives); // Inits
 
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
-static bool shots_update(); // returns true when aliens hit player
-
-static int rand_between(int lo, int hi);
+static bool shots_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType), void (*alienHit)(void), void (*shieldHit)(void)); // returns true when aliens hit player, also gets callback function to handle alien death
 
 // Detects collition between a and b
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2);
@@ -142,8 +141,8 @@ static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx
 static bool should_spawn_mothership(double elapsed_time);
 
 // Call for shots to update
-static void player_shot_update();
-static bool alien_shot_update(); // returns true when aliens hit player
+static void player_shot_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType), void (*alienHit)(void)); // alienDeath callback function (depends on platform, allegro plays explosion animation and sound)
+static bool alien_shot_update(void (*shieldHit)(void)); // returns true when aliens hit player
 
 // Move player
 static void player_move(int x, int y);
@@ -217,6 +216,14 @@ unsigned long long get_millis() {
 #endif
 }
 
+int rand_between(int lo, int hi) {
+  return lo + rand() % (hi - lo + 1);
+}
+
+float rand_between_f(float lo, float hi){
+    return lo + ((float)rand() / (float)RAND_MAX) * (hi - lo);
+}
+
 int mothership_get_x() {
   return mothership.x;
 }
@@ -225,6 +232,9 @@ int mothership_get_y() {
 }
 bool mothership_is_active() {
   return mothership.is_active;
+}
+int mothership_get_points(){
+  return mothership.points;
 }
 
 int player_get_x() {
@@ -249,27 +259,30 @@ bool player_shot_is_used() {
   return player_shot.is_used;
 }
 
-int aliens_get_frame(unsigned i, unsigned j){
-  return aliens[i][j].frame;
-}
-
 int aliens_get_x(unsigned i, unsigned j) {
   return aliens[i][j].x;
 }
 int aliens_get_y(unsigned i, unsigned j) {
   return aliens[i][j].y;
 }
+int aliens_get_points(unsigned i, unsigned j){
+  return aliens[i][j].points;
+}
 bool aliens_is_alive(unsigned i, unsigned j) {
   return aliens[i][j].lives;
 }
-double aliens_get_move_interval() {
-  return aliens_move_interval;
+int aliens_get_lives(unsigned i, unsigned j) {
+  return aliens[i][j].lives;
 }
-void aliens_set_move_interval(double interval) {
-  aliens_move_interval = interval;
+alien_type_t alines_get_type(unsigned i, unsigned j){
+  return aliens[i][j].type;
 }
 int alien_shot_get_x() {
   return alien_shot.x;
+}
+float aliens_get_relative_speed(){
+  return (ALIENS_MOVE_MAX_INTERVAL - aliens_move_interval) /
+           (ALIENS_MOVE_MAX_INTERVAL - ALIENS_MOVE_MIN_INTERVAL);
 }
 int alien_shot_get_y() {
   return alien_shot.y;
@@ -297,18 +310,17 @@ player_t *get_player() {
 alien_t (*get_aliens(void))[ALIENS_ROWS][ALIENS_COLUMNS] {
   return &aliens;
 }
-double *get_aliens_move_interval() {
-  return &aliens_move_interval;
-}
 
 void back_init() {
   srand(time(NULL));
   player_init();
 }
 
-void level_init(unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives, unsigned shield_block_lives) {
-  aliens_init(aliens_rows, aliens_cols, aliens_lives);
+void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives) {
+  if(!aliens_lives_min) aliens_lives_min = 1;
+  aliens_init(aliens_rows, aliens_cols, aliens_lives_min, aliens_lives_max);
   shields_init(shield_block_lives);
+  update_aliens_speed(level); // Set aliens_move_interval on level start
 }
 
 int get_best_alien_column_to_shoot() {
@@ -330,6 +342,7 @@ void player_reset_on_new_level() {
 
 void player_reset_on_new_game() {
   player_reset_lives();
+  player.score = 0;
   playerDied = false;
 }
 
@@ -342,10 +355,10 @@ void player_move_left() {
     player_move(-PLAYER_DX, 0);
 }
 
-level_state_t back_update(unsigned current_level) {
+level_state_t back_update(unsigned current_level, void (*alienDeath)(int x, int y, explosion_type_t explosionType), void (*alienHit)(void), void (*shieldHit)(void)) {
   static unsigned long long player_death_start = MAX_ULL; // Variable is MAX_ULL while player is not in death state
   
-  if(shots_update()){
+  if(shots_update(alienDeath, alienHit, shieldHit)){
     if(player.lives <= 0) return ALIENS_WIN;
 
     player_death_start = get_millis();
@@ -365,10 +378,11 @@ level_state_t back_update(unsigned current_level) {
   }
 
   double elapsed = (double) (get_millis() - player_death_start);
-  //if(player_death_start != MAX_ULL) player.x += PLAYER_OFFSET_WHEN_DEAD;
-  if(elapsed <= 800) return LEVEL_NOT_DONE;
+  if(elapsed <= 700) return LEVEL_NOT_DONE;
   if(player_death_start != MAX_ULL){
+    bool shot_before = player_shot.is_used; // player_reset_on_new_level will set player_shot.is_used to false, we undo that
     player_reset_on_new_level();
+    player_shot.is_used = shot_before;
     player_death_start = MAX_ULL;
   }
 
@@ -377,7 +391,7 @@ level_state_t back_update(unsigned current_level) {
 
 // Returns: true if shot was available when called, false otherwise
 bool player_try_shoot() {
-  if ( player_shot.is_used ) return false;
+  if ( player_shot.is_used || playerDied ) return false;
 
   player_shot.is_used = true;
   player_shot.x = player.x + PLAYER_W / 2 - SHOT_W / 2;
@@ -415,7 +429,6 @@ static bool aliens_update(unsigned current_level) {
     }
   }
   movement_t last_movement;
-  static movement_t prev_last_movement = NO_MOVEMENT;
   if ( (last_movement = aliens_update_position(row_to_move)) != NO_MOVEMENT )
     row_to_move = (row_to_move - 1) >= ALIENS_ROWS ? (ALIENS_ROWS - 1) : (row_to_move - 1);
   // Get next row with alive aliens
@@ -423,10 +436,6 @@ static bool aliens_update(unsigned current_level) {
     row_to_move = (row_to_move - 1) >= ALIENS_ROWS ? ALIENS_ROWS - 1 : (row_to_move - 1);
   }
   if ( last_movement != NO_MOVEMENT ) {
-    if ( last_movement == MOVEMENT_DOWN && prev_last_movement != MOVEMENT_DOWN ) {
-      row_to_move = ALIENS_ROWS - 1;
-    }
-    prev_last_movement = last_movement;
   }
 
   update_aliens_speed(current_level);
@@ -440,9 +449,9 @@ static bool aliens_update(unsigned current_level) {
   return false;
 }
 
-static bool shots_update() {
-  player_shot_update();
-  return alien_shot_update();
+static bool shots_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType), void (*alienHit)(void), void (*shieldHit)(void)) {
+  player_shot_update(alienDeath, alienHit);
+  return alien_shot_update(shieldHit);
 }
 
 static void mothership_update() {
@@ -456,8 +465,17 @@ static void mothership_update() {
   if ( !mothership.is_active ) {
     spawn_right = rand() % 2;
 
+    // Select points for mothership
+    int r = rand_between(1, 100); // Random 1 to 100
+    if(r <= 57) {
+        mothership.points = MOTHERSHIP_POINTS_SILVER;  // ~57%
+    } else if(r <= 86) {
+        mothership.points = MOTHERSHIP_POINTS_GOLD;    // ~29%
+    } else {
+        mothership.points = MOTHERSHIP_POINTS_NEON; // ~14%
+    }
+
     mothership.is_active = true;
-    mothership.points = 5 * rand_between(2, 16); // 10 to 80, 5 steps
     mothership.y = MOTHERSHIP_MARGIN;
     if ( spawn_right ) {
       mothership.x = WORLD_WIDTH;
@@ -477,10 +495,6 @@ static void mothership_update() {
     }
     mothership.x += MOTHERSHIP_DX;
   }
-}
-
-static int rand_between(int lo, int hi) {
-  return lo + rand() % (hi - lo + 1);
 }
 
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2) {
@@ -514,18 +528,41 @@ static bool should_spawn_mothership(double elapsed_time) {
 }
 
 #define FIRST_ALIEN_X_COORDINATE ((WORLD_WIDTH - (cols * ALIENS_W + (cols - 1) * ALIENS_HORIZONTAL_SEPARATION)) / 2) //+250) //+250 para que empieze mas a la derecha y testear mas facil
-static void aliens_init(unsigned rows, unsigned cols, unsigned lives) {
-  if ( !lives ) lives = 1;
+static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsigned lives_max) {
   unsigned i, j;
   int x = FIRST_ALIEN_X_COORDINATE;
   int y = ALIENS_MARGIN;
   for ( i = 0; i < ALIENS_ROWS; ++i ) {
     for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
+      if(i + 1 > (double)2/3 * rows){
+        aliens[i][j].type = ALIEN_FAT;
+        aliens[i][j].points = ALIEN_FAT_POINTS;
+      }else if(i + 1 > (double)1/3 * rows){
+        aliens[i][j].type = ALIEN_WINGED;
+        aliens[i][j].points = ALIEN_WINGED_POINTS;
+      }else{
+        aliens[i][j].type = ALIEN_SMALL;
+        aliens[i][j].points = ALIEN_SMALL_POINTS;
+      }
+      
+      // 2% neon, 4% gold, 8%, silver
+      int r = rand_between(1, 100);
+      if(r <= 2) {
+          aliens[i][j].points = ALIEN_POINTS_NEON;
+      } else if(r <= 6) {
+          aliens[i][j].points = ALIEN_POINTS_GOLD;
+      } else if(r <= 14) {
+          aliens[i][j].points = ALIEN_POINTS_SILVER;
+      }
+
       aliens[i][j].x = x;
       aliens[i][j].y = y;
-      aliens[i][j].lives = (i < rows && j < cols) ? lives : 0;
-      aliens[i][j].points = ALIENS_POINTS;
-      aliens[i][j].frame = 0;
+
+      if((i < rows && j < cols)){
+        aliens[i][j].lives = rows > 1 ? lives_min + ( (lives_max - lives_min) * i ) / (rows - 1) : lives_max;
+      }else{
+        aliens[i][j].lives = 0;
+      }
 
       x += ALIENS_W + ALIENS_HORIZONTAL_SEPARATION;
     }
@@ -609,6 +646,8 @@ static int get_top_alien_row() {
 }*/
 
 static int get_alien_column_above_player() {
+  if(playerDied) return -1;
+
   for ( unsigned j = 0; j < ALIENS_COLUMNS; ++j ) {
     int row = lowest_alien_alive_index(j);
     if ( !aliens[row][j].lives ) continue;
@@ -708,48 +747,46 @@ static movement_t aliens_update_position(unsigned row) {
   if ( row >= ALIENS_ROWS ) return false;
   static unsigned long long start = 0;
   double elapsed = (double) (get_millis() - start) / 1000;
-  unsigned i, j;
+  int i, j;
   static movement_t movement = MOVEMENT_RIGHT;
   static movement_t movement_post_down = MOVEMENT_LEFT;
+  
+  int topRow = get_top_alien_row();
+  // Check movement direction
+  if(movement != MOVEMENT_DOWN)
+  for ( i = ALIENS_COLUMNS - 1; i >= 0; --i ) {
+    if ( aliens_alive_in_column(i) ){
+      for ( j = ALIENS_ROWS - 1; j >= 0; --j ){
+        if(!aliens_alive_in_row(j)) continue;
+        if (movement==MOVEMENT_RIGHT && (aliens[j][i].x + ALIENS_W-1 + ALIENS_DX > WORLD_WIDTH-1) ) {
+          if(j == topRow){
+            movement = MOVEMENT_DOWN;
+            movement_post_down = MOVEMENT_LEFT;
+          }
+        }
+        else if (movement==MOVEMENT_LEFT && (aliens[j][i].x - ALIENS_DX < 0) ) {
+          if(j == topRow){
+            movement = MOVEMENT_DOWN;
+            movement_post_down = MOVEMENT_RIGHT;
+          }
+        }
+      }
+    }
+  }
+
   aliensMoved = elapsed >= aliens_move_interval;
-  if ( elapsed >= aliens_move_interval ) {
+  if ( elapsed >= aliens_move_interval) {
     start = get_millis();
     switch ( movement ) {
       case MOVEMENT_RIGHT:
         aliens_move_right(row);
-        for ( i = ALIENS_COLUMNS - 1; i < ALIENS_COLUMNS; --i ) { // Comparación así por i unsigned
-          if ( aliens_alive_in_column(i) ){
-            aliens[row][i].frame = !aliens[row][i].frame; // Cambia de frame solo en la fila que se movio
-            for ( j = ALIENS_ROWS - 1; j < ALIENS_ROWS; --j ){
-              if ( aliens_alive_in_row(j) && (aliens[j][i].x + ALIENS_W - 1 > WORLD_WIDTH - 1) ) {
-                aliens_move_left(row); // Nos habíamos pasado
-                movement = MOVEMENT_DOWN;
-                movement_post_down = MOVEMENT_LEFT;
-                break;
-              }
-            }
-          }
-        }
         break;
       case MOVEMENT_LEFT:
         aliens_move_left(row);
-        for ( i = 0; i < ALIENS_COLUMNS; ++i ) { // Comparación así por i unsigned
-          if ( aliens_alive_in_column(i) ){
-            aliens[row][i].frame = !aliens[row][i].frame; // Cambia de frame solo en la fila que se movio
-            for ( j = ALIENS_ROWS - 1; j < ALIENS_ROWS; --j ){
-              if ( aliens_alive_in_row(j) && (aliens[j][i].x < 0) ) {
-                aliens_move_right(row); // Nos habíamos pasado
-                movement = MOVEMENT_DOWN;
-                movement_post_down = MOVEMENT_RIGHT;
-                break;
-              }
-            }
-          }
-        }
         break;
       case MOVEMENT_DOWN:
         aliens_move_down(row);
-        if ( row == get_top_alien_row() ) {
+        if (row == topRow) {
           if ( movement_post_down == MOVEMENT_RIGHT ) {
             movement = MOVEMENT_RIGHT;
             movement_post_down = MOVEMENT_LEFT;
@@ -796,7 +833,7 @@ void aliens_shield_collition() {
   }
 }
 
-static void player_shot_update() {
+static void player_shot_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType), void (*alienHit)(void)) {
   if ( !player_shot.is_used ) return;
 
   player_shot.y -= SHOT_DY_PLAYER;
@@ -807,6 +844,7 @@ static void player_shot_update() {
     player_shot.is_used = false;
     player.score += mothership.points;
     mothership.is_active = false;
+    alienDeath(mothership.x, mothership.y, UFO_EXPLOSION);
   }
 
   // Alien_shot collition
@@ -820,8 +858,11 @@ static void player_shot_update() {
     for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
       if ( aliens[i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x + ALIENS_W - 1, aliens[i][j].y + ALIENS_H - 1) ) {
         player_shot.is_used = false;
-        aliens[i][j].lives--;
-        player.score += aliens[i][j].points;
+        if(--aliens[i][j].lives == 0){
+          alienDeath(aliens[i][j].x, aliens[i][j].y, ALIEN_EXPLOSION);
+          player.score += aliens[i][j].points;
+        }
+        else alienHit();
         break;
       }
     }
@@ -848,7 +889,7 @@ static void player_shot_update() {
     player_shot.is_used = false;
 }
 
-static bool alien_shot_update() {
+static bool alien_shot_update(void (*shieldHit)(void)) {
   if ( !alien_shot.is_used ) return false;
 
   alien_shot.y += SHOT_DY_ALIEN;
@@ -865,6 +906,7 @@ static bool alien_shot_update() {
           if ( shields[k][i][j].lives && collide(alien_shot.x, alien_shot.y, alien_shot.x + SHOT_W - 1, alien_shot.y + SHOT_H - 1, shields[k][i][j].x, shields[k][i][j].y, shields[k][i][j].x + SHIELD_BLOCK_W - 1, shields[k][i][j].y + SHIELD_BLOCK_H - 1) ) {
             alien_shot.is_used = false;
             shields[k][i][j].lives--;
+            shieldHit();
             break;
           }
         }

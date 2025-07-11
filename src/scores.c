@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "scores.h"
+#include "general_defines.h"
 
 #if PLATFORM == RPI
 #define SCORE_FILE "scores_rpi.csv"

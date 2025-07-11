@@ -14,11 +14,7 @@
  ******************************************************************************/
 
 #include "general_defines.h"
-#if PLATFORM == ALLEGRO
-#include "front_allegro.h"
-#elif PLATFORM == RPI
-#include "front_rb.h"
-#endif
+#include "front.h"
 
 /*******************************************************************************
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
@@ -56,33 +52,44 @@
  *******************************************************************************
  ******************************************************************************/
 
-int main() {
+int main(){
   game_state_t state = front_init();
 
   state = MENU; // Testing. Despues cambiar a MENU
 
   unsigned int level = 0;
+  bool new_level = true;
 
   while ( state != CLOSED ) {
     switch ( state ) {
       case MENU:
         level = 0;
+        new_level = true;
         state = menu();
         break;
       case GAME:
-        state = game_update(level++);
+        state = game_update(level, new_level);
+        if(state == GAME){
+           level++; // Player won
+           new_level = true;
+        }else{
+          new_level = false;
+        }
         break;
       case GAME_CRAZY:
         break;
       case PAUSE:
-        state = game_pause();
+        state = game_pause(level);
+        break;
+        case ENDGAME:
+        state = endgame();
         break;
       case CLOSED:
         break;
     }
   }
 
-  endgame();
+  front_deinit();
 
   return 0;
 }
