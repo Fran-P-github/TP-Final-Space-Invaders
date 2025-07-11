@@ -840,7 +840,7 @@ static void player_shot_update(void (*alienDeath)(int x, int y, explosion_type_t
   unsigned i, j;
 
   // Mothership collition
-  if ( collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, mothership.x, mothership.y, mothership.x + MOTHERSHIP_W - 1, mothership.y + MOTHERSHIP_H - 1) ) {
+  if (mothership.is_active && collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, mothership.x, mothership.y, mothership.x + MOTHERSHIP_W - 1, mothership.y + MOTHERSHIP_H - 1) ) {
     player_shot.is_used = false;
     player.score += mothership.points;
     mothership.is_active = false;

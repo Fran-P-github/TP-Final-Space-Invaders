@@ -31,6 +31,15 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
+#define DRAW_BUTTON(button) draw_button(&mouse, screen_width, screen_height, &(button))
+// Wrapper for drawing the button. Simpler and quicker
+
+#define BUTTON_TEXT(button, txt) draw_smart_text(&mouse, screen_width, screen_height, &(button), font_supercharge, color_black, color_white, ALLEGRO_ALIGN_RIGHT, (txt))
+// Wrapper for drawing text over a certain button
+
+#define MOUSE_HOVER(button) mouse_hover_button(&(button), &mouse, screen_width, screen_height)
+// Wrapper to detect where the mouse is hovering over
+
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
@@ -85,7 +94,7 @@ kill_all_button: Destroys the bitmaps of each button. Receives:
 - Variadic arguments refer to the pointers for each button. (e.g. &button_start)
 */
 
-void draw_button(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button);
+void draw_button(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h),*/ ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button);
 /*
 draw_button: Draws the button on the selected buffer target. Receives:
 - callback function to detect the mouse over the button
@@ -95,7 +104,7 @@ draw_button: Draws the button on the selected buffer target. Receives:
 - button pointer
 */
 
-void draw_smart_text(bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h), ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, char *text);
+void draw_smart_text(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h),*/ ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, char *text);
 /*
 draw_smart_text: Inserts static text on top of the button. Receives:
 - callback function to detect the mouse over the button
