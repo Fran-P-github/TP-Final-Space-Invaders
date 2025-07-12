@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "menu_allegro.h"
+#include "scores.h"
 #include <stdarg.h>
 
 /*******************************************************************************
@@ -67,6 +68,8 @@
 #define MOUSE_HOVER(button) mouse_hover_button(&(button), &mouse, screen_width, screen_height)
 // Wrapper to detect where the mouse is hovering over
 
+#define BACK_TEXT al_draw_text(font_cartesian, color_black, WORLD_WIDTH * 0.85, WORLD_WIDTH * 0.02, 0, "Press [ESC] to go back")
+
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
@@ -113,6 +116,9 @@ static void trail_accel(float *polygon, int new_x, int new_y, int old_x, int old
 // static polygon_t assign_polygon(unsigned int vertex_count, ...);
 // static void draw_polygon(polygon_t *polygon, ALLEGRO_COLOR color, float trace);
 // static void kill_all_polygon(unsigned int count, ...);
+static void insert_description(ALLEGRO_FONT *font, ALLEGRO_COLOR color, const char *text);
+static void smart_description(button_t *play, button_t *settings, button_t *scoreboard, button_t *credits, button_t *exit, ALLEGRO_MOUSE_STATE *mouse, ALLEGRO_FONT *font, ALLEGRO_COLOR color, short int *screen_width, short int *screen_height);
+static void background_slider_reset_except(short int n, short int *slider);
 
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
@@ -134,8 +140,14 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   ALLEGRO_BITMAP *intro_background_frames[300];
   ALLEGRO_BITMAP *intro_logo;
+  ALLEGRO_BITMAP *play_background;
+  ALLEGRO_BITMAP *settings_background;
+  ALLEGRO_BITMAP *scoreboard_background;
+  ALLEGRO_BITMAP *credits_background;
+  ALLEGRO_BITMAP *exit_background;
 
   ALLEGRO_FONT *font_toreks;
+  ALLEGRO_FONT *font_toreks_big;
   ALLEGRO_FONT *font_supercharge;
   ALLEGRO_FONT *font_cartesian;
 
@@ -158,11 +170,15 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   button_t button_credits;
   button_t button_exit;
 
+  highscore_t top_scores[MAX_SCORES];
+
   char intro_background_path[64];
 
-  short int counter_1, counter_2, counter_3, screen_width, screen_height, mouse_x, mouse_y;
+  short int counter_1, counter_2, counter_3;
+  short int screen_width, screen_height, mouse_x, mouse_y;
 
-  float button_slide_1; //, button_slide_2, button_slide_3;
+  float button_slide_1; //, button_slide_2;
+  float score_slide;
 
   bool redraw;
   bool fullscreen;
@@ -192,6 +208,10 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   flash_enable = 1;
   menu_enable = 0;
   menu_buttons_enable = 0;
+
+  score_slide = 1;
+
+  short int background_slide[5] = {-WORLD_WIDTH / 2};
 
   float Accel_x = 0, Accel_y = 0;
 
@@ -244,6 +264,16 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   ERRCHECK(intro_logo, "intro logo");
   intro_ship.sprite = al_load_bitmap(BITMAP_ROUTE("intro/intro_ship.png"));
   ERRCHECK(intro_ship.sprite, "intro ship");
+  play_background = al_load_bitmap(BITMAP_ROUTE("menu/play_background.png"));
+  ERRCHECK(play_background, "play background");
+  settings_background = al_load_bitmap(BITMAP_ROUTE("menu/settings_background.png"));
+  ERRCHECK(settings_background, "setttings background");
+  scoreboard_background = al_load_bitmap(BITMAP_ROUTE("menu/scoreboard_background.png"));
+  ERRCHECK(scoreboard_background, "scoreboard background");
+  credits_background = al_load_bitmap(BITMAP_ROUTE("menu/placeholder_background.png"));
+  ERRCHECK(credits_background, "credits background");
+  exit_background = al_load_bitmap(BITMAP_ROUTE("menu/exit_background.png"));
+  ERRCHECK(exit_background, "exit background");
 
   logo_sound = al_load_sample(AUDIO_ROUTE("coin.wav"));
   ERRCHECK(logo_sound, "Coin Sound");
@@ -254,6 +284,8 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   font_toreks = al_load_ttf_font(FONT_ROUTE("toreks-font/Toreks_regular.ttf"), 16, 0);
   ERRCHECK(font_toreks, "Toreks Font");
+  font_toreks_big = al_load_ttf_font(FONT_ROUTE("toreks-font/Toreks_regular.ttf"), 24, 0);
+  ERRCHECK(font_toreks_big, "Big Toreks Font");
   font_supercharge = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 24, 0);
   ERRCHECK(font_supercharge, "Supercharge Font");
   font_cartesian = al_load_ttf_font(FONT_ROUTE("cartesian-font/Cartesian_regular.ttf"), 12, 0);
@@ -261,6 +293,8 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   intro_ship.cx = al_get_bitmap_width(intro_ship.sprite) / 2;
   intro_ship.cy = al_get_bitmap_height(intro_ship.sprite) / 2;
+
+  load_scores(top_scores);
 
   al_set_sample(sample_instance2, intro_part2);
 
@@ -464,6 +498,34 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
               BUTTON_TEXT(button_scoreboard, "Scoreboard");
               BUTTON_TEXT(button_exit, "Quit game");
               BUTTON_TEXT(button_credits, "Credits");
+
+              smart_description(&button_play, &button_settings, &button_scoreboard, &button_credits, &button_exit, &mouse, font_cartesian, color_black, &screen_width, &screen_height);
+
+              if ( MOUSE_HOVER(button_play) ) {
+                background_slider_reset_except(0, background_slide);
+                al_draw_bitmap(play_background, background_slide[0], 0, 0);
+                if ( background_slide[0] < 0 ) background_slide[0] += WORLD_WIDTH / 10;
+              } else if ( MOUSE_HOVER(button_settings) ) {
+                background_slider_reset_except(1, background_slide);
+                al_draw_bitmap(settings_background, background_slide[1], 0, 0);
+                if ( background_slide[1] < 0 ) background_slide[1] += WORLD_WIDTH / 10;
+              } else if ( MOUSE_HOVER(button_scoreboard) ) {
+                background_slider_reset_except(2, background_slide);
+                al_draw_bitmap(scoreboard_background, background_slide[2], 0, 0);
+                if ( background_slide[2] < 0 ) background_slide[2] += WORLD_WIDTH / 10;
+              } else if ( MOUSE_HOVER(button_credits) ) {
+                background_slider_reset_except(3, background_slide);
+                al_draw_bitmap(credits_background, background_slide[3], 0, 0);
+                if ( background_slide[3] < 0 ) background_slide[3] += WORLD_WIDTH / 10;
+              } else if ( MOUSE_HOVER(button_exit) ) {
+                background_slider_reset_except(4, background_slide);
+                al_draw_bitmap(exit_background, background_slide[4], 0, 0);
+                if ( background_slide[4] < 0 ) background_slide[4] += WORLD_WIDTH / 10;
+              } else {
+                background_slider_reset_except(5, background_slide);
+              }
+
+              BACK_TEXT;
             }
 
             if ( counter_2 <= 0 && !menu_enable && !counter_3 ) {
@@ -478,7 +540,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
             break;
 
           case ALLEGRO_EVENT_KEY_DOWN:
-            if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE ) {
+            if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE && menu_enable ) {
               menu_enable = 0;
               menu_buttons_enable = 0;
               menu_slide_done = 0;
@@ -493,9 +555,10 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
                 select = PLAY;
               else if ( MOUSE_HOVER(button_settings) )
                 ; // select = MENU_SETTINGS;
-              else if ( MOUSE_HOVER(button_scoreboard) )
-                ;
-              else if ( MOUSE_HOVER(button_credits) )
+              else if ( MOUSE_HOVER(button_scoreboard) ) {
+                select = MENU_SCORE;
+                score_slide = 1;
+              } else if ( MOUSE_HOVER(button_credits) )
                 ;
               else if ( MOUSE_HOVER(button_exit) )
                 select = QUIT;
@@ -504,7 +567,53 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
         break;
 
-      case MENU_SETTINGS:
+      case MENU_SCORE:
+
+        switch ( menu_event.type ) {
+          case ALLEGRO_EVENT_KEY_DOWN:
+            if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE ) select = MENU_MAIN;
+            break;
+          case ALLEGRO_EVENT_TIMER:
+            BUFFER;
+            CLEAR;
+
+            DRAW_BACKGROUND;
+            DRAW_LOGO;
+            al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(0, 0, 0, counter_2));
+            al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));
+
+            al_draw_text(font_supercharge, color_black, (WORLD_WIDTH * 0.55) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.1, 0, "LeaderboaRd");
+
+            al_draw_text(font_toreks, al_map_rgb(255, 0, 0), (WORLD_WIDTH * 0.55) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.2, 0, "1");
+            al_draw_text(font_toreks_big, al_map_rgb(255, 0, 0), (WORLD_WIDTH * 0.6) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.2 - 7, 0, top_scores[0].name);
+            al_draw_textf(font_toreks, al_map_rgb(255, 0, 0), (WORLD_WIDTH * 0.75) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.2, 0, "%d", top_scores[0].score);
+
+            al_draw_text(font_toreks, al_map_rgb(255, 160, 0), (WORLD_WIDTH * 0.55) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.25, 0, "2");
+            al_draw_text(font_toreks_big, al_map_rgb(255, 160, 0), (WORLD_WIDTH * 0.6) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.25 - 7, 0, top_scores[1].name);
+            al_draw_textf(font_toreks, al_map_rgb(255, 160, 0), (WORLD_WIDTH * 0.75) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.25, 0, "%d", top_scores[1].score);
+
+            al_draw_text(font_toreks, al_map_rgb(255, 255, 0), (WORLD_WIDTH * 0.55) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.3, 0, "3");
+            al_draw_text(font_toreks_big, al_map_rgb(255, 255, 0), (WORLD_WIDTH * 0.6) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.3 - 7, 0, top_scores[2].name);
+            al_draw_textf(font_toreks, al_map_rgb(255, 255, 0), (WORLD_WIDTH * 0.75) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.3, 0, "%d", top_scores[2].score);
+
+            al_draw_text(font_toreks, al_map_rgb(190, 255, 0), (WORLD_WIDTH * 0.55) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.35, 0, "4");
+            al_draw_text(font_toreks_big, al_map_rgb(190, 255, 0), (WORLD_WIDTH * 0.6) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.35 - 7, 0, top_scores[3].name);
+            al_draw_textf(font_toreks, al_map_rgb(190, 255, 0), (WORLD_WIDTH * 0.75) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.35, 0, "%d", top_scores[3].score);
+
+            al_draw_text(font_toreks, al_map_rgb(120, 255, 0), (WORLD_WIDTH * 0.55) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.4, 0, "5");
+            al_draw_text(font_toreks_big, al_map_rgb(120, 255, 0), (WORLD_WIDTH * 0.6) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.4 - 7, 0, top_scores[4].name);
+            al_draw_textf(font_toreks, al_map_rgb(120, 255, 0), (WORLD_WIDTH * 0.75) * (1 + 1 / score_slide), WORLD_HEIGHT * 0.4, 0, "%d", top_scores[4].score);
+
+            if ( score_slide < 50 )
+              score_slide += 5;
+            else if ( score_slide < 100 )
+              score_slide += 10;
+
+            BACK_TEXT;
+
+            redraw = 1;
+            break;
+        }
         break;
 
       default:
@@ -519,10 +628,10 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   /***********************RESOURCE-FREEING***********************/
 
   for ( counter_1 = 0; counter_1 < 300; counter_1++ ) (*kill_all_bitmaps)(1, intro_background_frames[counter_1]);
-  (*kill_all_bitmaps)(2, intro_ship.sprite, intro_logo);
+  (*kill_all_bitmaps)(7, intro_ship.sprite, intro_logo, play_background, settings_background, scoreboard_background, exit_background, credits_background);
   (*kill_all_samples)(3, logo_sound, intro_part1, intro_part2);
   (*kill_all_instances)(2, sample_instance, sample_instance2);
-  (*kill_all_font)(3, font_cartesian, font_supercharge, font_toreks);
+  (*kill_all_font)(4, font_cartesian, font_supercharge, font_toreks, font_toreks_big);
   kill_all_button(6, &button_start, &button_play, &button_settings, &button_scoreboard, &button_credits, &button_exit);
 
   al_stop_timer(timer);
@@ -979,5 +1088,40 @@ void draw_smart_text(ALLEGRO_MOUSE_STATE *mouse, float screen_width, float scree
 }
 
 void insert_description(ALLEGRO_FONT *font, ALLEGRO_COLOR color, const char *text) {
-  al_draw_multiline_text(font, color, 0.6 * WORLD_WIDTH, 0.6 * WORLD_HEIGHT, 0.4 * WORLD_HEIGHT, al_get_font_line_height(font), 0, text);
+  al_draw_multiline_text(font, color, 0.4 * WORLD_WIDTH, 0.7 * WORLD_HEIGHT, 0.55 * WORLD_WIDTH, al_get_font_line_height(font), 0, text);
+}
+
+void smart_description(button_t *play, button_t *settings, button_t *scoreboard, button_t *credits, button_t *exit, ALLEGRO_MOUSE_STATE *mouse, ALLEGRO_FONT *font, ALLEGRO_COLOR color, short int *screen_width, short int *screen_height) {
+  if ( mouse_hover_button(play, mouse, *screen_width, *screen_height) )
+    insert_description(font, color, " Launch into space!\n"
+                                    " Fend off the aliens to protect your crew. Beware of their ferocious attacks and relentless approach.\n"
+                                    " Fear not, captain! Your trustworhty MKII blaster will be the key to success, but make sure your aim is as good as your dodging skills.\n"
+                                    " Keys:\n"
+                                    " Left arrow: Move to the left.\n"
+                                    " Right arrow: Move to the right.\n"
+                                    " X: Fire bullets.");
+  else if ( mouse_hover_button(settings, mouse, *screen_width, *screen_height) )
+    insert_description(font, color, " Want to play with some tweaks?\n"
+                                    " Change the windows size, as well as the fullscreen setting\n"
+                                    " Pretty much nothing else...");
+  else if ( mouse_hover_button(scoreboard, mouse, *screen_width, *screen_height) )
+    insert_description(font, color, " Check out the scoreboard!\n"
+                                    " Want to become the king of the leaderboard?\n"
+                                    " Take a look at the top 10 players and their scores.\n"
+                                    " Who knows? maybe you will get to be in the podium!");
+  else if ( mouse_hover_button(credits, mouse, *screen_width, *screen_height) )
+    insert_description(font, color, " Credits!\n"
+                                    " That's it.\n"
+                                    " Credits...\n");
+  else if ( mouse_hover_button(exit, mouse, *screen_width, *screen_height) )
+    insert_description(font, color, " Exit the game\n"
+                                    " Take a break and come back full of energy!\n"
+                                    " Or maybe you have skill issue.");
+}
+
+void background_slider_reset_except(short int n, short int *slider) {
+  short int counter_1;
+  for ( counter_1 = 0; counter_1 < 5; counter_1++ ) {
+    if ( counter_1 != n ) slider[counter_1] = -WORLD_WIDTH / 2;
+  }
 }
