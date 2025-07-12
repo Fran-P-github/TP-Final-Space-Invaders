@@ -133,6 +133,9 @@ static ALLEGRO_COLOR random_star_color();
 // HUD drawing
 static void draw_hud(unsigned level, ALLEGRO_FONT* font);
 
+// Frame drawing and sounds
+static void process_frame(unsigned long long frame, unsigned level, bool player_shot_made, explosion_t explosion, int explosion_interval, ALLEGRO_FONT* hud_font);
+
 static void draw_mothership(mothership_color_t color);
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame);
 static void draw_player();
@@ -276,8 +279,12 @@ game_state_t game_pause(unsigned int level) {
     al_stop_sample_instance(ufoSample); // Stop mothership sound
     al_show_mouse_cursor(disp);
 
-    ALLEGRO_FONT *font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 28, 0);
-    init_error(font, "Pause menu font");
+    bool deinit_font_on_exit = true;
+    ALLEGRO_FONT *pause_font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 28, 0);
+    if(!pause_font){
+      pause_font = default_font;
+      deinit_font_on_exit = false;
+    }
 
     const int space = WORLD_HEIGHT / 6;
     const int button_w = WORLD_WIDTH / 3;
@@ -318,14 +325,14 @@ game_state_t game_pause(unsigned int level) {
         ALLEGRO_MOUSE_STATE ms; al_get_mouse_state(&ms);
 
         // Show player info
-        al_draw_textf(font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space, ALLEGRO_ALIGN_CENTER,
+        al_draw_textf(pause_font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space, ALLEGRO_ALIGN_CENTER,
                       "Score: %d    Lives: %d    Level: %d",
                       player_get_score(), player_get_lives(), level+1); // First level is level 0
 
         // Draw buttons
         for(int i = 0; i < 3; ++i) {
             draw_button(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i]);
-            draw_smart_text(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i], font, al_map_rgb(230, 230, 230), al_map_rgb(30, 30, 30), ALLEGRO_ALIGN_CENTER, labels[i]);
+            draw_smart_text(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i], pause_font, al_map_rgb(230, 230, 230), al_map_rgb(30, 30, 30), ALLEGRO_ALIGN_CENTER, labels[i]);
         }
 
         // Draw to screen
@@ -363,7 +370,7 @@ game_state_t game_pause(unsigned int level) {
         }
     }
 
-    al_destroy_font(font);
+    if(deinit_font_on_exit) al_destroy_font(pause_font);
     al_start_timer(timer); // Resume timer after pause
     al_flush_event_queue(queue); // Flush queue to give it back empty to game_update
     al_clear_to_color(al_map_rgb(0, 0, 0)); // Clear screen on exit
@@ -379,11 +386,15 @@ game_state_t endgame() {
     int name_len = 0;
     int score = player_get_score();
 
+    bool deinit_font_on_exit = true;
     ALLEGRO_FONT *font_endgame = al_load_ttf_font(FONT_ROUTE("toreks-font/Toreks_regular.ttf"), 32, 0);
-    init_error(font_endgame, "Endgame font");
+    if(!font_endgame){
+      font_endgame = default_font;
+      deinit_font_on_exit = false;
+    }
     const int space_between_lines = WORLD_HEIGHT/8;
 
-    // Capture of last game screen, with transparency
+    // Capture of last game screen
     ALLEGRO_BITMAP *background = al_create_bitmap(WORLD_WIDTH, WORLD_HEIGHT);
     al_set_target_bitmap(background);
     al_draw_bitmap(buffer, 0, 0, 0);
@@ -439,7 +450,7 @@ game_state_t endgame() {
     highscore_t top_scores[MAX_SCORES]; load_scores(top_scores);
     if( try_insert_score(top_scores, name, player_get_score()) ){
         al_draw_text(font_endgame, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, 3*space_between_lines, ALLEGRO_ALIGN_CENTER,
-                  "Congratulations! You just made a new best");
+                  "Congratulations! You just made a new best!");
     }
     save_scores(top_scores);
     al_set_target_backbuffer(disp);
@@ -448,10 +459,11 @@ game_state_t endgame() {
 
     // Show buttons to decide what to do next
     al_show_mouse_cursor(disp);
-    const int space = WORLD_WIDTH / 6;
+    const int space = WORLD_WIDTH / 8;
     const int button_w = WORLD_WIDTH / 4.5;
     const int button_h = WORLD_HEIGHT / 12;
-    const int start_x = WORLD_WIDTH / 2 - space - button_w / 2;
+    const int total_width = 3 * button_w + 2 * space;
+    const int start_x = (WORLD_WIDTH - total_width) / 2 + button_w / 2;
 
     const char *labels[] = { "Replay", "Main Menu", "Exit" };
 
@@ -470,7 +482,7 @@ game_state_t endgame() {
       CREATE_BUTTON_GAME_PAUSE(colors[2][0], colors[2][1])
     };
     for(int i = 0; i < 3; ++i){
-      buttons[i].position_x = start_x + i * (button_w + space / 2);
+      buttons[i].position_x = start_x + i * (button_w + space);
       buttons[i].position_y = WORLD_HEIGHT - WORLD_HEIGHT / 6;
     }
     
@@ -520,10 +532,11 @@ game_state_t endgame() {
         }
     }
 
-    al_destroy_font(font_endgame);
+    if(deinit_font_on_exit) al_destroy_font(font_endgame);
     al_hide_mouse_cursor(disp);
     al_clear_to_color(al_map_rgb(0,0,0));
     al_flip_display();
+    al_play_sample_instance(pauseSample); // Same sound as pause when exiting endgame scene
     return result;
 }
 
@@ -617,13 +630,11 @@ game_state_t game_update(unsigned level, bool new_level) {
   }
 
   ALLEGRO_FONT *hud_font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 26, 0);
+  if(!hud_font) hud_font = default_font;
   ALLEGRO_EVENT event;
-  bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, shotMade = false;
+  bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, player_shot_made = false;
   level_state_t level_state = LEVEL_NOT_DONE;
   unsigned long long frame = 0;
-  unsigned shotFrame = 0, playerShotColor = 0, alienShotColor = 0;
-  int explosionOpacity = 255;
-  bool frameDecrement = false;
   explosion_t explosion;
   int explosion_interval = 0;
 
@@ -632,7 +643,7 @@ game_state_t game_update(unsigned level, bool new_level) {
   memset(key, 0, sizeof(key)); // Clear keys mask for going back to game
 
   while ( !done && level_state == LEVEL_NOT_DONE ) {
-    // Procesamiento de eventos
+    // Events processing
     if ( al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME) ) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
@@ -662,7 +673,7 @@ game_state_t game_update(unsigned level, bool new_level) {
           // Se utiliza X para disparar.
           if ( key[ALLEGRO_KEY_X] && player_try_shoot() ) {
             al_play_sample_instance(playerShotSample);
-            shotMade = true;
+            player_shot_made = true;
           }
           break;
         case ALLEGRO_EVENT_KEY_UP:
@@ -687,172 +698,12 @@ game_state_t game_update(unsigned level, bool new_level) {
       moveThisFrame = true;
     }
 
-    // Plays sound effect whenever the aliens move.
-    if ( total_aliens_alive() && aliensMoved ){
-      al_play_sample_instance(alienMovedSample);
-    }
-
-    if(alienWasHit){
-      al_play_sample_instance(alienHitSample);
-    }
-
-    // Stops player shot sound effect on collition
-    if ( !player_shot_is_used() && shotMade ) {
-      al_stop_sample_instance(playerShotSample);
-      shotMade = false;
-    }
-
     if ( redraw ) {
-      // Shot animation frames handling (both alien and player)
-      if(frame%3 == 0){
-        if(shotFrame >= SPRITE_SHOT_FRAMES - 1) frameDecrement = true;
-        else if (shotFrame <= 0) frameDecrement = false;
-        frameDecrement ? shotFrame-- : shotFrame++;
-        alienShotColor += 40;
-        playerShotColor += 30;
-        explosionOpacity -= 40;
-      }
-      if(!playerDied) explosionOpacity = 255;
-      else if(explosionOpacity <= 0) explosionOpacity = 0;
-      // Max color value for player shot
-      if(!player_shot_is_used()) playerShotColor = 0;
-      else if(playerShotColor >= 255) playerShotColor = 255;
-      // Max color value for alien shot
-      if(!alien_shot_is_used()) alienShotColor = 0;
-      else if(alienShotColor >= 255) alienShotColor = 255;
       redraw = false;
-
-      al_set_target_bitmap(buffer);
-      al_clear_to_color(al_map_rgb(0, 0, 0));
-      draw_background();
-
-      // HUD
-      draw_hud(level, hud_font);
-
-      unsigned i, j;
-      draw_player_shot(shotFrame, playerShotColor);
-      unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
-      if ( alien_column_to_shoot >= 0 ) {
-        alien_try_shoot(alien_column_to_shoot);
-      }
-      draw_alien_shot(shotFrame, alienShotColor);
-      for ( int x = 0; x < SHIELDS_CANT; x++ ) {
-        draw_shield(x);
-      }
-      if(shieldWasHit){
-        al_play_sample_instance(shieldHitSample);
-      }
-      draw_player();
-
-      // Player death
-      if(playerDied){
-        ALLEGRO_BITMAP* sprite = sprites.aliens_explotion[ALIEN_SILVER];
-        int srcWidth = al_get_bitmap_width(sprite), srcHeight = al_get_bitmap_height(sprite);
-        al_draw_tinted_scaled_bitmap(
-          sprite,
-          al_map_rgba(255, 255, 255, explosionOpacity),
-          0, 0, srcWidth, srcHeight,
-          player_get_x(), player_get_y(), PLAYER_W, PLAYER_H,
-          0
-        );
-        al_play_sample_instance(playerDeathSample);
-      }
-
-      {
-        int alienSprite = SPRITE_ALIENS_NUM;
-        static unsigned char aliensFrame = 0;
-        if(aliensMoved) aliensFrame = !aliensFrame;
-
-        for ( i = 0; i < ALIENS_ROWS; ++i ) {
-          if ( alienSprite > 0 && i % 2 == 0 ) {
-            alienSprite--;
-          }
-          for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
-            if ( aliens_is_alive(i, j) ) {
-              alien_color_t alienColor;
-              switch(aliens_get_lives(i, j)){
-                case 1:
-                  alienColor = ALIEN_LPINK;
-                  break;
-                case 2:
-                  alienColor = ALIEN_YELLOW;
-                  break;
-                case 3:
-                  alienColor = ALIEN_ORANGE;
-                  break;
-                case 4:
-                  alienColor = ALIEN_GREEN;
-                  break;
-                default:
-                  alienColor = ALIEN_RETRO; // Never to be reached
-                  break;
-              }
-              switch(aliens_get_points(i,j)){
-                case ALIEN_POINTS_SILVER:
-                  alienColor = ALIEN_SILVER;
-                  break;
-                case ALIEN_POINTS_GOLD:
-                  alienColor = ALIEN_GOLD;
-                  break;
-                case ALIEN_POINTS_NEON:
-                  alienColor = ALIEN_NEON;
-                  break;
-              }
-              draw_alien(i, j, alienSprite, alienColor, aliensFrame);
-            }
-          }
-        }
-      }
-
-      if(explosion.type == ALIEN_EXPLOSION && explosion_interval > 0){
-        alien_color_t color;
-        switch(explosion_interval){
-          case 5:
-          case 4:
-            color = ALIEN_ORANGE;
-            break;
-          case 3:
-          case 2:
-            color = ALIEN_WHITE;
-            break;
-          case 1:
-            color = ALIEN_GREY;
-            break;
-          default: // Never to be reached
-            color = ALIEN_PINK;
-            break;
-        }
-        draw_explosion(explosion, color);
-      }
-
-      {
-        mothership_color_t color;
-        if ( mothership_is_active() ) {
-          al_play_sample_instance(ufoSample);
-          switch(mothership_get_points()){
-            case MOTHERSHIP_POINTS_SILVER:
-              color = UFO_SILVER;
-              break;
-            case MOTHERSHIP_POINTS_GOLD:
-              color = UFO_GOLD;
-              break;
-            case MOTHERSHIP_POINTS_NEON:
-              color = UFO_NEON;
-              break;
-          }
-          draw_mothership(color);
-        } else {
-          al_stop_sample_instance(ufoSample);
-          if(explosion.type == UFO_EXPLOSION && explosion_interval > 0){
-            draw_explosion(explosion, color);
-          }
-        }
-      }
-
-      al_set_target_backbuffer(disp);
-      al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0); // flags
-      al_flip_display();
+      process_frame(frame, level, player_shot_made, explosion, explosion_interval, hud_font);
     }
+
+      
   }
 
   if ( level_state == PLAYER_WINS ) {
@@ -860,6 +711,184 @@ game_state_t game_update(unsigned level, bool new_level) {
   } else {
     return ENDGAME;
   }
+}
+
+static void process_frame(unsigned long long frame, unsigned level, bool player_shot_made, explosion_t explosion, int explosion_interval, ALLEGRO_FONT* hud_font){
+  al_set_target_bitmap(buffer);
+  al_clear_to_color(al_map_rgb(0, 0, 0));
+  draw_background();
+
+  static unsigned shotFrame = 0, playerShotColor = 0, alienShotColor = 0;
+  static bool frameDecrement = false;
+  static int explosionOpacity = 255;
+  if(frame == 0){
+    shotFrame = 0;
+    playerShotColor = 0;
+    alienShotColor = 0;
+    frameDecrement = false;
+    explosionOpacity = 255;
+  }
+
+  // Plays sound effect whenever the aliens move
+  if ( total_aliens_alive() && aliensMoved ){
+    al_play_sample_instance(alienMovedSample);
+  }
+  // Plays sound effect whenever an alien gets hit (but not killed)
+  if(alienWasHit){
+    al_play_sample_instance(alienHitSample);
+  }
+  // Stops player shot sound effect on collition
+  if ( !player_shot_is_used() && player_shot_made ) {
+    al_stop_sample_instance(playerShotSample);
+    player_shot_made = false;
+  }
+
+  // HUD
+  draw_hud(level, hud_font);
+
+  // Shot animation frames handling (both alien and player)
+  if(frame%3 == 0){
+    if(shotFrame >= SPRITE_SHOT_FRAMES - 1) frameDecrement = true;
+    else if (shotFrame <= 0) frameDecrement = false;
+    frameDecrement ? shotFrame-- : shotFrame++;
+    alienShotColor += 40;
+    playerShotColor += 30;
+    explosionOpacity -= 40;
+  }
+  if(!playerDied) explosionOpacity = 255;
+  else if(explosionOpacity <= 0) explosionOpacity = 0;
+  // Max color value for player shot
+  if(!player_shot_is_used()) playerShotColor = 0;
+  else if(playerShotColor >= 255) playerShotColor = 255;
+  // Max color value for alien shot
+  if(!alien_shot_is_used()) alienShotColor = 0;
+  else if(alienShotColor >= 255) alienShotColor = 255;
+  unsigned i, j;
+  draw_player_shot(shotFrame, playerShotColor);
+  unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
+  if ( alien_column_to_shoot >= 0 ) {
+    alien_try_shoot(alien_column_to_shoot);
+  }
+  draw_alien_shot(shotFrame, alienShotColor);
+  for ( int x = 0; x < SHIELDS_CANT; x++ ) {
+    draw_shield(x);
+  }
+  if(shieldWasHit){
+    al_play_sample_instance(shieldHitSample);
+  }
+  draw_player();
+
+  // Player death explosion
+  if(playerDied){
+    ALLEGRO_BITMAP* sprite = sprites.aliens_explotion[ALIEN_SILVER];
+    int srcWidth = al_get_bitmap_width(sprite), srcHeight = al_get_bitmap_height(sprite);
+    al_draw_tinted_scaled_bitmap(
+      sprite,
+      al_map_rgba(255, 255, 255, explosionOpacity),
+      0, 0, srcWidth, srcHeight,
+      player_get_x(), player_get_y(), PLAYER_W, PLAYER_H,
+      0
+    );
+    al_play_sample_instance(playerDeathSample);
+  }
+
+  {
+    int alienSprite = SPRITE_ALIENS_NUM;
+    static unsigned char aliensFrame = 0;
+    if(aliensMoved) aliensFrame = !aliensFrame;
+
+    for ( i = 0; i < ALIENS_ROWS; ++i ) {
+      if ( alienSprite > 0 && i % 2 == 0 ) {
+        alienSprite--;
+      }
+      for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
+        if ( aliens_is_alive(i, j) ) {
+          alien_color_t alienColor;
+          switch(aliens_get_lives(i, j)){
+            case 1:
+              alienColor = ALIEN_LPINK;
+              break;
+            case 2:
+              alienColor = ALIEN_YELLOW;
+              break;
+            case 3:
+              alienColor = ALIEN_ORANGE;
+              break;
+            case 4:
+              alienColor = ALIEN_GREEN;
+              break;
+            default:
+              alienColor = ALIEN_RETRO; // Never to be reached
+              break;
+          }
+          switch(aliens_get_points(i,j)){
+            case ALIEN_POINTS_SILVER:
+              alienColor = ALIEN_SILVER;
+              break;
+            case ALIEN_POINTS_GOLD:
+              alienColor = ALIEN_GOLD;
+              break;
+            case ALIEN_POINTS_NEON:
+              alienColor = ALIEN_NEON;
+              break;
+          }
+          draw_alien(i, j, alienSprite, alienColor, aliensFrame);
+        }
+      }
+    }
+  }
+
+  if(explosion.type == ALIEN_EXPLOSION && explosion_interval > 0){
+    alien_color_t color;
+    switch(explosion_interval){
+      case 5:
+      case 4:
+        color = ALIEN_ORANGE;
+        break;
+      case 3:
+      case 2:
+        color = ALIEN_WHITE;
+        break;
+      case 1:
+        color = ALIEN_GREY;
+        break;
+      default: // Never to be reached
+        color = ALIEN_PINK;
+        break;
+    }
+    draw_explosion(explosion, color);
+  }
+
+  {
+    mothership_color_t color;
+    switch(mothership_get_points()){
+      case MOTHERSHIP_POINTS_SILVER:
+        color = UFO_SILVER;
+        break;
+      case MOTHERSHIP_POINTS_GOLD:
+        color = UFO_GOLD;
+        break;
+      case MOTHERSHIP_POINTS_NEON:
+        color = UFO_NEON;
+        break;
+      default: // Never to be reached
+        color = UFO_PINK;
+        break;
+    }
+    if ( mothership_is_active() ) {
+      al_play_sample_instance(ufoSample);
+      draw_mothership(color);
+    } else {
+      al_stop_sample_instance(ufoSample);
+      if(explosion.type == UFO_EXPLOSION && explosion_interval > 0){
+        draw_explosion(explosion, color);
+      }
+    }
+  }
+
+  al_set_target_backbuffer(disp);
+  al_draw_scaled_bitmap(buffer, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0, 0, al_get_display_width(disp), al_get_display_height(disp), 0); // flags
+  al_flip_display();
 }
 
 static void draw_hud(unsigned level, ALLEGRO_FONT* font){
