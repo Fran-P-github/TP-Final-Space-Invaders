@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #define _IS_BACK_C_
 #include "back.h"
@@ -146,7 +147,7 @@ static void player_reset_on_new_level();
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
 // Returns true when aliens hit player, also gets callback function to handle alien death
-static bool shots_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType)); 
+static bool shots_update(); 
 
 // Detects collition between a and b
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2);
@@ -154,7 +155,7 @@ static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx
 // Returns true when mothership is to be spawned. Probability depends on elapsed_time
 static bool should_spawn_mothership(double elapsed_time);
 
-static void player_shot_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType)); // alienDeath callback function (depends on platform, allegro plays explosion animation and sound)
+static void player_shot_update();
 // Returns true when aliens hit player
 static bool alien_shot_update();
 
@@ -208,6 +209,8 @@ static shot_t player_shot;
 static shot_t alien_shot;
 
 static mothership_t mothership;
+
+explosion_t current_explosion;
 
 /*******************************************************************************
  *******************************************************************************
@@ -344,6 +347,14 @@ void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsi
   alienWasHit = false;
   playerDied = false;
   shieldWasHit = false;
+  current_explosion.type = NO_EXPLOSION;
+}
+
+bool get_explosion_state(explosion_t* explosion_state){
+  if(!explosion_state) return false;
+  if(current_explosion.type == NO_EXPLOSION) return false;
+  memcpy(explosion_state, &current_explosion, sizeof(explosion_t));
+  return true;
 }
 
 int get_best_alien_column_to_shoot() {
@@ -370,13 +381,14 @@ void player_move_left() {
     player_move(-PLAYER_DX, 0);
 }
 
-level_state_t back_update(unsigned current_level, void (*alienDeath)(int x, int y, explosion_type_t explosionType)) {
+level_state_t back_update(unsigned current_level) {
   shieldWasHit = false;
   alienWasHit = false;
+  current_explosion.type = NO_EXPLOSION;
 
   static unsigned long long player_death_start = MAX_ULL; // Variable is MAX_ULL while player is not in death state
   
-  if(shots_update(alienDeath)){
+  if(shots_update()){
     if(player.lives <= 0) return ALIENS_WIN;
 
     player_death_start = get_millis();
@@ -472,8 +484,8 @@ static bool aliens_update(unsigned current_level) {
   return false;
 }
 
-static bool shots_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType)) {
-  player_shot_update(alienDeath);
+static bool shots_update() {
+  player_shot_update();
   return alien_shot_update();
 }
 
@@ -858,7 +870,7 @@ void aliens_shield_collition() {
   }
 }
 
-static void player_shot_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType)) {
+static void player_shot_update() {
   if ( !player_shot.is_used ) return;
 
   player_shot.y -= SHOT_DY_PLAYER;
@@ -869,7 +881,9 @@ static void player_shot_update(void (*alienDeath)(int x, int y, explosion_type_t
     player_shot.is_used = false;
     player.score += mothership.points;
     mothership.is_active = false;
-    alienDeath(mothership.x, mothership.y, UFO_EXPLOSION);
+    current_explosion.x = mothership.x;
+    current_explosion.y = mothership.y;
+    current_explosion.type = UFO_EXPLOSION;
   }
 
   // Alien_shot collition
@@ -884,7 +898,9 @@ static void player_shot_update(void (*alienDeath)(int x, int y, explosion_type_t
       if ( aliens[i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x + ALIENS_W - 1, aliens[i][j].y + ALIENS_H - 1) ) {
         player_shot.is_used = false;
         if(--aliens[i][j].lives == 0){
-          alienDeath(aliens[i][j].x, aliens[i][j].y, ALIEN_EXPLOSION);
+          current_explosion.x = aliens[i][j].x;
+          current_explosion.y = aliens[i][j].y;
+          current_explosion.type = ALIEN_EXPLOSION;
           player.score += aliens[i][j].points;
         }
         else{

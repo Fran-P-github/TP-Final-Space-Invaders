@@ -33,9 +33,15 @@ typedef enum{
 } alien_type_t;
 
 typedef enum {
-  ALIEN_EXPLOSION = 0,
+  NO_EXPLOSION=0,
+  ALIEN_EXPLOSION,
   UFO_EXPLOSION
 } explosion_type_t;
+typedef struct{
+  int x;
+  int y;
+  explosion_type_t type;
+}explosion_t;
 
 /*******************************************************************************
  * EXTERN VARIABLES
@@ -69,7 +75,7 @@ float rand_between_f(float lo, float hi);
 void back_init();
 
 // To be called once every frame. Recieves current level, first level is level 0
-level_state_t back_update(unsigned int current_level, void (*alienDeath)(int x, int y, explosion_type_t explosionType));
+level_state_t back_update(unsigned int current_level);
 
 // To be called and the beginning of a level, with level specific configuration
 // current_level: level in progress, first level is level 0
@@ -90,6 +96,10 @@ void player_move_left();
 bool player_try_shoot();
 // Returns: true if alien in column was able to shoot
 bool alien_try_shoot(unsigned column);
+
+// Copies info for explosion to be drawn to explosion_state if there was an explosion during last frame
+// Returns false when not copying or if NULL pointer is given
+bool get_explosion_state(explosion_t* explosion_state);
 
 // Player status functions
 

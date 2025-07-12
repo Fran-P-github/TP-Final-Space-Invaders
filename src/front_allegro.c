@@ -119,13 +119,6 @@ typedef struct {
   ALLEGRO_BITMAP *ufo[UFO_TOTAL_COLORS][2];                       // 11 colores de naves nodrizas, 2 estados de animacion
 } sprites_t;
 
-typedef struct{
-  int x;
-  int y;
-  int explosion_interval;
-  explosion_type_t type;
-}explosion_t;
-
 /*******************************************************************************
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -140,14 +133,13 @@ static ALLEGRO_COLOR random_star_color();
 // HUD drawing
 static void draw_hud(unsigned level, ALLEGRO_FONT* font);
 
-static void alien_death(int x, int y, explosion_type_t explosionType);
 static void draw_mothership(mothership_color_t color);
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame);
 static void draw_player();
 static void draw_player_shot(unsigned frame, unsigned color);
 static void draw_alien_shot(unsigned frame, unsigned color);
 static void draw_shield(unsigned shield);
-static void draw_explosion(unsigned frame, unsigned color);
+static void draw_explosion(explosion_t explosion, unsigned color);
 static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h);
 static void sprites_init();
 static void sprites_deinit();
@@ -182,8 +174,6 @@ static ALLEGRO_MIXER *mixer;
 
 // Sprites
 static sprites_t sprites;
-
-explosion_t explosion; // explosion struct
 
 // Punteros a los samples para el audio
 static ALLEGRO_SAMPLE_INSTANCE *playerShotSample = NULL;
@@ -634,6 +624,8 @@ game_state_t game_update(unsigned level, bool new_level) {
   unsigned shotFrame = 0, playerShotColor = 0, alienShotColor = 0;
   int explosionOpacity = 255;
   bool frameDecrement = false;
+  explosion_t explosion;
+  int explosion_interval = 0;
 
   al_start_timer(timer);
   al_hide_mouse_cursor(disp);
@@ -645,7 +637,13 @@ game_state_t game_update(unsigned level, bool new_level) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
           background_update();
-          level_state = back_update(level, alien_death);
+          level_state = back_update(level);
+          if(explosion_interval > 0){
+            if(explosion_interval <= 0) explosion.type = NO_EXPLOSION;
+            if(!(frame%2)) explosion_interval--;
+          }else{
+            if(get_explosion_state(&explosion)) explosion_interval = 5;
+          }
           redraw = true;
           ++frame;
           moveThisFrame = false;
@@ -806,9 +804,9 @@ game_state_t game_update(unsigned level, bool new_level) {
         }
       }
 
-      if(explosion.type == ALIEN_EXPLOSION && explosion.explosion_interval > 0){
+      if(explosion.type == ALIEN_EXPLOSION && explosion_interval > 0){
         alien_color_t color;
-        switch(explosion.explosion_interval){
+        switch(explosion_interval){
           case 5:
           case 4:
             color = ALIEN_ORANGE;
@@ -820,8 +818,11 @@ game_state_t game_update(unsigned level, bool new_level) {
           case 1:
             color = ALIEN_GREY;
             break;
+          default: // Never to be reached
+            color = ALIEN_PINK;
+            break;
         }
-        draw_explosion(frame, color);
+        draw_explosion(explosion, color);
       }
 
       {
@@ -842,8 +843,8 @@ game_state_t game_update(unsigned level, bool new_level) {
           draw_mothership(color);
         } else {
           al_stop_sample_instance(ufoSample);
-          if(explosion.type == UFO_EXPLOSION && explosion.explosion_interval > 0){
-            draw_explosion(frame, color);
+          if(explosion.type == UFO_EXPLOSION && explosion_interval > 0){
+            draw_explosion(explosion, color);
           }
         }
       }
@@ -921,19 +922,6 @@ static ALLEGRO_COLOR random_star_color() {
         case 4: return al_map_rgb_f(1.0, 0.9, 0.8); // Naranja pálido (tipo K)
         default: return al_map_rgb_f(1.0, 1.0, 1.0);
     }
-}
-
-static void alien_death(int x, int y, explosion_type_t explosionType){
-  // Play animation
-  explosion.x = x;
-  explosion.y = y;
-  explosion.type = explosionType;
-  explosion.explosion_interval = 5;
-  // Play sound effect
-  if(explosionType == ALIEN_EXPLOSION)
-    al_play_sample_instance(alienDeathSample);
-  else if(explosionType == UFO_EXPLOSION)
-    al_play_sample_instance(ufoDeathSample);
 }
 
 static void draw_mothership(mothership_color_t color) {
@@ -1030,25 +1018,28 @@ static void draw_shield(unsigned shield) {
   }
 }
 
-static void draw_explosion(unsigned frame, unsigned color){
+static void draw_explosion(explosion_t explosion, unsigned color){
   ALLEGRO_BITMAP* sprite = NULL;
   int width, height;
   switch(explosion.type){
     case ALIEN_EXPLOSION:
+      al_play_sample_instance(alienDeathSample);
       sprite = sprites.aliens_explotion[color];
       width = ALIENS_W;
       height = ALIENS_H;
       break;
     case UFO_EXPLOSION:
+      al_play_sample_instance(ufoDeathSample);
       sprite = sprites.ufo[color][1];
       width = MOTHERSHIP_W;
       height = MOTHERSHIP_H;
+      break;
+    case NO_EXPLOSION:
       break;
   }
   int srcWidth = al_get_bitmap_width(sprite);
   int srcHeight = al_get_bitmap_height(sprite);
   al_draw_scaled_bitmap(sprite, 0, 0, srcWidth, srcHeight, explosion.x, explosion.y, width, height, 0);
-  if(frame % 2) explosion.explosion_interval--;
 }
 
 static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h) {
