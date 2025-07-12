@@ -170,6 +170,8 @@ static void kill_all_font(int len, ...);
 
 star_t stars[STARS_N];
 
+
+static bool fullscreen = true;
 static ALLEGRO_TIMER *timer;
 static ALLEGRO_DISPLAY *disp;
 static ALLEGRO_EVENT_QUEUE *queue;
@@ -344,29 +346,42 @@ game_state_t game_pause(unsigned int level) {
 
         // Wait for event
         while (al_get_next_event(queue, &ev)) {
-          if (ev.type == ALLEGRO_EVENT_MOUSE_AXES) continue; // Ignore mouse movement
+          switch(ev.type){
+            case ALLEGRO_EVENT_MOUSE_AXES: 
+              continue;
+              break;
 
-          if (ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+            case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
               for(int i = 0; i < 3; ++i) {
-                  if (mouse_hover_button(&buttons[i], &ms, al_get_display_width(disp), al_get_display_height(disp))) {
-                      switch(i){
-                        case 0:
-                          result = GAME;
-                          break;
-                        case 1:
-                          result = MENU;
-                          break;
-                        case 2:
-                          result = CLOSED;
-                          break;
-                      }
-                      done = true;
-                      break;
-                  }
-              }
-          } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
-              result = GAME;
-              done = true;
+                    if (mouse_hover_button(&buttons[i], &ms, al_get_display_width(disp), al_get_display_height(disp))) {
+                        switch(i){
+                          case 0:
+                            result = GAME;
+                            break;
+                          case 1:
+                            result = MENU;
+                            break;
+                          case 2:
+                            result = CLOSED;
+                            break;
+                        }
+                        done = true;
+                        break;
+                    }
+                }
+                break;
+
+              case ALLEGRO_EVENT_KEY_DOWN:
+                switch(ev.keyboard.keycode){
+                  case ALLEGRO_KEY_ESCAPE:
+                    result = GAME;
+                    done = true;
+                    break;
+                  case ALLEGRO_KEY_F:
+                    fullscreen = !fullscreen;
+                    al_toggle_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
+                }
+                break;
           }
         }
     }
@@ -506,9 +521,12 @@ game_state_t endgame() {
 
         // Wait for event
         while (al_get_next_event(queue, &ev)) {
-          if (ev.type == ALLEGRO_EVENT_MOUSE_AXES) continue; // Ignore mouse movement
+          switch(ev.type){
+            case ALLEGRO_EVENT_MOUSE_AXES:
+              continue; // Ignore mouse movement
+              break;
 
-          if (ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+            case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
               for(int i = 0; i < 3; ++i) {
                   if (mouse_hover_button(&buttons[i], &ms, al_get_display_width(disp), al_get_display_height(disp))) {
                       switch(i){
@@ -526,9 +544,20 @@ game_state_t endgame() {
                       break;
                   }
               }
-          } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
-              result = GAME;
-              done = true;
+              break;
+
+              case ALLEGRO_EVENT_KEY_DOWN:
+                switch(ev.keyboard.keycode){
+                  case ALLEGRO_KEY_ESCAPE:
+                    result = GAME;
+                    done = true;
+                    break;
+                  case ALLEGRO_KEY_F:
+                    fullscreen = !fullscreen;
+                    al_toggle_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
+                    break;
+                }
+                break;
           }
         }
     }
@@ -633,7 +662,7 @@ game_state_t game_update(unsigned level, bool new_level) {
   ALLEGRO_FONT *hud_font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 26, 0);
   if(!hud_font) hud_font = default_font;
   ALLEGRO_EVENT event;
-  bool redraw = false, done = false, fullscreen = true, moveThisFrame = true, player_shot_made = false;
+  bool redraw = false, done = false, moveThisFrame = true, player_shot_made = false;
   level_state_t level_state = LEVEL_NOT_DONE;
   unsigned long long frame = 0;
   explosion_t explosion;
