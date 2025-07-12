@@ -33,15 +33,14 @@
 #define MOTHERSHIP_X_VELOCITY 250
 #define MOTHERSHIP_DX (MOTHERSHIP_X_VELOCITY / FRAME_RATE)
 
-#define ALIENS_X_VELOCITY 500 //( (ALIENS_W + ALIENS_HORIZONTAL_SEPARATION) / 2 )
-#define ALIENS_Y_VELOCITY 500 //( (ALIENS_H + ALIENS_VERTICAL_SEPARATION) / 2 )
+#define ALIENS_X_VELOCITY 500
+#define ALIENS_Y_VELOCITY 500
 #define ALIENS_DX (ALIENS_X_VELOCITY / FRAME_RATE)
 #define ALIENS_DY (ALIENS_Y_VELOCITY / FRAME_RATE)
 
-#define PLAYER_VELOCITY 200 //( PLAYER_W / 2 )
+#define PLAYER_VELOCITY 200
 #define PLAYER_DX (PLAYER_VELOCITY / FRAME_RATE)
 
-// #define SHOT_DY ( SHOT_W / 2 )
 #define SHOT_VELOCITY_ALIEN 200
 #define SHOT_VELOCITY_PLAYER 300
 #define SHOT_DY_ALIEN (SHOT_VELOCITY_ALIEN / FRAME_RATE)
@@ -64,7 +63,10 @@
 
 #endif
 
-// GLOBAL AND PUBLIC VARIABLES
+/*******************************************************************************
+ * GLOBAL PUBLIC VARIABLES
+ ******************************************************************************/
+
 bool aliensMoved = false;
 bool alienWasHit;
 bool playerDied = false;
@@ -132,6 +134,7 @@ static void player_init();
 static void player_reset_lives();
 static void shields_init(unsigned lives);
 static void shield_init(unsigned shield, int x, int y, unsigned lives); // Inits shield in given coordinates
+static void player_reset_on_new_level();
 
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
@@ -316,17 +319,19 @@ alien_t (*get_aliens(void))[ALIENS_ROWS][ALIENS_COLUMNS] {
 void back_init() {
   srand(time(NULL));
   player_init();
+}
+
+void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives) {
+  player_reset_on_new_level();
+  if(!aliens_lives_min) aliens_lives_min = 1;
+  if(aliens_lives_max < aliens_lives_min) aliens_lives_max = aliens_lives_min;
+  aliens_init(aliens_rows, aliens_cols, aliens_lives_min, aliens_lives_max);
+  shields_init(shield_block_lives);
+  update_aliens_speed(level); // Set aliens_move_interval on level start
   aliensMoved = false;
   alienWasHit = false;
   playerDied = false;
   shieldWasHit = false;
-}
-
-void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives) {
-  if(!aliens_lives_min) aliens_lives_min = 1;
-  aliens_init(aliens_rows, aliens_cols, aliens_lives_min, aliens_lives_max);
-  shields_init(shield_block_lives);
-  update_aliens_speed(level); // Set aliens_move_interval on level start
 }
 
 int get_best_alien_column_to_shoot() {
@@ -336,14 +341,6 @@ int get_best_alien_column_to_shoot() {
   col = get_alien_column_above_shield();
   if ( col >= 0 ) return col;
   return -1;
-}
-
-#define INITIAL_PLAYER_X_COORDINATE ((WORLD_WIDTH - PLAYER_W) / 2)
-void player_reset_on_new_level() {
-  player.x = INITIAL_PLAYER_X_COORDINATE;
-  player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
-  player_shot.is_used = false;
-  playerDied = false;
 }
 
 void player_reset_on_new_game() {
@@ -398,7 +395,6 @@ level_state_t back_update(unsigned current_level, void (*alienDeath)(int x, int 
   return LEVEL_NOT_DONE;
 }
 
-// Returns: true if shot was available when called, false otherwise
 bool player_try_shoot() {
   if ( player_shot.is_used || playerDied ) return false;
 
@@ -408,8 +404,6 @@ bool player_try_shoot() {
   return true;
 }
 
-// c = aliens column trying to shoot
-// Returns: true if shot was available when called, false otherwise
 bool alien_try_shoot(unsigned c) {
   unsigned alive_aliens = aliens_alive_in_column(c);
   if ( alien_shot.is_used || !alive_aliens ) return false;
@@ -424,6 +418,15 @@ bool alien_try_shoot(unsigned c) {
                         LOCAL FUNCTION DEFINITIONS
  *******************************************************************************
  ******************************************************************************/
+
+#define INITIAL_PLAYER_X_COORDINATE ((WORLD_WIDTH - PLAYER_W) / 2)
+// To be called upon entering new level
+static void player_reset_on_new_level() {
+  player.x = INITIAL_PLAYER_X_COORDINATE;
+  player.y = WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H;
+  player_shot.is_used = false;
+  playerDied = false;
+}
 
 // Returns: true if aliens win (reach the bottom of the screen)
 static bool aliens_update(unsigned current_level) {

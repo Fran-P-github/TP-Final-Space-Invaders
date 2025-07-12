@@ -622,7 +622,6 @@ static void init_error(bool state, const char *name) {
 game_state_t game_update(unsigned level, bool new_level) {
   if(new_level){ // Restart on new level
     level_init(level, ALIENS_ROWS-3 + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
-    player_reset_on_new_level();
     if ( level == 0 ) player_reset_on_new_game();
     background_init();
   }

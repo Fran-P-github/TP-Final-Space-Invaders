@@ -300,7 +300,6 @@ game_state_t game_update(unsigned level, bool new_level){
     // Initial level config
     if(new_level){ // Restart on new level
         level_init(level, ALIENS_ROWS-1+level/2, ALIENS_COLUMNS-1+level/3, 1, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
-        player_reset_on_new_level();
         if ( level == 0 ) player_reset_on_new_game();
     }
 

@@ -42,42 +42,76 @@ typedef enum {
  ******************************************************************************/
 
 // Not to be added in back.c
+// All this variables are indicators the game status
 #ifndef _IS_BACK_C_
+
+// True after a frame in which any aliens moved
 extern const bool alienWasHit;
+// True after a frame in which an alien was hit
 extern const bool aliensMoved;
+// True after a frame in which the player was killed. Remains true for the duration of the player death sound
 extern const bool playerDied;
 extern const bool shieldWasHit;
+
 #endif
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
+// Returns milliseconds elapsed since a moment in time. Similar to Arduino millis() function
 unsigned long long get_millis();
+
 int rand_between(int lo, int hi);
 float rand_between_f(float lo, float hi);
 
+// To be called once before any of the following functions
 void back_init();
 
-// First level is level 0
+// To be called once every frame. Recieves current level, first level is level 0
 level_state_t back_update(unsigned int current_level, void (*alienDeath)(int x, int y, explosion_type_t explosionType));
 
+// To be called and the beginning of a level, with level specific configuration
+// current_level: level in progress, first level is level 0
 // aliens_rows/columns: number of aliens to spawn. ALIENS_ROWS/COLUMNS assumed if a grater number is given
-// For aliens_lives, 1 is assumed if 0 is given
+// aliens_lives_min/max: aliens in top row have aliens_lives_min, aliens in bottom row have aliens_lives_max. Linear Progression.
+//                       1 assumed for aliens_lives_min if 0 is given. aliens_lives_min assumed for aliens_lives_max if aliens_lives_max < aliens_lives_min
+// shield_block_lives: shots a block in the shield can resist
 void level_init(unsigned current_level, unsigned int aliens_rows, unsigned int aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives);
 
-void player_reset_on_new_level();
+// To be called at the beginning of a new game
 void player_reset_on_new_game();
+
+// Game control functions
+
+void player_move_right();
+void player_move_left();
+// Returns true if player was able to shoot
+bool player_try_shoot();
+// Returns: true if alien in column was able to shoot
+bool alien_try_shoot(unsigned column);
+
+// Player status functions
+
 int player_get_x();
 int player_get_y();
 int player_get_lives();
 int player_get_score();
+
+// Player shot status functions
+
 int player_shot_get_x();
 int player_shot_get_y();
 bool player_shot_is_used();
 
+// Mothership status functions
+
 int mothership_get_x();
 int mothership_get_y();
+bool mothership_is_active();
+int mothership_get_points();
+
+// Aliens status functions
 
 int aliens_get_x(unsigned i, unsigned j);
 int aliens_get_y(unsigned i, unsigned j);
@@ -86,24 +120,21 @@ bool aliens_is_alive(unsigned i, unsigned j);
 int aliens_get_lives(unsigned i, unsigned j);
 alien_type_t alines_get_type(unsigned i, unsigned j);
 
+// Aliens shot status functions
+
 int alien_shot_get_x();
 int alien_shot_get_y();
 bool alien_shot_is_used();
+// Float in [0, 1]. The closer aliens speed is to the max, the closer to 1
 float aliens_get_relative_speed();
-int get_best_alien_column_to_shoot(); // Returns column above player, or column above some shield block if no aliens are above player, or -1 if aliens wait to shoot
+// Returns column above player, or column above some shield block if no aliens are above player, or -1 if aliens wait to shoot
+int get_best_alien_column_to_shoot(); 
 unsigned total_aliens_alive();
+
+// Shield status functions
 
 int shield_get_x(unsigned shield, unsigned block_y, unsigned block_x);
 int shield_get_y(unsigned shield, unsigned block_y, unsigned block_x);
 int shield_get_lives(unsigned shield, unsigned block_y, unsigned block_x);
-
-bool mothership_is_active();
-int mothership_get_points();
-
-void player_move_right();
-void player_move_left();
-
-bool player_try_shoot();
-bool alien_try_shoot(unsigned column);
 
 #endif // _BACK_H_
