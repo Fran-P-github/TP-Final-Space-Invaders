@@ -86,6 +86,7 @@ static void init_error(bool state, const char *name);
 static void draw_rectangle(int x1, int y1, int x2, int y2);
 
 static void draw_mothership();
+// Draws alien in position i,j in matrix, if alive
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
 static void draw_player_shot();
@@ -318,7 +319,8 @@ game_state_t game_update(unsigned level, bool new_level){
         if(frame_elapsed >= frame_time){
             ++frame;
             frame_start = get_millis();
-            level_state = back_update(level);
+            level_state = back_update(level, new_level);
+            new_level = false;
             sounds_update();
             unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
             if(alien_column_to_shoot >= 0 && !(frame%30)){

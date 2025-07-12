@@ -75,8 +75,8 @@ float rand_between_f(float lo, float hi);
 // To be called once before any of the following functions
 void back_init();
 
-// To be called once every frame. Recieves current level, first level is level 0
-level_state_t back_update(unsigned int current_level);
+// To be called once every frame. Recieves current level (first level is level 0) and new_level (must be true olnly for the first frame of a new level)
+level_state_t back_update(unsigned int current_level, bool new_level);
 
 // To be called and the beginning of a level, with level specific configuration
 // current_level: level in progress, first level is level 0

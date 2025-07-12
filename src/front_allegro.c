@@ -678,15 +678,14 @@ game_state_t game_update(unsigned level, bool new_level) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
           background_update();
-          level_state = back_update(level);
+          level_state = back_update(level, new_level);
+          new_level = false;
           if(!(frame%2)) explosion_interval--;
           if(explosion_interval <= 0){
             explosion.type = NO_EXPLOSION;
             explosion_interval = 0;
           }
-          printf("Explosion interval: %d\n", explosion_interval);
           if(get_explosion_state(&explosion)){
-            printf("Explosion reset!\n");
             explosion_interval = 5;
           }
 
