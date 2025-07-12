@@ -357,6 +357,7 @@ void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsi
   playerDied = false;
   shieldWasHit = false;
   current_explosion.type = NO_EXPLOSION;
+  mothership.is_active = false;
 }
 
 bool get_explosion_state(explosion_t* explosion_state){

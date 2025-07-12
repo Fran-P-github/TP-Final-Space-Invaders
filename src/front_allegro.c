@@ -742,10 +742,10 @@ game_state_t game_update(unsigned level, bool new_level) {
       
   }
 
+  al_stop_sample_instance(ufoSample); // Stop mothership sound
   if ( level_state == PLAYER_WINS ) {
     return GAME;
   } else {
-    al_stop_sample_instance(ufoSample); // Stop mothership sound
     return ENDGAME;
   }
 }
