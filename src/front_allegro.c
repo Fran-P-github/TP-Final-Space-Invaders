@@ -53,6 +53,8 @@
 #define VOLUME_UFO_DEATH .3
 #define VOLUME_PAUSE .5
 // Sprites
+#define MOTHERSHIP_SCALE_X 40
+#define MOTHERSHIP_SCALE_Y 35
 #define ALIEN_SCALE_X 40
 #define ALIEN_SCALE_Y 40
 #define SPRITE_ALIENS_NUM 3
@@ -276,7 +278,6 @@ game_state_t menu() {
 game_state_t game_pause(unsigned int level) {
     al_play_sample_instance(pauseSample); // Play pause sound
     al_stop_timer(timer); // Pause timer while in pause
-    al_stop_sample_instance(ufoSample); // Stop mothership sound
     al_show_mouse_cursor(disp);
 
     bool deinit_font_on_exit = true;
@@ -649,12 +650,17 @@ game_state_t game_update(unsigned level, bool new_level) {
         case ALLEGRO_EVENT_TIMER:
           background_update();
           level_state = back_update(level);
-          if(explosion_interval > 0){
-            if(explosion_interval <= 0) explosion.type = NO_EXPLOSION;
-            if(!(frame%2)) explosion_interval--;
-          }else{
-            if(get_explosion_state(&explosion)) explosion_interval = 5;
+          if(!(frame%2)) explosion_interval--;
+          if(explosion_interval <= 0){
+            explosion.type = NO_EXPLOSION;
+            explosion_interval = 0;
           }
+          printf("Explosion interval: %d\n", explosion_interval);
+          if(get_explosion_state(&explosion)){
+            printf("Explosion reset!\n");
+            explosion_interval = 5;
+          }
+
           redraw = true;
           ++frame;
           moveThisFrame = false;
@@ -664,6 +670,7 @@ game_state_t game_update(unsigned level, bool new_level) {
           key[event.keyboard.keycode] = 1;
           if ( key[ALLEGRO_KEY_ESCAPE] ){
             done = true;
+            al_stop_sample_instance(ufoSample); // Stop mothership sound
             return PAUSE;
           }
           if ( key[ALLEGRO_KEY_F] ) {
@@ -709,6 +716,7 @@ game_state_t game_update(unsigned level, bool new_level) {
   if ( level_state == PLAYER_WINS ) {
     return GAME;
   } else {
+    al_stop_sample_instance(ufoSample); // Stop mothership sound
     return ENDGAME;
   }
 }
@@ -954,13 +962,13 @@ static ALLEGRO_COLOR random_star_color() {
 }
 
 static void draw_mothership(mothership_color_t color) {
-  //al_draw_filled_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(128, 0, 255));
+  //al_draw_rectangle(mothership_get_x(), mothership_get_y(), mothership_get_x() + MOTHERSHIP_W - 1, mothership_get_y() + MOTHERSHIP_H - 1, al_map_rgb(255, 0, 0), 1);
   ALLEGRO_BITMAP* ufoSprite = sprites.ufo[color][0];
   int srcWidth = al_get_bitmap_width(ufoSprite), srcHeight = al_get_bitmap_height(ufoSprite);
   al_draw_scaled_bitmap(
     ufoSprite, 0, 0, srcWidth, srcHeight,
-    mothership_get_x(), mothership_get_y(),
-    MOTHERSHIP_W, MOTHERSHIP_H, 0);
+    mothership_get_x()-MOTHERSHIP_SCALE_X/2, mothership_get_y()-MOTHERSHIP_SCALE_Y/2,
+    MOTHERSHIP_W+MOTHERSHIP_SCALE_X, MOTHERSHIP_H+MOTHERSHIP_SCALE_Y, 0);
 }
 
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame) {
@@ -1049,7 +1057,7 @@ static void draw_shield(unsigned shield) {
 
 static void draw_explosion(explosion_t explosion, unsigned color){
   ALLEGRO_BITMAP* sprite = NULL;
-  int width, height;
+  int width, height, x = explosion.x, y = explosion.y;
   switch(explosion.type){
     case ALIEN_EXPLOSION:
       al_play_sample_instance(alienDeathSample);
@@ -1060,15 +1068,17 @@ static void draw_explosion(explosion_t explosion, unsigned color){
     case UFO_EXPLOSION:
       al_play_sample_instance(ufoDeathSample);
       sprite = sprites.ufo[color][1];
-      width = MOTHERSHIP_W;
-      height = MOTHERSHIP_H;
+      width = MOTHERSHIP_W+MOTHERSHIP_SCALE_X;
+      height = MOTHERSHIP_H+MOTHERSHIP_SCALE_Y;
+      x -= MOTHERSHIP_SCALE_X/2;
+      y -= MOTHERSHIP_SCALE_Y/2;
       break;
     case NO_EXPLOSION:
       break;
   }
   int srcWidth = al_get_bitmap_width(sprite);
   int srcHeight = al_get_bitmap_height(sprite);
-  al_draw_scaled_bitmap(sprite, 0, 0, srcWidth, srcHeight, explosion.x, explosion.y, width, height, 0);
+  al_draw_scaled_bitmap(sprite, 0, 0, srcWidth, srcHeight, x, y, width, height, 0);
 }
 
 static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, int h) {

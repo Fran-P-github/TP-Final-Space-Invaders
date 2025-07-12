@@ -45,9 +45,9 @@
 #define WORLD_WIDTH 960
 #define WORLD_HEIGHT 540
 
-#define MOTHERSHIP_W 90
-#define MOTHERSHIP_H 60
-#define MOTHERSHIP_MARGIN 0
+#define MOTHERSHIP_W 60
+#define MOTHERSHIP_H 30
+#define MOTHERSHIP_MARGIN 35
 
 #define PLAYER_W 80
 #define PLAYER_H 40
@@ -59,7 +59,7 @@
 #define ALIENS_VERTICAL_SEPARATION 18
 #define ALIENS_W 40
 #define ALIENS_H 32
-#define ALIENS_MARGIN 50 // Distance from top edge
+#define ALIENS_MARGIN 75 // Distance from top edge
 
 #define SHOT_W 8
 #define SHOT_H 19

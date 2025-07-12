@@ -360,10 +360,10 @@ void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsi
 }
 
 bool get_explosion_state(explosion_t* explosion_state){
-  if(!explosion_state) return false;
-  if(current_explosion.type == NO_EXPLOSION) return false;
-  memcpy(explosion_state, &current_explosion, sizeof(explosion_t));
-  return true;
+  bool result = true;
+  if(!explosion_state || current_explosion.type == NO_EXPLOSION) result = false;
+  else memcpy(explosion_state, &current_explosion, sizeof(explosion_t));
+  return result;
 }
 
 int get_best_alien_column_to_shoot() {
