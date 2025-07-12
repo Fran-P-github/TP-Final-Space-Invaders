@@ -85,9 +85,7 @@ static void init_error(bool state, const char *name);
  // Draws a filled rectangle. Used by all other draw functions
 static void draw_rectangle(int x1, int y1, int x2, int y2);
 
-static void alien_hit();
 static void alien_death(int i, int j, explosion_type_t unused); // Es un callback que se usa en back_update() (en allegro para reproducir sonido y mostrar explosion, en rb para sonido)
-static void shield_hit();  // Otro callback
 static void draw_mothership();
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
@@ -322,7 +320,7 @@ game_state_t game_update(unsigned level, bool new_level){
         if(frame_elapsed >= frame_time){
             ++frame;
             frame_start = get_millis();
-            level_state = back_update(level, alien_death, alien_hit, shield_hit);
+            level_state = back_update(level, alien_death);
             sounds_update();
             unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
             if(alien_column_to_shoot >= 0){
@@ -424,6 +422,14 @@ static void sounds_update(){
 
     if(aliensMoved){
         play_sound_with_duration(alienMovedSound, 40);
+    }
+
+    if(alienWasHit){
+        playSoundFromMemory(alienHitSound, SDL_MIX_MAXVOLUME);
+    }
+
+    if(shieldWasHit){
+        playSoundFromMemory(shieldHitSound, SDL_MIX_MAXVOLUME);
     }
 
     // Se utiliza el callback alien_death() para reproducir el sonido
@@ -777,14 +783,6 @@ static void draw_rectangle(int x1, int y1, int x2, int y2){
                 disp_write((dcoord_t){.x=i, .y=j}, D_ON); // LED {i,j} turned on
         }
     } 
-}
-
-static void shield_hit(){
-  playSoundFromMemory(shieldHitSound, SDL_MIX_MAXVOLUME);
-}
-
-static void alien_hit(){
-  playSoundFromMemory(alienHitSound, SDL_MIX_MAXVOLUME);
 }
 
 // Queda medio feo que sea algo aparte de la funcion sounds_update()
