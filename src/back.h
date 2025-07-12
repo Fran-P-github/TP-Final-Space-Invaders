@@ -43,6 +43,7 @@ typedef enum {
 
 // Not to be added in back.c
 #ifndef _IS_BACK_C_
+extern const bool alienWasHit;
 extern const bool aliensMoved;
 extern const bool playerDied;
 extern const bool shieldWasHit;
@@ -59,7 +60,7 @@ float rand_between_f(float lo, float hi);
 void back_init();
 
 // First level is level 0
-level_state_t back_update(unsigned int current_level, void (*alienDeath)(int x, int y, explosion_type_t explosionType), void (*alienHit)(void));
+level_state_t back_update(unsigned int current_level, void (*alienDeath)(int x, int y, explosion_type_t explosionType));
 
 // aliens_rows/columns: number of aliens to spawn. ALIENS_ROWS/COLUMNS assumed if a grater number is given
 // For aliens_lives, 1 is assumed if 0 is given

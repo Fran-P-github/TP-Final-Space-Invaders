@@ -140,8 +140,6 @@ static ALLEGRO_COLOR random_star_color();
 // HUD drawing
 static void draw_hud(unsigned level, ALLEGRO_FONT* font);
 
-static void shield_hit();
-static void alien_hit();
 static void alien_death(int x, int y, explosion_type_t explosionType);
 static void draw_mothership(mothership_color_t color);
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame);
@@ -648,7 +646,7 @@ game_state_t game_update(unsigned level, bool new_level) {
       switch ( event.type ) {
         case ALLEGRO_EVENT_TIMER:
           background_update();
-          level_state = back_update(level, alien_death, alien_hit);
+          level_state = back_update(level, alien_death);
           redraw = true;
           ++frame;
           moveThisFrame = false;
@@ -693,8 +691,13 @@ game_state_t game_update(unsigned level, bool new_level) {
     }
 
     // Plays sound effect whenever the aliens move.
-    if ( total_aliens_alive() && aliensMoved )
+    if ( total_aliens_alive() && aliensMoved ){
       al_play_sample_instance(alienMovedSample);
+    }
+
+    if(alienWasHit){
+      al_play_sample_instance(alienHitSample);
+    }
 
     // Stops player shot sound effect on collition
     if ( !player_shot_is_used() && shotMade ) {
@@ -740,7 +743,7 @@ game_state_t game_update(unsigned level, bool new_level) {
         draw_shield(x);
       }
       if(shieldWasHit){
-        shield_hit();
+        al_play_sample_instance(shieldHitSample);
       }
       draw_player();
 
@@ -919,14 +922,6 @@ static ALLEGRO_COLOR random_star_color() {
         case 4: return al_map_rgb_f(1.0, 0.9, 0.8); // Naranja pálido (tipo K)
         default: return al_map_rgb_f(1.0, 1.0, 1.0);
     }
-}
-
-static void shield_hit(){
-  al_play_sample_instance(shieldHitSample);
-}
-
-static void alien_hit(){
-  al_play_sample_instance(alienHitSample);
 }
 
 static void alien_death(int x, int y, explosion_type_t explosionType){
