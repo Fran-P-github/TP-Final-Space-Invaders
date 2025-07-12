@@ -129,40 +129,54 @@ typedef struct {
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
+// Inits with aliens_rows and aliens_cols alive. Lives go from lives_min to lives_max
 static void aliens_init(unsigned aliens_rows, unsigned aliens_cols, unsigned lives_min, unsigned lives_max);
+// Inits player. Lives are as defined in general_defines
 static void player_init();
+// Reset player lives to number specified in general_defines
 static void player_reset_lives();
+// Inits shields with specified lives
 static void shields_init(unsigned lives);
-static void shield_init(unsigned shield, int x, int y, unsigned lives); // Inits shield in given coordinates
+// Inits one shield in given coordinates
+static void shield_init(unsigned shield, int x, int y, unsigned lives);
+// Resets player status for a new level
 static void player_reset_on_new_level();
 
+// Returns true if aliens win (reach the bottom of the screen)
 static bool aliens_update(unsigned current_level);
 static void mothership_update();
-static bool shots_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType)); // returns true when aliens hit player, also gets callback function to handle alien death
+// Returns true when aliens hit player, also gets callback function to handle alien death
+static bool shots_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType)); 
 
 // Detects collition between a and b
 static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2);
 
+// Returns true when mothership is to be spawned. Probability depends on elapsed_time
 static bool should_spawn_mothership(double elapsed_time);
 
-// Call for shots to update
 static void player_shot_update(void (*alienDeath)(int x, int y, explosion_type_t explosionType)); // alienDeath callback function (depends on platform, allegro plays explosion animation and sound)
-static bool alien_shot_update(); // returns true when aliens hit player
+// Returns true when aliens hit player
+static bool alien_shot_update();
 
 // Move player
 static void player_move(int x, int y);
 
 // Move alien and wrappers
+
 static void aliens_move(int x, int y, unsigned row);
 static void aliens_move_right(unsigned row);
 static void aliens_move_left(unsigned row);
 static void aliens_move_down(unsigned row);
 
 static movement_t aliens_update_position(unsigned row);
+// Updates aliens speed depending on level and aliens alive
 static void update_aliens_speed(unsigned current_level);
+// Detects collition to shields when aliens are close to bottom of the screen
 void aliens_shield_collition();
 
+// Returns: index of column above player, or -1 if none is
 static int get_alien_column_above_player();
+// Returns: index of column above a shield block, or -1 if none is. TODO: que no devuelva siempre la columna de mas a la izq, mejor que sea una random
 static int get_alien_column_above_shield();
 // Returns: how many aliens are alive in column c
 static unsigned aliens_alive_in_column(unsigned c);
@@ -323,8 +337,6 @@ void back_init() {
 
 void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives) {
   player_reset_on_new_level();
-  if(!aliens_lives_min) aliens_lives_min = 1;
-  if(aliens_lives_max < aliens_lives_min) aliens_lives_max = aliens_lives_min;
   aliens_init(aliens_rows, aliens_cols, aliens_lives_min, aliens_lives_max);
   shields_init(shield_block_lives);
   update_aliens_speed(level); // Set aliens_move_interval on level start
@@ -428,7 +440,6 @@ static void player_reset_on_new_level() {
   playerDied = false;
 }
 
-// Returns: true if aliens win (reach the bottom of the screen)
 static bool aliens_update(unsigned current_level) {
   if ( !total_aliens_alive() ) return false;
 
@@ -541,6 +552,9 @@ static bool should_spawn_mothership(double elapsed_time) {
 
 #define FIRST_ALIEN_X_COORDINATE ((WORLD_WIDTH - (cols * ALIENS_W + (cols - 1) * ALIENS_HORIZONTAL_SEPARATION)) / 2)
 static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsigned lives_max) {
+  if(!lives_min) lives_min = 1;
+  if(lives_max < lives_min) lives_max = lives_min;
+
   unsigned i, j;
   int x = FIRST_ALIEN_X_COORDINATE;
   int y = ALIENS_MARGIN;
@@ -736,7 +750,6 @@ static unsigned aliens_alive_in_row(unsigned r) {
   return rta;
 }
 
-// First level is level 0
 static void update_aliens_speed(unsigned level) {
 
   unsigned total = ALIENS_ROWS * ALIENS_COLUMNS;
