@@ -321,7 +321,7 @@ game_state_t game_update(unsigned level, bool new_level){
             level_state = back_update(level);
             sounds_update();
             unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
-            if(alien_column_to_shoot >= 0){
+            if(alien_column_to_shoot >= 0 && !(frame%30)){
                 alien_try_shoot(alien_column_to_shoot);
             }
             redraw = true;

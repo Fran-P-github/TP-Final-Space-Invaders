@@ -766,7 +766,7 @@ static void process_frame(unsigned long long frame, unsigned level, bool player_
   unsigned i, j;
   draw_player_shot(shotFrame, playerShotColor);
   unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
-  if ( alien_column_to_shoot >= 0 ) {
+  if ( alien_column_to_shoot >= 0 && !(frame%10)) {
     alien_try_shoot(alien_column_to_shoot);
   }
   draw_alien_shot(shotFrame, alienShotColor);
@@ -901,8 +901,8 @@ static void draw_hud(unsigned level, ALLEGRO_FONT* font){
   // Lives
   int srcWidth = al_get_bitmap_width(sprites.ship);
   int srcHeight = al_get_bitmap_height(sprites.ship);
-  al_draw_scaled_bitmap(sprites.ship, 0, 0, srcWidth, srcHeight, 30, WORLD_HEIGHT-30, PLAYER_W/1.5, PLAYER_H/1.5, 0);
-  al_draw_textf(font, al_map_rgb(255, 255, 255), 5, WORLD_HEIGHT-30, 0, "%d", player_get_lives());
+  al_draw_scaled_bitmap(sprites.ship, 0, 0, srcWidth, srcHeight, WORLD_WIDTH-PLAYER_W/1.5-10, 10, PLAYER_W/1.5, PLAYER_H/1.5, 0);
+  al_draw_textf(font, al_map_rgb(255, 255, 255), WORLD_WIDTH-PLAYER_W/1.5-55, 10, 0, "%02d", player_get_lives());
 }
 
 static float get_random_star_speed(){

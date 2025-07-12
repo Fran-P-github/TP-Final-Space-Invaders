@@ -68,6 +68,7 @@ extern const bool shieldWasHit;
 // Returns milliseconds elapsed since a moment in time. Similar to Arduino millis() function
 unsigned long long get_millis();
 
+void shuffle(unsigned *array, unsigned n);
 int rand_between(int lo, int hi);
 float rand_between_f(float lo, float hi);
 

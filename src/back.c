@@ -238,6 +238,15 @@ unsigned long long get_millis() {
 #endif
 }
 
+void shuffle(unsigned *array, unsigned n) {
+  for (unsigned i = n - 1; i > 0; --i) {
+    unsigned j = rand() % (i + 1);
+    unsigned tmp = array[i];
+    array[i] = array[j];
+    array[j] = tmp;
+  }
+}
+
 int rand_between(int lo, int hi) {
   return lo + rand() % (hi - lo + 1);
 }
@@ -705,9 +714,16 @@ static int get_alien_column_above_player() {
 }
 
 static int get_alien_column_above_shield() {
-  for ( unsigned j = 0; j < ALIENS_COLUMNS; ++j ) {
+  unsigned columns[ALIENS_COLUMNS];
+  for (unsigned i = 0; i < ALIENS_COLUMNS; ++i) {
+    columns[i] = i;
+  }
+  shuffle(columns, ALIENS_COLUMNS);
+
+  for (unsigned idx = 0; idx < ALIENS_COLUMNS; ++idx) {
+    unsigned j = columns[idx]; // Random column
     int row = lowest_alien_alive_index(j);
-    if ( !aliens[row][j].lives ) continue;
+    if ( row < 0 || aliens[row][j].lives < 0 ) continue;
 
     int ax1 = aliens[row][j].x;
     int ax2 = ax1 + ALIENS_W - 1;
@@ -722,7 +738,7 @@ static int get_alien_column_above_shield() {
 
           // If there is horizontal overlap
           if ( !(ax2 < sx1 || ax1 > sx2) ) {
-            return j; // Alien column overlapping with a shield
+            return j; // Random alien column overlapping with a shield
           }
         }
       }
