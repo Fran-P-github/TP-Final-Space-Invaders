@@ -574,6 +574,8 @@ static bool should_spawn_mothership(double elapsed_time) {
 
 #define FIRST_ALIEN_X_COORDINATE ((WORLD_WIDTH - (cols * ALIENS_W + (cols - 1) * ALIENS_HORIZONTAL_SEPARATION)) / 2)
 static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsigned lives_max) {
+  if(rows >= ALIENS_ROWS) rows = ALIENS_ROWS - 1;
+  if(cols >= ALIENS_COLUMNS) cols = ALIENS_COLUMNS - 1;
   if(!lives_min) lives_min = 1;
   if(lives_max < lives_min) lives_max = lives_min;
 
@@ -631,6 +633,7 @@ static void player_init() {
 
 #define INITIAL_SHIELD_Y_COORDINATE (WORLD_HEIGHT - PLAYER_MARGIN - PLAYER_H - SHIELD_TO_PLAYER_MARGIN - SHIELD_H * SHIELD_BLOCK_H)
 static void shields_init(unsigned lives) {
+  if(lives > SHIELD_BLOCK_LIVES) lives = 0;
   unsigned i;
   for ( i = 0; i < SHIELDS_CANT; ++i ) {
     int x = (i + 1) * WORLD_WIDTH / (SHIELDS_CANT + 1) - SHIELD_W * SHIELD_BLOCK_W / 2;

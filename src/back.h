@@ -86,7 +86,7 @@ level_state_t back_update(unsigned int current_level, bool new_level);
 // aliens_rows/columns: number of aliens to spawn. ALIENS_ROWS/COLUMNS assumed if a grater number is given
 // aliens_lives_min/max: aliens in top row have aliens_lives_min, aliens in bottom row have aliens_lives_max. Linear Progression.
 //                       1 assumed for aliens_lives_min if 0 is given. aliens_lives_min assumed for aliens_lives_max if aliens_lives_max < aliens_lives_min
-// shield_block_lives: shots a block in the shield can resist
+// shield_block_lives: shots a block in the shield can resist. 0 assumed if number given is greater than SHIELD_BLOCK_LIVES
 void level_init(unsigned current_level, unsigned int aliens_rows, unsigned int aliens_cols, unsigned aliens_lives_min, unsigned aliens_lives_max, unsigned shield_block_lives);
 
 // To be called at the beginning of a new game
