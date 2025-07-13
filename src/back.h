@@ -132,7 +132,7 @@ int aliens_get_y(unsigned i, unsigned j);
 int aliens_get_points(unsigned i, unsigned j);
 bool aliens_is_alive(unsigned i, unsigned j);
 int aliens_get_lives(unsigned i, unsigned j);
-alien_type_t alines_get_type(unsigned i, unsigned j);
+alien_type_t aliens_get_type(unsigned i, unsigned j);
 
 // Aliens shot status functions
 
