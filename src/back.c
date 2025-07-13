@@ -574,8 +574,8 @@ static bool should_spawn_mothership(double elapsed_time) {
 
 #define FIRST_ALIEN_X_COORDINATE ((WORLD_WIDTH - (cols * ALIENS_W + (cols - 1) * ALIENS_HORIZONTAL_SEPARATION)) / 2)
 static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsigned lives_max) {
-  if(rows >= ALIENS_ROWS) rows = ALIENS_ROWS - 1;
-  if(cols >= ALIENS_COLUMNS) cols = ALIENS_COLUMNS - 1;
+  if(rows > ALIENS_ROWS) rows = ALIENS_ROWS;
+  if(cols > ALIENS_COLUMNS) cols = ALIENS_COLUMNS;
   if(!lives_min) lives_min = 1;
   if(lives_max < lives_min) lives_max = lives_min;
 
