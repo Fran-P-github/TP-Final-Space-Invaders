@@ -28,9 +28,9 @@
 #define FPS 6
 
 // Player joystick defnitions
-#define JOY_THRESHOLD_SLOW  50
-#define JOY_THRESHOLD_FAST  100
-#define SLOW_MOVEMENT_WAIT_TIME 0.4
+#define JOY_THRESHOLD_SLOW  JOY_MAX_POS / 6
+#define JOY_THRESHOLD_FAST  JOY_MAX_POS / 1.1
+#define SLOW_MOVEMENT_WAIT_TIME 0.2
 #define FAST_MOVEMENT_WAIT_TIME 0.1
 
 // Intro letters definitions
@@ -49,7 +49,7 @@ typedef enum{
 #define ARROW_X 2 // Arrows initial
 #define ARROW_Y 3 // position
 #define ARROW_SPACING 5   // Options horizontal spacing
-#define BUTTON_PAUSE_TIME 1.2 // Seconds to hold the button to go into pause
+#define BUTTON_PAUSE_TIME 0.55 // Seconds to hold the button to go into pause
 
 // Sizes to use font3x5 variables
 #define CHAR_WIDTH 3
@@ -107,7 +107,7 @@ static movement_y_t movement_read_y(int joystick_y_coordinate);
 // Draws a 3x3 icon to x,y position
 static void draw3x3(const char icon[3][4], unsigned x, unsigned y);
 
-// Draws text to x,y position
+// Draws text to x,y position. Tries to use more than 1 line if it doesn't fit
 static void draw_text_wrapped(const char* str, int x, int y);
 
 // Blinks string in x,y position
@@ -158,7 +158,6 @@ static Audio *pauseSound = NULL;
                         GLOBAL FUNCTION DEFINITIONS
  ******************************************************************************/
 
-// TODO: chequear que todo se inicialice bien
 game_state_t front_init(){
     back_init();
 
@@ -178,7 +177,7 @@ game_state_t front_init(){
     INIT_SOUND(shieldHitSound, AUDIO_SHIELD_HIT);
     INIT_SOUND(pauseSound, AUDIO_PAUSE);
 
-    return MENU;
+    return MENU; // Go into menu scene first
 }
 
 game_state_t game_pause(unsigned int* level, bool* new_level){ // Level unused here, it is not shown
@@ -232,11 +231,8 @@ game_state_t game_pause(unsigned int* level, bool* new_level){ // Level unused h
         else if (js.x > JOY_THRESHOLD_SLOW) pos = MOVE_RIGHT_FAST;
         else pos = NO_MOVE_X;
         if(pos != prev_pos){
-            if(pos == MOVE_RIGHT_FAST) selected++;
-            if(pos == MOVE_LEFT_FAST) selected--;
-
-            if(selected<0) selected = 0;
-            if(selected>=MENU_OPTIONS) selected = MENU_OPTIONS-1;
+            if(pos == MOVE_RIGHT_FAST && selected != EXIT) selected++;
+            if(pos == MOVE_LEFT_FAST && selected != RESUME) selected--;
         }
         prev_pos = pos;
 
@@ -367,7 +363,7 @@ game_state_t game_update(unsigned level, bool new_level){
 game_state_t endgame(){
     disp_clear();
 
-    // Show plater score
+    // Show player score
     char score[10];
     snprintf(score, sizeof(score), "%d", player_get_score());
     disp_clear();
@@ -421,7 +417,7 @@ static void sounds_update(){
     }
 
     if(aliensMoved){
-        play_sound_with_duration(alienMovedSound, 40);
+        play_sound_with_duration(alienMovedSound, 90);
     }
 
     if(alienWasHit){
@@ -496,7 +492,7 @@ static bool logo_menu_display(){
     };
     
     // Current first column
-    static unsigned column = INTRO_LETTERS_WIDTH - 8; // -68to start with letters more to the right
+    static unsigned column = INTRO_LETTERS_WIDTH - 8; // -8 to start with letters more to the right
 
     static unsigned long long start = 0;
     double elapsed = (double)(get_millis() - start) / 1000;
@@ -541,7 +537,7 @@ static void level_end_animation(level_state_t level_state){
     }
     draw_text_wrapped(buf, x_offset, 2);
     disp_update();
-    sleep(1);
+    sleep(1); // Hold message for one second at least
     wait_button_press();
     wait_button_release();
 }
@@ -556,7 +552,7 @@ static void draw3x3(const char icon[3][4], unsigned x, unsigned y){
 }
 
 static void blink_string(char buf[], unsigned x, unsigned y){
-    for(unsigned i=0; i<3; ++i){ // Score blinks 3 times
+    for(unsigned i=0; i<3; ++i){ // String blinks 3 times
         usleep(300000); // 0.3 sec
         draw_text_wrapped(buf, x, y);
         disp_update();
@@ -575,6 +571,7 @@ static void get_player_name(char name[4], unsigned x, unsigned y){
 
     name[0] = name[1] = name[2] = name[3] = '\0'; // Clean
 
+    // Read each letter
     while(index < 3){
         joyinfo_t js = joy_read();
         movement_y_t movement = movement_read_y(js.y);
@@ -681,17 +678,22 @@ static bool update_joystick(){
         }
         if(playerDied) return false; // Nothing to check while player is dead
 
-        if(joystick.sw == J_PRESS && player_try_shoot()){ // Play shot sound if player was allowrd to shoot
-            playSoundFromMemory(playerShotSound, SDL_MIX_MAXVOLUME);
+        {
+            static jswitch_t prev_sw = J_NOPRESS; // Only shoot when pressing, not when is pressed
+            if(joystick.sw == J_PRESS && prev_sw == J_NOPRESS && player_try_shoot()){ // Play shot sound if player was allowed to shoot
+                playSoundFromMemory(playerShotSound, SDL_MIX_MAXVOLUME);
+            }
+            prev_sw = joystick.sw;
         }
 
         movement_x_t movement = movement_read_x(joystick.x);
         static movement_x_t prev_movement = NO_MOVE_X;
         static unsigned long long player_time_start = 0;
         double player_elapsed = (double)(get_millis() - player_time_start) / 1000;
+        // Wait time depends on type of movement: fast or slow
         double player_wait_time =   movement == MOVE_LEFT_FAST || movement == MOVE_RIGHT_FAST ? FAST_MOVEMENT_WAIT_TIME :
                                     movement == MOVE_LEFT_SLOW || movement == MOVE_RIGHT_SLOW ? SLOW_MOVEMENT_WAIT_TIME :
-                                    99999; // Never to be elapsed
+                                    99999; // Never to be elapsed, player won't move
 
         if(movement != prev_movement || player_elapsed > player_wait_time){
             player_time_start = get_millis();
@@ -778,8 +780,9 @@ static void draw_rectangle(int x1, int y1, int x2, int y2){
     int i, j;
     for(i = x1; i <= x2; i++){
         for(j = y1; j <= y2; j++){
-            if(i>=0 && j>=0 && i<WORLD_WIDTH && j<WORLD_HEIGHT) // Turning on LED out of bounds is an error
+            if(i>=0 && j>=0 && i<WORLD_WIDTH && j<WORLD_HEIGHT){ // Turning on LED out of bounds is an error
                 disp_write((dcoord_t){.x=i, .y=j}, D_ON); // LED {i,j} turned on
+            }
         }
     } 
 }
@@ -812,8 +815,9 @@ static void draw_shield(unsigned shield){
     unsigned i, j;
     for(i=0; i<SHIELD_H; ++i){
         for(j=0; j<SHIELD_W; ++j){
-            if(shield_get_lives(shield,i,j))
-            draw_rectangle(shield_get_x(shield,i,j), shield_get_y(shield,i,j), shield_get_x(shield,i,j)+SHIELD_BLOCK_W-1, shield_get_y(shield,i,j)+SHIELD_BLOCK_H-1);
+            if(shield_get_lives(shield,i,j)){
+                draw_rectangle(shield_get_x(shield,i,j), shield_get_y(shield,i,j), shield_get_x(shield,i,j)+SHIELD_BLOCK_W-1, shield_get_y(shield,i,j)+SHIELD_BLOCK_H-1);
+            }
         }
     }
 }
