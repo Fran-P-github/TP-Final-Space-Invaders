@@ -76,6 +76,7 @@ bool alienWasHit = false;
 bool alienWasKilled = false;
 bool playerDied = false;
 bool shieldWasHit = false;
+bool shotsCollided = false;
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -361,6 +362,7 @@ void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsi
   alienWasKilled = false;
   playerDied = false;
   shieldWasHit = false;
+  shotsCollided = false;
   current_explosion.type = NO_EXPLOSION;
   mothership.is_active = false;
 }
@@ -400,6 +402,7 @@ level_state_t back_update(unsigned current_level, bool new_level) {
   shieldWasHit = false;
   alienWasHit = false;
   alienWasKilled = false;
+  shotsCollided = false;
   current_explosion.type = NO_EXPLOSION;
 
   static unsigned long long player_death_start = MAX_ULL; // Variable is MAX_ULL while player is not in death state
@@ -917,6 +920,7 @@ static void player_shot_update() {
   if ( collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, alien_shot.x, alien_shot.y, alien_shot.x + SHOT_W - 1, alien_shot.y + SHOT_H - 1) ) {
     player_shot.is_used = false;
     alien_shot.is_used = false;
+    shotsCollided = true;
   }
 
   // Alien collision

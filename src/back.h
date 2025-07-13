@@ -61,6 +61,8 @@ extern const bool aliensMoved;
 extern const bool playerDied;
 // True after a frame in which a shield block hit
 extern const bool shieldWasHit;
+// True after a frame in which alien and player shot collided
+extern const bool shotsCollided;
 
 #endif
 
