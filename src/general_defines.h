@@ -120,7 +120,7 @@
 #define AUDIO_ROUTE(s) "../assets/Audio/"s
 #define BITMAP_ROUTE(s) "../assets/Bitmap/"s
 #define FONT_ROUTE(s) "../assets/Font/"s
-#define SPRITE_ROUTE(s) "../assets/sprites/"s
+//#define SPRITE_ROUTE(s) "../assets/sprites/"s
 
 // Audio files (Same across all platforms)
 #define AUDIO_PLAYER_SHOT    AUDIO_ROUTE("shoot.wav")

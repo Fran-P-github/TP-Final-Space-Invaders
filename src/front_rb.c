@@ -79,7 +79,7 @@ typedef enum{
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-#define MSJ_ERR_INIT "Problema al inicializar: "
+#define MSJ_ERR_INIT "Problem initialazing: "
 static void init_error(bool state, const char *name);
 
  // Draws a filled rectangle. Used by all other draw functions

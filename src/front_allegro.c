@@ -39,7 +39,7 @@
   al_attach_sample_instance_to_mixer(p, mixer);           \
   initAudioInstance(p, volume, playmode);
 
-#define MSJ_ERR_INIT "Problema al inicializar: "
+#define MSJ_ERR_INIT "Problem initialazing: "
 #define AUDIO_SAMPLES 16
 #define MAX_EVENT_WAIT_TIME 0.001
 // Floats for the volume of sound effects 
@@ -194,6 +194,7 @@ static ALLEGRO_SAMPLE_INSTANCE *playerDeathSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *shieldHitSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *bulletHitSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *pauseSample = NULL;
+static ALLEGRO_SAMPLE_INSTANCE *bulletsCollition = NULL;
 
 // keyboard
 static unsigned char key[ALLEGRO_KEY_MAX];
@@ -240,7 +241,7 @@ game_state_t front_init() {
   INIT_SOUND(ufoDeathSample, AUDIO_UFO_DEATH, VOLUME_UFO_DEATH, ALLEGRO_PLAYMODE_ONCE, mixer)
   INIT_SOUND(ufoSample, AUDIO_UFO, VOLUME_UFO, ALLEGRO_PLAYMODE_LOOP, mixer)
   INIT_SOUND(pauseSample, AUDIO_PAUSE, VOLUME_PAUSE, ALLEGRO_PLAYMODE_ONCE, mixer)
-
+  INIT_SOUND(bulletsCollition, AUDIO_BULLET_HIT, VOLUME_PAUSE, ALLEGRO_PLAYMODE_ONCE, mixer)
 
 
   al_set_new_display_flags(ALLEGRO_OPENGL | ALLEGRO_FULLSCREEN_WINDOW);
@@ -591,7 +592,7 @@ void front_deinit() {
   al_destroy_mixer(mixer);
   // The audio-related instances are destroyed. 
   kill_all_instances(
-      9, // Amount of instances to destroy.
+      10, // Amount of instances to destroy.
       playerShotSample,
       playerDeathSample,
       alienMovedSample,
@@ -600,7 +601,8 @@ void front_deinit() {
       shieldHitSample,
       ufoDeathSample,
       ufoSample,
-      pauseSample
+      pauseSample,
+      bulletsCollition
     );
   al_uninstall_audio();
   sprites_deinit();
@@ -736,11 +738,12 @@ game_state_t game_update(unsigned level, bool new_level) {
           break;
       }
     }
-    // Use arrow keys to move the player
-    if ( key[ALLEGRO_KEY_RIGHT] && !moveThisFrame ) {
+
+    // Use arrow keys to move the player. Player won't move if both arrows are pressed at the same time
+    if ( key[ALLEGRO_KEY_RIGHT] && !key[ALLEGRO_KEY_LEFT] && !moveThisFrame ) {
       player_move_right();
       moveThisFrame = true;
-    } else if ( key[ALLEGRO_KEY_LEFT] && !moveThisFrame ) {
+    } else if ( key[ALLEGRO_KEY_LEFT] && !key[ALLEGRO_KEY_RIGHT] && !moveThisFrame ) {
       player_move_left();
       moveThisFrame = true;
     }
@@ -823,6 +826,9 @@ static void process_frame(unsigned long long frame, unsigned level, bool player_
   }
   if(shieldWasHit){
     al_play_sample_instance(shieldHitSample);
+  }
+  if(shotsCollided){
+    al_play_sample_instance(bulletsCollition);
   }
   draw_player();
 
