@@ -1016,7 +1016,7 @@ static void draw_mothership(mothership_color_t color) {
 
 static void draw_alien(unsigned i, unsigned j, unsigned sprite, alien_color_t color, unsigned char aliensFrame) {
   int alienX = aliens_get_x(i, j) - ALIEN_SCALE_X/2, alienY = aliens_get_y(i, j) - ALIEN_SCALE_Y/2;
-  ALLEGRO_BITMAP *alienSprite = sprites.aliens[alines_get_type(i,j)][color][aliensFrame];
+  ALLEGRO_BITMAP *alienSprite = sprites.aliens[aliens_get_type(i,j)][color][aliensFrame];
   int srcWidth = al_get_bitmap_width(alienSprite), srcHeight = al_get_bitmap_height(alienSprite);
   int dWidth = ALIENS_W + ALIEN_SCALE_X, dHeight = ALIENS_H + ALIEN_SCALE_Y;
   // Para ver la hitbox
@@ -1131,7 +1131,7 @@ static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, 
 }
 
 static void sprites_init() {
-  sprites._sheet = al_load_bitmap(SPRITESHEET2);
+  sprites._sheet = al_load_bitmap(SPRITESHEET_INVADERS);
   init_error(sprites._sheet, "spritesheet");
   sprites._sheet_shot = al_load_bitmap(SPRITESHEETSHOT);
   init_error(sprites._sheet_shot, "spritesheet_shot");
