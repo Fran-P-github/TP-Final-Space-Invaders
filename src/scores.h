@@ -14,8 +14,8 @@
 #define NAME_LEN 3
 
 typedef struct {
-    char name[NAME_LEN+1];
-    int score;
+  char name[NAME_LEN + 1];
+  int score;
 } highscore_t;
 
 // Loads the top scores from the file
