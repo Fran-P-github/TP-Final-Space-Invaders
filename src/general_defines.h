@@ -129,6 +129,7 @@
 #define AUDIO_INVADER_MOVED  AUDIO_ROUTE("invadermoved.wav")
 #define AUDIO_INVADER_HIT    AUDIO_ROUTE("alienHitSound.wav")
 #define AUDIO_SHIELD_HIT     AUDIO_ROUTE("shieldHitSound.wav")
+#define AUDIO_BULLET_HIT     AUDIO_ROUTE("collisionBetweenBullets.wav")
 #define AUDIO_UFO            AUDIO_ROUTE("ufo.wav")
 #define AUDIO_UFO_DEATH      AUDIO_ROUTE("ufoDeath.wav")
 #define GAME_BG_MUSIC        AUDIO_ROUTE("gameBackground.wav")
