@@ -53,10 +53,13 @@ typedef struct{
 
 // True after a frame in which any aliens moved
 extern const bool alienWasHit;
+// True after a frame in which alien or mothership is killed
+extern const bool alienWasKilled;
 // True after a frame in which an alien was hit
 extern const bool aliensMoved;
 // True after a frame in which the player was killed. Remains true for the duration of the player death sound
 extern const bool playerDied;
+// True after a frame in which a shield block hit
 extern const bool shieldWasHit;
 
 #endif

@@ -654,7 +654,7 @@ static void init_error(bool state, const char *name) {
 
 game_state_t game_update(unsigned level, bool new_level) {
   if(new_level){ // Restart on new level
-    level_init(level, ALIENS_ROWS-3 + level / 3, ALIENS_COLUMNS + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
+    level_init(level, ALIENS_ROWS - 3 + level / 3, ALIENS_COLUMNS - 2 + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
     if ( level == 0 ) player_reset_on_new_game();
     background_init();
   }
@@ -853,8 +853,11 @@ static void process_frame(unsigned long long frame, unsigned level, bool player_
             case 4:
               alienColor = ALIEN_GREEN;
               break;
+            case 5:
+              alienColor = ALIEN_GREY;
+              break;
             default:
-              alienColor = ALIEN_RETRO; // Never to be reached
+              alienColor = ALIEN_RETRO; // Retro for any number over 5
               break;
           }
           switch(aliens_get_points(i,j)){
@@ -1088,13 +1091,13 @@ static void draw_explosion(explosion_t explosion, unsigned color){
   int width, height, x = explosion.x, y = explosion.y;
   switch(explosion.type){
     case ALIEN_EXPLOSION:
-      al_play_sample_instance(alienDeathSample);
+      if(alienWasKilled) al_play_sample_instance(alienDeathSample);
       sprite = sprites.aliens_explotion[color];
       width = ALIENS_W;
       height = ALIENS_H;
       break;
     case UFO_EXPLOSION:
-      al_play_sample_instance(ufoDeathSample);
+      if(alienWasKilled) al_play_sample_instance(ufoDeathSample);
       sprite = sprites.ufo[color][1];
       width = MOTHERSHIP_W+MOTHERSHIP_SCALE_X;
       height = MOTHERSHIP_H+MOTHERSHIP_SCALE_Y;

@@ -34,7 +34,7 @@
 #define ALIENS_MOVE_MIN_INTERVAL 0.01
 #define ALIENS_MOVE_MAX_INTERVAL 0.5
 
-#define MOTHERSHIP_X_VELOCITY 250
+#define MOTHERSHIP_X_VELOCITY 180
 #define MOTHERSHIP_DX (MOTHERSHIP_X_VELOCITY / FRAME_RATE)
 
 #define ALIENS_X_VELOCITY 500
@@ -72,7 +72,8 @@
  ******************************************************************************/
 
 bool aliensMoved = false;
-bool alienWasHit;
+bool alienWasHit = false;
+bool alienWasKilled = false;
 bool playerDied = false;
 bool shieldWasHit = false;
 
@@ -357,6 +358,7 @@ void level_init(unsigned level, unsigned aliens_rows, unsigned aliens_cols, unsi
   update_aliens_speed(level); // Set aliens_move_interval on level start
   aliensMoved = false;
   alienWasHit = false;
+  alienWasKilled = false;
   playerDied = false;
   shieldWasHit = false;
   current_explosion.type = NO_EXPLOSION;
@@ -397,6 +399,7 @@ void player_move_left() {
 level_state_t back_update(unsigned current_level, bool new_level) {
   shieldWasHit = false;
   alienWasHit = false;
+  alienWasKilled = false;
   current_explosion.type = NO_EXPLOSION;
 
   static unsigned long long player_death_start = MAX_ULL; // Variable is MAX_ULL while player is not in death state
@@ -904,6 +907,7 @@ static void player_shot_update() {
     current_explosion.x = mothership.x;
     current_explosion.y = mothership.y;
     current_explosion.type = UFO_EXPLOSION;
+    alienWasKilled = true;
   }
 
   // Alien_shot collition
@@ -922,6 +926,7 @@ static void player_shot_update() {
           current_explosion.y = aliens[i][j].y;
           current_explosion.type = ALIEN_EXPLOSION;
           player.score += aliens[i][j].points;
+          alienWasKilled = true;
         }
         else{
           alienWasHit = true;
