@@ -1,3 +1,14 @@
+/***************************************************************************/ /**
+     TP-FINAL-SPACE-INVADERS
+     scores.h
+
+     Description:
+     Handles hi-scores saving and reading.
+     Provides highscore_t struct to handle hi-scores
+
+
+  ******************************************************************************/
+
 #ifndef SCORES_H
 #define SCORES_H
 

@@ -1,10 +1,10 @@
 /***************************************************************************/ /**
      TP-FINAL-SPACE-INVADERS
      general_defines.h
-     25/6/25
 
      Description:
-
+     Game configuration related constants.
+     Differentiates RPI and PC constants with PLATFORM definition, to be defined in compilation time.
 
 
   ******************************************************************************/

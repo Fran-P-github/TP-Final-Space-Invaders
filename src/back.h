@@ -1,10 +1,10 @@
 /***************************************************************************/ /**
      TP-FINAL-SPACE-INVADERS
      front_allegro.h
-     25/6/25
 
      Description:
-
+     Manages game logic and updates state every frame.
+     Handles alien behavior, collisions, and level progress, providing flags and return values to communicate changes.
 
 
   ******************************************************************************/
