@@ -116,35 +116,40 @@
 
 #endif
 
+// Resource folder macros
 #define AUDIO_ROUTE(s) "../assets/Audio/"s
 #define BITMAP_ROUTE(s) "../assets/Bitmap/"s
 #define FONT_ROUTE(s) "../assets/Font/"s
+#define SPRITE_ROUTE(s) "../assets/sprites/"s
 
 // Audio files (Same across all platforms)
-#define AUDIO_PLAYER_SHOT "../assets/Audio/shoot.wav"
-#define AUDIO_PLAYER_DEATH "../assets/Audio/playerkilled.wav"
-#define AUDIO_INVADER_DEATH "../assets/Audio/invaderkilled.wav"
-#define AUDIO_INVADER_MOVED "../assets/Audio/invadermoved.wav"
-#define AUDIO_INVADER_HIT "../assets/Audio/alienHitSound.wav"
-#define AUDIO_SHIELD_HIT "../assets/Audio/shieldHitSound.wav"
-#define AUDIO_UFO "../assets/Audio/ufo.wav"
-#define AUDIO_UFO_DEATH "../assets/Audio/ufoDeath.wav"
-#define GAME_BG_MUSIC "../assets/Audio/gameBackground.wav"
-#define AUDIO_MENU_SONG "../assets/Audio/menuSong.wav"
-#define AUDIO_PAUSE "../assets/Audio/pauseSound.wav"
-#define SPRITESHEET2 "../assets/sprites/alien_and_ufo_sprites.png"
+#define AUDIO_PLAYER_SHOT    AUDIO_ROUTE("shoot.wav")
+#define AUDIO_PLAYER_DEATH   AUDIO_ROUTE("playerkilled.wav")
+#define AUDIO_INVADER_DEATH  AUDIO_ROUTE("invaderkilled.wav")
+#define AUDIO_INVADER_MOVED  AUDIO_ROUTE("invadermoved.wav")
+#define AUDIO_INVADER_HIT    AUDIO_ROUTE("alienHitSound.wav")
+#define AUDIO_SHIELD_HIT     AUDIO_ROUTE("shieldHitSound.wav")
+#define AUDIO_UFO            AUDIO_ROUTE("ufo.wav")
+#define AUDIO_UFO_DEATH      AUDIO_ROUTE("ufoDeath.wav")
+#define GAME_BG_MUSIC        AUDIO_ROUTE("gameBackground.wav")
+#define AUDIO_MENU_SONG      AUDIO_ROUTE("menuSong.wav")
+#define AUDIO_PAUSE          AUDIO_ROUTE("pauseSound.wav")
+
+// Sprite sheets
+#define SPRITESHEET_INVADERS "../assets/sprites/alien_and_ufo_sprites.png"
 #define SPRITESHEETSHOT "../assets/sprites/shot_animations.png"
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
-
-typedef enum { CLOSED = 0,
-               MENU,
-               GAME,
-               GAME_CRAZY,
-               PAUSE,
-               ENDGAME } game_state_t;
+// TODO: pasar game_state_t a front.h
+typedef enum {
+  CLOSED = 0,
+  MENU,
+  GAME,
+  PAUSE,
+  ENDGAME 
+} game_state_t;
 
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE

@@ -12,8 +12,22 @@
 #ifndef _FRONT_H_
 #define _FRONT_H_
 
+/*******************************************************************************
+ * INCLUDE HEADER FILES
+ ******************************************************************************/
+
 #include <stdbool.h>
 #include "general_defines.h"
+
+/*******************************************************************************
+ * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
+ ******************************************************************************/
+
+// TODO: poner aca game_state_t
+
+/*******************************************************************************
+ * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
+ ******************************************************************************/
 
 // To be called once before any other function. Returns initial state of the game (MENU)
 game_state_t front_init();

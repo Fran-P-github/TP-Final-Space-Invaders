@@ -1127,7 +1127,7 @@ static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, 
 }
 
 static void sprites_init() {
-  sprites._sheet = al_load_bitmap(SPRITESHEET2);
+  sprites._sheet = al_load_bitmap(SPRITESHEET_INVADERS);
   init_error(sprites._sheet, "spritesheet");
   sprites._sheet_shot = al_load_bitmap(SPRITESHEETSHOT);
   init_error(sprites._sheet_shot, "spritesheet_shot");

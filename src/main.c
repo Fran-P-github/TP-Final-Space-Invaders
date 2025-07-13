@@ -78,8 +78,6 @@ int main(){
           new_level = false;
         }
         break;
-      case GAME_CRAZY:
-        break;
       case PAUSE:
         state = game_pause(&level, &new_level);
         break;
