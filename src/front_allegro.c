@@ -42,7 +42,7 @@
 #define MSJ_ERR_INIT "Problema al inicializar: "
 #define AUDIO_SAMPLES 16
 #define MAX_EVENT_WAIT_TIME 0.001
-// Floats para el volumen de los efectos de sonido
+// Floats for the volume of sound effects 
 #define VOLUME_PLAYER_SHOT .1
 #define VOLUME_PLAYER_DEATH .3
 #define VOLUME_ALIENS_MOVED .3
@@ -115,10 +115,10 @@ typedef struct {
   ALLEGRO_BITMAP *_sheet;
   ALLEGRO_BITMAP *_sheet_shot;
   ALLEGRO_BITMAP *ship;
-  ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 tipos de aliens, 11 colores, 2 estados de animacion
-  ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colores de explosiones
-  ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];        // 2 tipos de disparos, 6 estados de animacion
-  ALLEGRO_BITMAP *ufo[UFO_TOTAL_COLORS][2];                       // 11 colores de naves nodrizas, 2 estados de animacion
+  ALLEGRO_BITMAP *aliens[SPRITE_ALIENS_NUM][ALIEN_TOTAL_COLORS][2]; // 3 types of aliens, 11 colours, 2 animation states
+  ALLEGRO_BITMAP *aliens_explotion[ALIEN_TOTAL_COLORS];             // 11 colours of explosions
+  ALLEGRO_BITMAP *shot[SPRITE_SHOT_NUM][SPRITE_SHOT_FRAMES];        // 2 types of shots, 6 animation states  
+  ALLEGRO_BITMAP *ufo[UFO_TOTAL_COLORS][2];                         // 11 mothership colors, 2 animation states 
 } sprites_t;
 
 /*******************************************************************************
@@ -149,7 +149,7 @@ static ALLEGRO_BITMAP *sprite_grab(ALLEGRO_BITMAP* father, int x, int y, int w, 
 static void sprites_init();
 static void sprites_deinit();
 
-// Funcion wrapper para inicializar un efecto de sonido
+// Wrapper function to initialize a sound effect
 static void initAudioInstance(ALLEGRO_SAMPLE_INSTANCE *instance, float volume, ALLEGRO_PLAYMODE playmode);
 
 static void init_error(bool state, const char *name);
@@ -182,7 +182,7 @@ static ALLEGRO_MIXER *mixer;
 // Sprites
 static sprites_t sprites;
 
-// Punteros a los samples para el audio
+// Pointers to the audio samples
 static ALLEGRO_SAMPLE_INSTANCE *playerShotSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *alienMovedSample = NULL;
 static ALLEGRO_SAMPLE_INSTANCE *ufoSample = NULL;
@@ -221,13 +221,13 @@ game_state_t front_init() {
 
   sprites_init();
 
-  // Se crea el mixer
+  // Mixer is created
   mixer = al_create_mixer(44100, ALLEGRO_AUDIO_DEPTH_FLOAT32, ALLEGRO_CHANNEL_CONF_2);
   init_error(mixer, "Mixer");
-  // Se adjunta el mixer creado al mixer principal.
+  // The created mixer is attached to the main mixer.
   al_attach_mixer_to_mixer(mixer, al_get_default_mixer());
 
-  // Se cargan los archivos de audio
+  // Audio files are loaded
   INIT_SOUND(playerShotSample, AUDIO_PLAYER_SHOT, VOLUME_PLAYER_SHOT, ALLEGRO_PLAYMODE_ONCE, mixer)
   INIT_SOUND(playerDeathSample, AUDIO_PLAYER_DEATH, VOLUME_PLAYER_DEATH, ALLEGRO_PLAYMODE_ONCE, mixer)
   INIT_SOUND(alienDeathSample, AUDIO_INVADER_DEATH, VOLUME_ALIENS_DEATH, ALLEGRO_PLAYMODE_ONCE, mixer)
@@ -492,7 +492,7 @@ game_state_t endgame() {
       { al_map_rgb(200,  60,  60), al_map_rgb(255, 100, 100) }
     };
 
-    button_t buttons[3] = { // Buttons will hace the same format as the ones in pause menu
+    button_t buttons[3] = { // Buttons will have the same format as the ones in pause menu
       CREATE_BUTTON_GAME_PAUSE(colors[0][0], colors[0][1]),
       CREATE_BUTTON_GAME_PAUSE(colors[1][0], colors[1][1]),
       CREATE_BUTTON_GAME_PAUSE(colors[2][0], colors[2][1])
@@ -577,9 +577,9 @@ void front_deinit() {
   al_destroy_event_queue(queue);
   al_destroy_font(default_font);
   al_destroy_mixer(mixer);
-  // Se matan los procesos relacionados al audio.
+  // The audio-related instances are destroyed. 
   kill_all_instances(
-      9, // Cantidad de instancias a destruir.
+      9, // Amount of instances to destroy.
       playerShotSample,
       playerDeathSample,
       alienMovedSample,
@@ -600,7 +600,7 @@ void front_deinit() {
  *******************************************************************************
  ******************************************************************************/
 
-// Funcion para matar todos los audio samples cargados.
+// Function to destroy all audio samples.
 static void kill_all_samples(int len, ...) {
   va_list sample_list;
   va_start(sample_list, len);
@@ -610,7 +610,7 @@ static void kill_all_samples(int len, ...) {
   }
 }
 
-// Funcion para matar todas las instancias de audio samples creadas.
+// Function to destroy all audio instances.
 static void kill_all_instances(int len, ...) {
   va_list instance_list;
   va_start(instance_list, len);
@@ -620,7 +620,7 @@ static void kill_all_instances(int len, ...) {
   }
 }
 
-// Funcion para matar todas los bitmaps creados.
+// Function to destroy all bitmaps.
 static void kill_all_bitmaps(int len, ...) {
   va_list bitmap_list;
   va_start(bitmap_list, len);
@@ -630,7 +630,7 @@ static void kill_all_bitmaps(int len, ...) {
   }
 }
 
-// Funcion para matar todas las fuentes creadas.
+// Function to destroy all fonts.
 static void kill_all_font(int len, ...) {
   va_list font_list;
   va_start(font_list, len);
@@ -705,7 +705,7 @@ game_state_t game_update(unsigned level, bool new_level) {
             fullscreen = !fullscreen;
             al_toggle_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
           }
-          // Se utiliza X para disparar.
+          // X is used to shoot.
           if ( key[ALLEGRO_KEY_X] && player_try_shoot() ) {
             al_play_sample_instance(playerShotSample);
             player_shot_made = true;
@@ -724,7 +724,7 @@ game_state_t game_update(unsigned level, bool new_level) {
           break;
       }
     }
-    // Se utilizan las flechas para mover al jugador
+    // Use arrow keys to move the player
     if ( key[ALLEGRO_KEY_RIGHT] && !moveThisFrame ) {
       player_move_right();
       moveThisFrame = true;
@@ -967,7 +967,7 @@ static void background_init() {
     for(int i = 0; i < STARS_N; i++) {
         stars[i].y = rand_between_f(0, WORLD_HEIGHT);
         stars[i].speed = get_random_star_speed();
-        stars[i].color = random_star_color();  // Asignar color aleatorio
+        stars[i].color = random_star_color();  // assign random color
     }
 }
 
@@ -980,14 +980,14 @@ static void draw_background() {
 }
 
 static ALLEGRO_COLOR random_star_color() {
-    int r = rand() % 5;  // 5 tipos de estrellas
+    int r = rand() % 5;  // 5 types of stars
 
     switch(r) {
-        case 0: return al_map_rgb_f(1.0, 1.0, 1.0); // Blanco (tipo A)
-        case 1: return al_map_rgb_f(0.8, 0.8, 1.0); // Azul claro (tipo B)
-        case 2: return al_map_rgb_f(1.0, 1.0, 0.6); // Amarillento (tipo G)
-        case 3: return al_map_rgb_f(0.9, 0.7, 1.0); // Violeta suave
-        case 4: return al_map_rgb_f(1.0, 0.9, 0.8); // Naranja pálido (tipo K)
+        case 0: return al_map_rgb_f(1.0, 1.0, 1.0); // White (type A)
+        case 1: return al_map_rgb_f(0.8, 0.8, 1.0); // Light blue (type B)
+        case 2: return al_map_rgb_f(1.0, 1.0, 0.6); // Yellow (type G)
+        case 3: return al_map_rgb_f(0.9, 0.7, 1.0); // Light violet
+        case 4: return al_map_rgb_f(1.0, 0.9, 0.8); // Pale orange (type K)
         default: return al_map_rgb_f(1.0, 1.0, 1.0);
     }
 }
