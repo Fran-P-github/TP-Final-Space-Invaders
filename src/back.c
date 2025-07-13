@@ -182,7 +182,7 @@ void aliens_shield_collition();
 
 // Returns: index of column above player, or -1 if none is
 static int get_alien_column_above_player();
-// Returns: index of column above a shield block, or -1 if none is. TODO: que no devuelva siempre la columna de mas a la izq, mejor que sea una random
+// Returns: index of random column above a shield block, or -1 if none is
 static int get_alien_column_above_shield();
 // Returns: how many aliens are alive in column c
 static unsigned aliens_alive_in_column(unsigned c);
@@ -505,7 +505,7 @@ static void mothership_update() {
   if ( !mothership.is_active && !should_spawn_mothership(elapsed) ) return; // Mothership inactive and not activated yet
   start = get_millis();
 
-  static bool spawn_right;
+  static bool spawn_right; // Where to spawn ship
 
   if ( !mothership.is_active ) {
     spawn_right = rand() % 2;
@@ -513,11 +513,11 @@ static void mothership_update() {
     // Select points for mothership
     int r = rand_between(1, 100); // Random 1 to 100
     if(r <= 57) {
-        mothership.points = MOTHERSHIP_POINTS_SILVER;  // ~57%
+        mothership.points = MOTHERSHIP_POINTS_SILVER;  // 57%
     } else if(r <= 86) {
-        mothership.points = MOTHERSHIP_POINTS_GOLD;    // ~29%
+        mothership.points = MOTHERSHIP_POINTS_GOLD;    // 29%
     } else {
-        mothership.points = MOTHERSHIP_POINTS_NEON; // ~14%
+        mothership.points = MOTHERSHIP_POINTS_NEON; // 14%
     }
 
     mothership.is_active = true;
@@ -554,10 +554,10 @@ static bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx
 static bool should_spawn_mothership(double elapsed_time) {
 #if PLATFORM == ALLEGRO
   const double max_prob = 0.5; // max
-  const double rate = 0.00005; // increase per second
+  const double rate = 0.00005; // increase per frame
 #elif PLATFORM == RPI
   const double max_prob = 0.5; // max
-  const double rate = 0.00005;    // increase per second
+  const double rate = 0.00005; // increase per frame
 #endif
 
   double probability = elapsed_time * rate;
@@ -642,14 +642,14 @@ static void shields_init(unsigned lives) {
   }
 }
 
-static void shield_init(unsigned k, int x, int y, unsigned lives) {
+static void shield_init(unsigned shield, int x, int y, unsigned lives) {
   char form[SHIELD_H][SHIELD_W] = SHIELD_FORM;
   unsigned i, j;
   for ( i = 0; i < SHIELD_H; ++i ) {
     for ( j = 0; j < SHIELD_W; ++j ) {
-      shields[k][i][j].x = x + j * SHIELD_BLOCK_W;
-      shields[k][i][j].y = y + i * SHIELD_BLOCK_H;
-      shields[k][i][j].lives = (form[i][j] == '*') ? lives : 0;
+      shields[shield][i][j].x = x + j * SHIELD_BLOCK_W;
+      shields[shield][i][j].y = y + i * SHIELD_BLOCK_H;
+      shields[shield][i][j].lives = (form[i][j] == '*') ? lives : 0;
     }
   }
 }
@@ -687,12 +687,10 @@ static int get_top_alien_row() {
 }
 
 static int get_lowest_alien_row(){
-    for(int i = ALIENS_ROWS-1; i >= 0; --i){
-        if(aliens_alive_in_row(i)){
-            return i;
-        }
-    }
-    return -1;
+  for(int i = ALIENS_ROWS-1; i >= 0; --i){
+    if(aliens_alive_in_row(i)) return i;
+  }
+  return -1;
 }
 
 static int get_alien_column_above_player() {
@@ -721,7 +719,7 @@ static int get_alien_column_above_shield() {
   for (unsigned i = 0; i < ALIENS_COLUMNS; ++i) {
     columns[i] = i;
   }
-  shuffle(columns, ALIENS_COLUMNS);
+  shuffle(columns, ALIENS_COLUMNS); // Search columns randomly
 
   for (unsigned idx = 0; idx < ALIENS_COLUMNS; ++idx) {
     unsigned j = columns[idx]; // Random column
@@ -773,12 +771,12 @@ static unsigned aliens_alive_in_column(unsigned c) {
 
 static unsigned aliens_alive_in_row(unsigned r) {
   if ( r >= ALIENS_ROWS ) return 0;
-  unsigned rta = 0;
+  unsigned count = 0;
   unsigned i;
   for ( i = 0; i < ALIENS_COLUMNS; ++i ) {
-    if ( aliens[r][i].lives ) ++rta;
+    if ( aliens[r][i].lives ) ++count;
   }
-  return rta;
+  return count;
 }
 
 static void update_aliens_speed(unsigned level) {
@@ -792,7 +790,7 @@ static void update_aliens_speed(unsigned level) {
   aliens_move_interval = ALIENS_MOVE_MAX_INTERVAL * alive_ratio;
 
   // Apply scaling based on level (increases base speed)
-  aliens_move_interval /= (1 + 1. * level); // 20% faster per level
+  aliens_move_interval /= (1 + 0.2 * level); // 20% faster per level
 
   // Clamp to the minimum
   if ( aliens_move_interval < ALIENS_MOVE_MIN_INTERVAL )
@@ -806,6 +804,7 @@ static movement_t aliens_update_position(unsigned row, bool new_level) {
   int i, j;
   static movement_t movement = MOVEMENT_RIGHT;
   static movement_t movement_post_down = MOVEMENT_LEFT;
+  // Reset movement to right on new level
   if(new_level){
     movement = MOVEMENT_RIGHT;
     movement_post_down = MOVEMENT_LEFT;
@@ -837,7 +836,7 @@ static movement_t aliens_update_position(unsigned row, bool new_level) {
   }
 
   // Move aliens
-  aliensMoved = elapsed >= aliens_move_interval;
+  aliensMoved = elapsed >= aliens_move_interval; // Will go back to false in next frame
   if ( elapsed >= aliens_move_interval) {
     start = get_millis();
     switch ( movement ) {
@@ -849,7 +848,7 @@ static movement_t aliens_update_position(unsigned row, bool new_level) {
         break;
       case MOVEMENT_DOWN:
         aliens_move_down(row);
-        if (row == topRow) {
+        if (row == topRow) { // Set movement after last row went down
           if ( movement_post_down == MOVEMENT_RIGHT ) {
             movement = MOVEMENT_RIGHT;
             movement_post_down = MOVEMENT_LEFT;
@@ -870,27 +869,22 @@ static movement_t aliens_update_position(unsigned row, bool new_level) {
 void aliens_shield_collition() {
   // Shield collition
   unsigned shield, i, j;
-  unsigned alien_row, alien_column;
+  unsigned alien_row = get_lowest_alien_row(), alien_column; // Only lowest alein row can collide
   for ( shield = 0; shield < SHIELDS_CANT; ++shield ) {
     for ( i = 0; i < SHIELD_H; ++i ) {
       for ( j = 0; j < SHIELD_W; ++j ) {
-        if ( shields[shield][i][j].lives == 0 )
-          continue;
+        if ( shields[shield][i][j].lives == 0 ) continue;
 
-        for ( alien_row = 0; alien_row < ALIENS_ROWS; ++alien_row ) {
-          for ( alien_column = 0; alien_column < ALIENS_COLUMNS; ++alien_column ) {
-            if ( !aliens[alien_row][alien_column].lives )
-              continue;
+        for ( alien_column = 0; alien_column < ALIENS_COLUMNS; ++alien_column ) {
+          if ( !aliens[alien_row][alien_column].lives ) continue;
 
-            if ( collide(
-                     aliens[alien_row][alien_column].x, aliens[alien_row][alien_column].y, aliens[alien_row][alien_column].x + ALIENS_W - 1, aliens[alien_row][alien_column].y + ALIENS_H - 1, shields[shield][i][j].x, shields[shield][i][j].y, shields[shield][i][j].x + SHIELD_BLOCK_W - 1, shields[shield][i][j].y + SHIELD_BLOCK_H - 1) ) {
+          // Alien to shield collition
+          if ( collide(aliens[alien_row][alien_column].x, aliens[alien_row][alien_column].y, aliens[alien_row][alien_column].x + ALIENS_W - 1, aliens[alien_row][alien_column].y + ALIENS_H - 1, shields[shield][i][j].x, shields[shield][i][j].y, shields[shield][i][j].x + SHIELD_BLOCK_W - 1, shields[shield][i][j].y + SHIELD_BLOCK_H - 1) ) {
 
-              shields[shield][i][j].lives = 0;
-              goto next_block; // Done with this block, check for next block
-            }
+            shields[shield][i][j].lives = 0;
+            break; // Done with this block, check for next block
           }
         }
-      next_block:;
       }
     }
   }
