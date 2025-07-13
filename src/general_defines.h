@@ -120,7 +120,7 @@
 #define AUDIO_ROUTE(s) "../assets/Audio/"s
 #define BITMAP_ROUTE(s) "../assets/Bitmap/"s
 #define FONT_ROUTE(s) "../assets/Font/"s
-//#define SPRITE_ROUTE(s) "../assets/sprites/"s
+#define SPRITE_ROUTE(s) BITMAP_ROUTE("game_sprites/")s
 
 // Audio files (Same across all platforms)
 #define AUDIO_PLAYER_SHOT    AUDIO_ROUTE("shoot.wav")
@@ -137,8 +137,9 @@
 #define AUDIO_PAUSE          AUDIO_ROUTE("pauseSound.wav")
 
 // Sprite sheets
-#define SPRITESHEET_INVADERS "../assets/sprites/alien_and_ufo_sprites.png"
-#define SPRITESHEETSHOT "../assets/sprites/shot_animations.png"
+#define SPRITESHEET_INVADERS SPRITE_ROUTE("alien_and_ufo_sprites.png")
+#define SPRITESHEETSHOT SPRITE_ROUTE("shot_animations.png")
+#define SHIP_SPRITE SPRITE_ROUTE("ship.png")
 
 /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS

@@ -1141,7 +1141,7 @@ static void sprites_init() {
   init_error(sprites._sheet, "spritesheet");
   sprites._sheet_shot = al_load_bitmap(SPRITESHEETSHOT);
   init_error(sprites._sheet_shot, "spritesheet_shot");
-  sprites.ship = al_load_bitmap(BITMAP_ROUTE("intro/intro_ship.png"));
+  sprites.ship = al_load_bitmap(SHIP_SPRITE);
   init_error(sprites.ship, "spritesheet_ship");
 
   // Alien sprites
