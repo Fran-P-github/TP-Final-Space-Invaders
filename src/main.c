@@ -83,6 +83,8 @@ int main(){
         break;
         case ENDGAME:
         state = endgame();
+        level = 0;
+        new_level = true;
         break;
       case CLOSED:
         break;

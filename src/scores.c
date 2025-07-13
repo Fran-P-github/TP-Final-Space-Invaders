@@ -17,7 +17,7 @@ void load_scores(highscore_t top_scores[]) {
     FILE *f = fopen(SCORE_FILE, "r");
     if (!f) {
         for (int i = 0; i < MAX_SCORES; ++i) {
-            strcpy(top_scores[i].name, "---");
+            strcpy(top_scores[i].name, ""); // Empty name
             top_scores[i].score = 0;
         }
         return;

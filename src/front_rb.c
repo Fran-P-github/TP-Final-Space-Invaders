@@ -85,10 +85,8 @@ static void init_error(bool state, const char *name);
  // Draws a filled rectangle. Used by all other draw functions
 static void draw_rectangle(int x1, int y1, int x2, int y2);
 
-static void alien_hit();
-static void alien_death(int i, int j, explosion_type_t unused); // Es un callback que se usa en back_update() (en allegro para reproducir sonido y mostrar explosion, en rb para sonido)
-static void shield_hit();  // Otro callback
 static void draw_mothership();
+// Draws alien in position i,j in matrix, if alive
 static void draw_alien(unsigned i, unsigned j);
 static void draw_player();
 static void draw_player_shot();
@@ -302,7 +300,6 @@ game_state_t game_update(unsigned level, bool new_level){
     // Initial level config
     if(new_level){ // Restart on new level
         level_init(level, ALIENS_ROWS-1+level/2, ALIENS_COLUMNS-1+level/3, 1, 1+level/3, SHIELD_BLOCK_LIVES-level/6);
-        player_reset_on_new_level();
         if ( level == 0 ) player_reset_on_new_game();
     }
 
@@ -322,10 +319,11 @@ game_state_t game_update(unsigned level, bool new_level){
         if(frame_elapsed >= frame_time){
             ++frame;
             frame_start = get_millis();
-            level_state = back_update(level, alien_death, alien_hit, shield_hit);
+            level_state = back_update(level, new_level);
+            new_level = false;
             sounds_update();
             unsigned alien_column_to_shoot = get_best_alien_column_to_shoot();
-            if(alien_column_to_shoot >= 0){
+            if(alien_column_to_shoot >= 0 && !(frame%30)){
                 alien_try_shoot(alien_column_to_shoot);
             }
             redraw = true;
@@ -426,16 +424,23 @@ static void sounds_update(){
         play_sound_with_duration(alienMovedSound, 40);
     }
 
-    // Se utiliza el callback alien_death() para reproducir el sonido
-    // { // Checks if an alien just died
-    //     static int last_aliens_alive = 0;
-    //     if(!last_aliens_alive) last_aliens_alive = total_aliens_alive();
+    if(alienWasHit){
+        playSoundFromMemory(alienHitSound, SDL_MIX_MAXVOLUME);
+    }
 
-    //     if(last_aliens_alive > total_aliens_alive()){
-    //         last_aliens_alive--;
-    //         playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
-    //     }
-    // }
+    if(shieldWasHit){
+        playSoundFromMemory(shieldHitSound, SDL_MIX_MAXVOLUME);
+    }
+
+    { // Checks if an alien just died
+        static int last_aliens_alive = 0;
+        if(!last_aliens_alive) last_aliens_alive = total_aliens_alive();
+
+        if(last_aliens_alive > total_aliens_alive()){
+            last_aliens_alive--;
+            playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
+        }
+    }
 }
 
 static bool leaderboard_menu_display(){
@@ -777,21 +782,6 @@ static void draw_rectangle(int x1, int y1, int x2, int y2){
                 disp_write((dcoord_t){.x=i, .y=j}, D_ON); // LED {i,j} turned on
         }
     } 
-}
-
-static void shield_hit(){
-  playSoundFromMemory(shieldHitSound, SDL_MIX_MAXVOLUME);
-}
-
-static void alien_hit(){
-  playSoundFromMemory(alienHitSound, SDL_MIX_MAXVOLUME);
-}
-
-// Queda medio feo que sea algo aparte de la funcion sounds_update()
-// pero necesitamos usar el callback para mostrar animacion y sonido en allegro
-static void alien_death(int i, int j, explosion_type_t unused){
-    // Reproducir sonido cuando el alien se muere... (los indices i y j no sirven en este caso)
-    playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
 }
 
 static void draw_mothership(){
