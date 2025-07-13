@@ -277,7 +277,7 @@ game_state_t menu() {
 
 // Borders are grey (no hover) and white (hover)
 #define CREATE_BUTTON_GAME_PAUSE(color_normal, color_hover) create_button(color_normal, color_normal, GRADIENT_CENTER, color_hover, color_hover, GRADIENT_CENTER, al_map_rgb(200, 200, 200), al_map_rgb(255,255,255), 4, 4, 0.,0., 0.,button_h+0., button_w+0.,button_h+0., button_w+0.,0.)
-game_state_t game_pause(unsigned int level) {
+game_state_t game_pause(unsigned int* level, bool* new_level) {
     al_play_sample_instance(pauseSample); // Play pause sound
     al_stop_timer(timer); // Pause timer while in pause
     al_show_mouse_cursor(disp);
@@ -294,23 +294,26 @@ game_state_t game_pause(unsigned int level) {
     const int button_h = WORLD_HEIGHT / 12;
     const int start_y = WORLD_HEIGHT / 3; // This is not centered
 
-    const char *labels[] = { "Resume", "Main Menu", "Exit" };
+    const char *labels[] = { "Resume", "Replay", "Main Menu", "Exit" };
 
-    ALLEGRO_COLOR colors[3][2] = {
+    ALLEGRO_COLOR colors[4][2] = {
       // "Resume" - blue
       { al_map_rgb(  80,  80, 200), al_map_rgb(120, 120, 255) },
+      // Replay - purple
+      { al_map_rgb(  200,  80, 200), al_map_rgb(255, 120, 255) },
       // "Main Menu" - green
       { al_map_rgb(  60, 200,  60), al_map_rgb(100, 255, 100) },
       // "Exit" - red
       { al_map_rgb(200,  60,  60), al_map_rgb(255, 100, 100) }
     };
 
-    button_t buttons[3] = {
+    button_t buttons[4] = {
       CREATE_BUTTON_GAME_PAUSE(colors[0][0], colors[0][1]),
       CREATE_BUTTON_GAME_PAUSE(colors[1][0], colors[1][1]),
-      CREATE_BUTTON_GAME_PAUSE(colors[2][0], colors[2][1])
+      CREATE_BUTTON_GAME_PAUSE(colors[2][0], colors[2][1]),
+      CREATE_BUTTON_GAME_PAUSE(colors[3][0], colors[3][1])
     };
-    for(int i = 0; i < 3; ++i){
+    for(int i = 0; i < 4; ++i){
       buttons[i].position_x = WORLD_WIDTH / 2;
       buttons[i].position_y = start_y + i * (button_h + space / 2);
     }
@@ -330,10 +333,10 @@ game_state_t game_pause(unsigned int level) {
         // Show player info
         al_draw_textf(pause_font, al_map_rgb(255, 255, 255), WORLD_WIDTH/2, space, ALLEGRO_ALIGN_CENTER,
                       "Score: %d    Lives: %d    Level: %d",
-                      player_get_score(), player_get_lives(), level+1); // First level is level 0
+                      player_get_score(), player_get_lives(), (*level)+1); // First level is level 0
 
         // Draw buttons
-        for(int i = 0; i < 3; ++i) {
+        for(int i = 0; i < 4; ++i) {
             draw_button(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i]);
             draw_smart_text(&ms, al_get_display_width(disp), al_get_display_height(disp), &buttons[i], pause_font, al_map_rgb(230, 230, 230), al_map_rgb(30, 30, 30), ALLEGRO_ALIGN_CENTER, labels[i]);
         }
@@ -352,16 +355,21 @@ game_state_t game_pause(unsigned int level) {
               break;
 
             case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
-              for(int i = 0; i < 3; ++i) {
+              for(int i = 0; i < 4; ++i) {
                     if (mouse_hover_button(&buttons[i], &ms, al_get_display_width(disp), al_get_display_height(disp))) {
                         switch(i){
                           case 0:
                             result = GAME;
                             break;
                           case 1:
-                            result = MENU;
+                            *level = 0;
+                            *new_level = true;
+                            result = GAME;
                             break;
                           case 2:
+                            result = MENU;
+                            break;
+                          case 3:
                             result = CLOSED;
                             break;
                         }

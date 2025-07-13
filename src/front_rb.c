@@ -181,7 +181,7 @@ game_state_t front_init(){
     return MENU;
 }
 
-game_state_t game_pause(unsigned int level){ // Level unused here, it is not shown
+game_state_t game_pause(unsigned int* level, bool* new_level){ // Level unused here, it is not shown
     playSoundFromMemory(pauseSound, SDL_MIX_MAXVOLUME);
 
     const char resume[3][4] = {

@@ -27,7 +27,7 @@ game_state_t game_update(unsigned int curent_level, bool new_level);
 
 // To be called after a function returning PAUSE
 // Receives: curent_level (starting from level 0)
-game_state_t game_pause(unsigned int curent_level);
+game_state_t game_pause(unsigned int* curent_level, bool* new_level);
 
 // To be called after a function returning ENGAME
 game_state_t endgame();

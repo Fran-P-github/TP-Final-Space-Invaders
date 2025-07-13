@@ -52,6 +52,8 @@
  *******************************************************************************
  ******************************************************************************/
 
+// AGREGAR REPLAY EN MENU PAUSA AGREGAR SONIDO COLISION BALAS
+
 int main(){
   game_state_t state = front_init();
 
@@ -79,9 +81,9 @@ int main(){
       case GAME_CRAZY:
         break;
       case PAUSE:
-        state = game_pause(level);
+        state = game_pause(&level, &new_level);
         break;
-        case ENDGAME:
+      case ENDGAME:
         state = endgame();
         level = 0;
         new_level = true;
