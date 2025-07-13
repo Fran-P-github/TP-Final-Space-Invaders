@@ -907,13 +907,13 @@ static void player_shot_update() {
     alienWasKilled = true;
   }
 
-  // Alien_shot collition
+  // Alien_shot collision
   if ( collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, alien_shot.x, alien_shot.y, alien_shot.x + SHOT_W - 1, alien_shot.y + SHOT_H - 1) ) {
     player_shot.is_used = false;
     alien_shot.is_used = false;
   }
 
-  // Alien collition
+  // Alien collision
   for ( i = 0; i < ALIENS_ROWS && player_shot.is_used; ++i ) {
     for ( j = 0; j < ALIENS_COLUMNS; ++j ) {
       if ( aliens[i][j].lives && collide(player_shot.x, player_shot.y, player_shot.x + SHOT_W - 1, player_shot.y + SHOT_H - 1, aliens[i][j].x, aliens[i][j].y, aliens[i][j].x + ALIENS_W - 1, aliens[i][j].y + ALIENS_H - 1) ) {
@@ -984,7 +984,7 @@ static bool alien_shot_update() {
   if ( alien_shot.y + SHOT_H - 1 > WORLD_HEIGHT ) // Out of bounds
     alien_shot.is_used = false;
 
-  // Player collition
+  // Player collision
   if ( !playerDied && collide(alien_shot.x, alien_shot.y, alien_shot.x + SHOT_W - 1, alien_shot.y + SHOT_H - 1, player.x, player.y, player.x + PLAYER_W - 1, player.y + PLAYER_H - 1) ) {
     alien_shot.is_used = false;
     player.lives--;

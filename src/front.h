@@ -8,7 +8,7 @@
      Game ends when any function returns CLOSED
 
   ******************************************************************************/
- 
+
 #ifndef _FRONT_H_
 #define _FRONT_H_
 

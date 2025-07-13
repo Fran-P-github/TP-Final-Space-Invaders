@@ -52,8 +52,6 @@
  *******************************************************************************
  ******************************************************************************/
 
-// AGREGAR REPLAY EN MENU PAUSA AGREGAR SONIDO COLISION BALAS
-
 int main(){
   game_state_t state = front_init();
 

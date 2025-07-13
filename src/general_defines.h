@@ -127,6 +127,7 @@
 #define AUDIO_INVADER_MOVED "../assets/Audio/invadermoved.wav"
 #define AUDIO_INVADER_HIT "../assets/Audio/alienHitSound.wav"
 #define AUDIO_SHIELD_HIT "../assets/Audio/shieldHitSound.wav"
+#define AUDIO_BULLET_HIT "../assets/Audio/collisionBetweenBullets.wav"
 #define AUDIO_UFO "../assets/Audio/ufo.wav"
 #define AUDIO_UFO_DEATH "../assets/Audio/ufoDeath.wav"
 #define GAME_BG_MUSIC "../assets/Audio/gameBackground.wav"
