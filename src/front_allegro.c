@@ -59,6 +59,12 @@
 #define ALIEN_SCALE_X 40
 #define ALIEN_SCALE_Y 40
 #define SPRITE_ALIENS_NUM 3
+#define SPRITE_ALIENS_W 72
+#define SPRITE_ALIENS_H 70
+#define SPRITE_UFO_W 95
+#define SPRITE_UFO_H 65
+#define SPRITE_EXPLOSION_W 48
+#define SPRITE_EXPLOSION_H 32
 #define SPRITE_SHOT_FRAMES 6
 #define SPRITE_SHOT_W 3
 #define SPRITE_SHOT_H 12
@@ -1151,13 +1157,13 @@ static void sprites_init() {
   int xOffset = 0;
   for(int i = 0; i < ALIEN_TOTAL_COLORS; i++){
     if(i >= 6) xOffset = 577;
-    sprites.aliens[0][i][0] = sprite_grab(sprites._sheet, xOffset+8,  4+(i%6)*74, 72, 70); // 20, 22+(i%6)*74, 48, 32
-    sprites.aliens[0][i][1] = sprite_grab(sprites._sheet, xOffset+92,  4+(i%6)*74, 72, 70); // 104, 22...
-    sprites.aliens[1][i][0] = sprite_grab(sprites._sheet, xOffset+176, 4+(i%6)*74, 72, 70);
-    sprites.aliens[1][i][1] = sprite_grab(sprites._sheet, xOffset+260, 4+(i%6)*74, 72, 70);
-    sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+340, 4+(i%6)*74, 72, 70);
-    sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+416, 4+(i%6)*74, 72, 70);
-    sprites.aliens_explotion[i] = sprite_grab(sprites._sheet, xOffset+512, 22+(i%6)*74, 48, 32);
+    sprites.aliens[0][i][0] = sprite_grab(sprites._sheet, xOffset+8,   4+(i%6)*74, SPRITE_ALIENS_W, SPRITE_ALIENS_H);
+    sprites.aliens[0][i][1] = sprite_grab(sprites._sheet, xOffset+92,  4+(i%6)*74, SPRITE_ALIENS_W, SPRITE_ALIENS_H);
+    sprites.aliens[1][i][0] = sprite_grab(sprites._sheet, xOffset+176, 4+(i%6)*74, SPRITE_ALIENS_W, SPRITE_ALIENS_H);
+    sprites.aliens[1][i][1] = sprite_grab(sprites._sheet, xOffset+260, 4+(i%6)*74, SPRITE_ALIENS_W, SPRITE_ALIENS_H);
+    sprites.aliens[2][i][0] = sprite_grab(sprites._sheet, xOffset+340, 4+(i%6)*74, SPRITE_ALIENS_W, SPRITE_ALIENS_H);
+    sprites.aliens[2][i][1] = sprite_grab(sprites._sheet, xOffset+416, 4+(i%6)*74, SPRITE_ALIENS_W, SPRITE_ALIENS_H);
+    sprites.aliens_explotion[i] = sprite_grab(sprites._sheet, xOffset+512, 22+(i%6)*74, SPRITE_EXPLOSION_W, SPRITE_EXPLOSION_H);
   }
 
   // UFO sprites
@@ -1165,11 +1171,11 @@ static void sprites_init() {
   int i, j, k;
   for(j = 0; j < 2; j++){
     for(k = 0, i = j*5; k+frame < 6 && i < 10; (frame ? (i++,k++) : i), frame = !frame){
-      sprites.ufo[i][frame] = sprite_grab(sprites._sheet, 4-j*4+115*k+(k+frame-j)*95+12*frame, (j*75)+450, 95, 65);
+      sprites.ufo[i][frame] = sprite_grab(sprites._sheet, 4-j*4+115*k+(k+frame-j)*SPRITE_UFO_W+12*frame, (j*75)+450, SPRITE_UFO_W, SPRITE_UFO_H);
     }
   }
-  sprites.ufo[10][0] = sprite_grab(sprites._sheet, 1054, 525, 95, 65);
-  sprites.ufo[10][1] = sprite_grab(sprites._sheet, 12, 600, 95, 65);
+  sprites.ufo[10][0] = sprite_grab(sprites._sheet, 1054, 525, SPRITE_UFO_W, SPRITE_UFO_H);
+  sprites.ufo[10][1] = sprite_grab(sprites._sheet, 12, 600, SPRITE_UFO_W, SPRITE_UFO_H);
 
   // Shot animations sprites
   int xSpacing, ySpacing = 0;
