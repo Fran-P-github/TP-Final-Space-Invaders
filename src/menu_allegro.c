@@ -1183,6 +1183,7 @@ void draw_rectangle_gradient(float center_x, float center_y, float radius_x, flo
   for ( counter_1 = 0; counter_1 < count; counter_1++ ) {
     free(va_arg(polygon_list, polygon_t *)->coords);
   }
+  va_end(polygon_list);
 }*/
 
 /*void draw_polygon(polygon_t *polygon, ALLEGRO_COLOR color, float trace) {
@@ -1337,6 +1338,7 @@ void kill_all_button(int count, ...) {
     al_destroy_bitmap(button->sprite[1]);
     button->valid = 0;
   }
+  va_end(list);
 }
 
 bool mouse_hover_button(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float size_x, float size_y) {

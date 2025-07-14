@@ -621,6 +621,7 @@ static void kill_all_samples(int len, ...) {
   for ( i = 0; i < len; i++ ) {
     al_destroy_sample(va_arg(sample_list, ALLEGRO_SAMPLE *));
   }
+  va_end(sample_list);
 }
 
 // Function to destroy all audio instances.
@@ -631,6 +632,7 @@ static void kill_all_instances(int len, ...) {
   for ( i = 0; i < len; i++ ) {
     al_destroy_sample_instance(va_arg(instance_list, ALLEGRO_SAMPLE_INSTANCE *));
   }
+  va_end(instance_list);
 }
 
 // Function to destroy all bitmaps.
@@ -641,6 +643,7 @@ static void kill_all_bitmaps(int len, ...) {
   for ( i = 0; i < len; i++ ) {
     al_destroy_bitmap(va_arg(bitmap_list, ALLEGRO_BITMAP *));
   }
+  va_end(bitmap_list);
 }
 
 // Function to destroy all fonts.
@@ -651,6 +654,7 @@ static void kill_all_font(int len, ...) {
   for ( i = 0; i < len; i++ ) {
     al_destroy_font(va_arg(font_list, ALLEGRO_FONT *));
   }
+  va_end(font_list);
 }
 
 static void initAudioInstance(ALLEGRO_SAMPLE_INSTANCE *instance, float volume, ALLEGRO_PLAYMODE playmode) {
@@ -1116,8 +1120,6 @@ static void draw_explosion(explosion_t explosion, unsigned color){
       height = MOTHERSHIP_H+MOTHERSHIP_SCALE_Y;
       x -= MOTHERSHIP_SCALE_X/2;
       y -= MOTHERSHIP_SCALE_Y/2;
-      break;
-    case NO_EXPLOSION:
       break;
   }
   int srcWidth = al_get_bitmap_width(sprite);
