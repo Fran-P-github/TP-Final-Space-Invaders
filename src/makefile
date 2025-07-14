@@ -47,5 +47,5 @@ scores.o: scores.h scores.c general_defines.h
 font_3x5.o: font_3x5.c font_3x5.h
 	$(CC) $(FLAGS) -c font_3x5.c
 
-clear:
+clean:
 	rm -f *.o SpaceInvaders

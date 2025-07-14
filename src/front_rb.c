@@ -45,7 +45,7 @@ typedef enum{
     HOME,
     EXIT
 } pause_option_t;
-#define MENU_OPTIONS EXIT+1
+#define PAUSE_MENU_OPTIONS EXIT+1
 #define ARROW_X 2 // Arrows initial
 #define ARROW_Y 3 // position
 #define ARROW_SPACING 5   // Options horizontal spacing
@@ -180,7 +180,7 @@ game_state_t front_init(){
     return MENU; // Go into menu scene first
 }
 
-game_state_t game_pause(unsigned int* level, bool* new_level){ // Level unused here, it is not shown
+game_state_t game_pause(unsigned int* level, bool* new_level){ // level and new_level unused here. Added for compatibility for pause in front_allegro
     playSoundFromMemory(pauseSound, SDL_MIX_MAXVOLUME);
 
     const char resume[3][4] = {
@@ -237,7 +237,7 @@ game_state_t game_pause(unsigned int* level, bool* new_level){ // Level unused h
         prev_pos = pos;
 
         // Draw arrow
-        for (int i = 0; i < MENU_OPTIONS; ++i) {
+        for (int i = 0; i < PAUSE_MENU_OPTIONS; ++i) {
             dcoord_t coord = { .x = ARROW_X+i*ARROW_SPACING, .y = ARROW_Y };
             disp_write(coord, i == selected ? D_ON : D_OFF);
         }
@@ -391,6 +391,7 @@ game_state_t endgame(){
 }
 
 void front_deinit(){
+    // Free audios
     freeAudio(mothershipMusic);
     freeAudio(playerShotSound);
     freeAudio(playerDeathSound);
@@ -399,6 +400,10 @@ void front_deinit(){
     freeAudio(alienMovedSound);
     freeAudio(shieldHitSound);
     freeAudio(pauseSound);
+
+    // Clear display
+    disp_clear();
+    disp_update();
 }
 
 /*******************************************************************************
@@ -428,14 +433,8 @@ static void sounds_update(){
         playSoundFromMemory(shieldHitSound, SDL_MIX_MAXVOLUME);
     }
 
-    { // Checks if an alien just died
-        static int last_aliens_alive = 0;
-        if(!last_aliens_alive) last_aliens_alive = total_aliens_alive();
-
-        if(last_aliens_alive > total_aliens_alive()){
-            last_aliens_alive--;
-            playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
-        }
+    if(alienWasKilled){
+        playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
     }
 }
 

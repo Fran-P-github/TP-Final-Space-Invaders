@@ -206,7 +206,7 @@ static shot_t alien_shot;
 
 static mothership_t mothership;
 
-explosion_t current_explosion;
+static explosion_t current_explosion;
 
 /*******************************************************************************
  *******************************************************************************

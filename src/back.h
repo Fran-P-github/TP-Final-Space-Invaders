@@ -1,10 +1,11 @@
 /***************************************************************************/ /**
      TP-FINAL-SPACE-INVADERS
-     front_allegro.h
+     back.h
 
      Description:
-     Manages game logic and updates state every frame.
-     Handles alien behavior, collisions, and level progress, providing flags and return values to communicate changes.
+     Manages game logic and updates state every frame. back_update must be called once a frame to achieve this.
+     Handles alien behavior, collisions, player control, and level progress.
+     Provides status information via accessor functions and frame-based flags.
 
 
   ******************************************************************************/

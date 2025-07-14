@@ -23,7 +23,13 @@
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
-// TODO: poner aca game_state_t
+typedef enum {
+  CLOSED = 0,
+  MENU,
+  GAME,
+  PAUSE,
+  ENDGAME 
+} game_state_t;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -40,7 +46,7 @@ game_state_t menu();
 game_state_t game_update(unsigned int curent_level, bool new_level);
 
 // To be called after a function returning PAUSE
-// Receives: curent_level (starting from level 0)
+// Receives: curent_level pointer and new_level pointer. Uses pointers because the variables will be modified if choosing to replay (only in front_allegro)
 game_state_t game_pause(unsigned int* curent_level, bool* new_level);
 
 // To be called after a function returning ENGAME
