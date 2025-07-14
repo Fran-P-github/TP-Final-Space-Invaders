@@ -1121,6 +1121,8 @@ static void draw_explosion(explosion_t explosion, unsigned color){
       x -= MOTHERSHIP_SCALE_X/2;
       y -= MOTHERSHIP_SCALE_Y/2;
       break;
+    case NO_EXPLOSION:
+      break;
   }
   int srcWidth = al_get_bitmap_width(sprite);
   int srcHeight = al_get_bitmap_height(sprite);
