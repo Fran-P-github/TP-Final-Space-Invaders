@@ -13,8 +13,8 @@
  * INCLUDE HEADER FILES
  ******************************************************************************/
 
-#include "general_defines.h"
 #include "front.h"
+#include "general_defines.h"
 
 /*******************************************************************************
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
@@ -52,10 +52,10 @@
  *******************************************************************************
  ******************************************************************************/
 
-int main(){
+int main() {
   game_state_t state = front_init();
 
-  state = GAME; // Testing. Despues cambiar a MENU
+  state = MENU; // Testing. Despues cambiar a MENU
 
   unsigned int level = 0;
   bool new_level = true;
@@ -69,10 +69,10 @@ int main(){
         break;
       case GAME:
         state = game_update(level, new_level);
-        if(state == GAME){
-           level++; // Player won
-           new_level = true;
-        }else{
+        if ( state == GAME ) {
+          level++; // Player won
+          new_level = true;
+        } else {
           new_level = false;
         }
         break;

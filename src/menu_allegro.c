@@ -29,7 +29,7 @@
 #define CLEAR_A al_clear_to_color(al_map_rgba(0, 0, 0, 0))
 
 #define ERRCHECK(obj, txt) \
-  if ( must_setup(obj, txt) == CLOSED ) return CLOSED
+  if ( must_setup(obj, txt) == 0 ) return 0
 
 #define DRAW_BACKGROUND                                                       \
   al_draw_bitmap(intro_background_frames[background_frames_loop++], 0, 0, 0); \
@@ -70,7 +70,7 @@
 
 #define BACK_TEXT al_draw_text(font_cartesian, color_black, WORLD_WIDTH * 0.85, WORLD_WIDTH * 0.02, 0, "Press [ESC] to go back")
 
-#define PLAY_SOUND(src) al_play_sample((src), 0.5, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+#define PLAY_SOUND(src) al_play_sample((src), 0.25, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
 
 /*******************************************************************************
  * ENUMERATIONS, STRUCTURES AND TYPEDEFS
@@ -110,7 +110,7 @@ typedef struct {
  * FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
 
-static game_state_t must_setup(bool task, char *msg);
+static bool must_setup(bool task, char *msg);
 static void intro_anim(ALLEGRO_FONT *dfont, ALLEGRO_SAMPLE *s_logo, ALLEGRO_SAMPLE *sample_intro_1, ALLEGRO_BITMAP *buffer, ALLEGRO_DISPLAY *display, ALLEGRO_SAMPLE_INSTANCE *sample_instance, ALLEGRO_BITMAP *ship);
 static void draw_frame(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *buffer);
 static void cursor_accel(ALLEGRO_MOUSE_STATE *mouse, short int *mouse_old_x, short int *mouse_old_y, float *accel_x, float *Accel_y);
@@ -137,7 +137,7 @@ static void draw_scoreboard(ALLEGRO_FONT *font_supercharge, ALLEGRO_FONT *font_t
  *******************************************************************************
  ******************************************************************************/
 
-game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_QUEUE *queue, ALLEGRO_FONT *default_font, ALLEGRO_BITMAP *buffer, ALLEGRO_MIXER *mixer, void (*kill_all_bitmaps)(int, ...), void (*kill_all_instances)(int, ...), void (*kill_all_samples)(int, ...), void (*kill_all_font)(int, ...)) {
+bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_QUEUE *queue, ALLEGRO_FONT *default_font, ALLEGRO_BITMAP *buffer, ALLEGRO_MIXER *mixer, void (*kill_all_bitmaps)(int, ...), void (*kill_all_instances)(int, ...), void (*kill_all_samples)(int, ...), void (*kill_all_font)(int, ...)) {
 
   /*************************DECLARATIONS************************/
 
@@ -206,7 +206,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   float arrow_line_thickness;
 
-  static bool intro_already_shown = 0;
+  static bool intro_already_shown = 1;
 
   bool redraw;
   bool fullscreen;
@@ -280,45 +280,45 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   /************************INITIALIZERS**************************/
 
   sample_instance = al_create_sample_instance(NULL);
-  if ( must_setup(sample_instance, "sample Instance") == CLOSED ) return CLOSED;
+  ERRCHECK(sample_instance,"Sample Instance");
   sample_instance2 = al_create_sample_instance(NULL);
-  if ( must_setup(sample_instance2, "sample Instance") == CLOSED ) return CLOSED;
+  ERRCHECK(sample_instance2,"Sample Instance 2");
 
   button_start = create_button(al_map_rgb(255, 125, 0), al_map_rgb(200, 0, 220), GRADIENT_CENTER, al_map_rgb(255, 0, 0), al_map_rgb(0, 0, 0), GRADIENT_CENTER, color_black, color_white, 4.0, 4, 50., 0., 0., 100., 200., 100., 250., 0.);
-  if ( must_setup(button_start.valid, "Start button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_start.valid,"Start Button");
 
   button_play = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, button_base_vertex[0], button_base_vertex[1], button_base_vertex[2], button_base_vertex[3], button_base_vertex[4], button_base_vertex[5], button_base_vertex[6], button_base_vertex[7]);
-  if ( must_setup(button_play.valid, "Play button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_play.valid,"Play Button");
 
   button_settings = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, button_base_vertex[0], button_base_vertex[1], button_base_vertex[2], button_base_vertex[3], button_base_vertex[4] + 20., button_base_vertex[5], button_base_vertex[6] + 20., button_base_vertex[7]);
-  if ( must_setup(button_settings.valid, "Settings button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_settings.valid,"Settings Button");
 
   button_scoreboard = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, button_base_vertex[0], button_base_vertex[1], button_base_vertex[2], button_base_vertex[3], button_base_vertex[4] + 40., button_base_vertex[5], button_base_vertex[6] + 40., button_base_vertex[7]);
-  if ( must_setup(button_scoreboard.valid, "Settings button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_scoreboard.valid,"Scoreboard Button");
 
   button_exit = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, 0.0, 0.0, 0.0, button_base_vertex[3], button_base_vertex[4] / 2 + 20.0, button_base_vertex[5], button_base_vertex[6] / 2 + 20.0, button_base_vertex[7]);
-  if ( must_setup(button_exit.valid, "Exit button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_exit.valid,"Exit Button");
 
   button_credits = create_button(color_button_right, color_button_left, GRADIENT_LEFT_TO_RIGHT, color_button_hover_right, color_button_hover_left, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, button_base_vertex[0], button_base_vertex[1], button_base_vertex[2], button_base_vertex[3], button_base_vertex[4] / 2 + 20.0, button_base_vertex[5], button_base_vertex[6] / 2 + 20.0, button_base_vertex[7]);
-  if ( must_setup(button_credits.valid, "Credits button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_credits.valid,"Credits Button");
 
   button_left_arrow_enabled = create_button(color_arrow_left, color_arrow_right, GRADIENT_LEFT_TO_RIGHT, color_arrow_hover_left, color_arrow_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_white, arrow_line_thickness, 3, left_arrow_base_vertex[0], left_arrow_base_vertex[1], left_arrow_base_vertex[2], left_arrow_base_vertex[3], left_arrow_base_vertex[4], left_arrow_base_vertex[5]);
-  if ( must_setup(button_left_arrow_enabled.valid, "Left enabled arrow button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_left_arrow_enabled.valid,"Left enabled arrow Button");
 
   button_left_arrow_disabled = create_button(color_arrow_disabled, color_arrow_disabled, GRADIENT_LEFT_TO_RIGHT, color_arrow_disabled_hover, color_arrow_disabled_hover, GRADIENT_LEFT_TO_RIGHT, color_grey, color_grey, arrow_line_thickness, 3, left_arrow_base_vertex[0], left_arrow_base_vertex[1], left_arrow_base_vertex[2], left_arrow_base_vertex[3], left_arrow_base_vertex[4], left_arrow_base_vertex[5]);
-  if ( must_setup(button_left_arrow_disabled.valid, "Left disabled arrow button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_left_arrow_disabled.valid,"Left disabled arrow Button");
 
   button_right_arrow_enabled = create_button(color_arrow_right, color_arrow_left, GRADIENT_LEFT_TO_RIGHT, color_arrow_hover_right, color_arrow_hover_left, GRADIENT_LEFT_TO_RIGHT, color_black, color_white, arrow_line_thickness, 3, right_arrow_base_vertex[0], right_arrow_base_vertex[1], right_arrow_base_vertex[2], right_arrow_base_vertex[3], right_arrow_base_vertex[4], right_arrow_base_vertex[5]);
-  if ( must_setup(button_right_arrow_enabled.valid, "Right enabled arrow button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_right_arrow_enabled.valid,"Right enabled arrow Button");
 
   button_right_arrow_disabled = create_button(color_arrow_disabled, color_arrow_disabled, GRADIENT_LEFT_TO_RIGHT, color_arrow_disabled_hover, color_arrow_disabled_hover, GRADIENT_LEFT_TO_RIGHT, color_grey, color_grey, arrow_line_thickness, 3, right_arrow_base_vertex[0], right_arrow_base_vertex[1], right_arrow_base_vertex[2], right_arrow_base_vertex[3], right_arrow_base_vertex[4], right_arrow_base_vertex[5]);
-  if ( must_setup(button_right_arrow_disabled.valid, "Right disabled arrow button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_right_arrow_disabled.valid,"Right disabled arrow Button");
 
   button_fullscreen = create_button(al_map_rgba(255, 125, 0, 240), al_map_rgba(200, 0, 220, 180), GRADIENT_CENTER, al_map_rgba(255, 0, 0, 240), al_map_rgba(0, 0, 0, 180), GRADIENT_CENTER, color_black, color_white, 4.0, 6, 0.0, 0.0, 10.0, 25.0, 0.0, 50.0, 210.0, 50.0, 200.0, 25.0, 210.0, 0.0);
-  if ( must_setup(button_fullscreen.valid, "Fullscreen button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_fullscreen.valid,"Fullscreen Button");
 
   button_apply = create_button(al_map_rgba(255, 125, 0, 240), al_map_rgba(200, 0, 220, 180), GRADIENT_CENTER, al_map_rgba(255, 0, 0, 240), al_map_rgba(0, 0, 0, 180), GRADIENT_CENTER, color_black, color_white, 4.0, 5, 0.0, 0.0, 0.0, 30.0, 110.0, 30.0, 100.0, 15.0, 110.0, 0.0);
-  if ( must_setup(button_apply.valid, "Apply button") == CLOSED ) return CLOSED;
+  ERRCHECK(button_apply.valid,"Apply Button");
 
   al_attach_sample_instance_to_mixer(sample_instance, al_get_default_mixer());
   al_attach_sample_instance_to_mixer(sample_instance2, al_get_default_mixer());
@@ -328,7 +328,7 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
   for ( background_frames_loop = 1; background_frames_loop <= 300 && select != QUIT; background_frames_loop++ ) {
     sprintf(intro_background_path, "../assets/Bitmap/intro_background/frames/frame_%03d.png", background_frames_loop);
     intro_background_frames[background_frames_loop - 1] = al_load_bitmap(intro_background_path);
-    if ( must_setup(intro_background_frames[background_frames_loop - 1], "Intro background frame") == CLOSED ) return CLOSED;
+    ERRCHECK(intro_background_frames[background_frames_loop - 1], intro_background_path);
   }
 
   intro_logo = al_load_bitmap(BITMAP_ROUTE("intro/intro_logo.png"));
@@ -815,28 +815,35 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
             if ( MOUSE_HOVER(button_fullscreen) && mouse.buttons & LEFT_CLICK ) {
               PLAY_SOUND(menu_modify);
               fullscreen = !fullscreen;
-              if ( fullscreen ) display_size_counter = 0;
+              if ( fullscreen )
+                display_size_counter = 0;
+              else
+                display_size_counter = 1;
             } else if ( MOUSE_HOVER(button_right_arrow_enabled) && !fullscreen && mouse.buttons & LEFT_CLICK ) {
               PLAY_SOUND(menu_modify);
               display_size_counter++;
-              if ( display_size_counter > 4 ) display_size_counter = 0;
+              if ( display_size_counter > 4 ) display_size_counter = 1;
             } else if ( MOUSE_HOVER(button_right_arrow_disabled) && mouse.buttons & LEFT_CLICK ) {
               PLAY_SOUND(menu_locked);
             } else if ( MOUSE_HOVER(button_left_arrow_enabled) && !fullscreen && mouse.buttons & LEFT_CLICK ) {
               PLAY_SOUND(menu_modify);
               display_size_counter--;
-              if ( display_size_counter < 0 ) display_size_counter = 4;
+              if ( display_size_counter < 1 ) display_size_counter = 4;
             } else if ( MOUSE_HOVER(button_left_arrow_disabled) && mouse.buttons & LEFT_CLICK ) {
               PLAY_SOUND(menu_locked);
             } else if ( MOUSE_HOVER(button_apply) && mouse.buttons & LEFT_CLICK ) {
-              PLAY_SOUND(menu_enter);
-              al_set_display_flag(display, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
-              if ( !fullscreen ) {
-                al_resize_display(display, window_sizes[2 * display_size_counter], window_sizes[2 * display_size_counter + 1]);
+              if ( fullscreen == ((al_get_display_flags(display) & ALLEGRO_FULLSCREEN_WINDOW) ? 1 : 0) && screen_width == window_sizes[2 * display_size_counter] ) {
+                PLAY_SOUND(menu_locked);
+              } else {
+                PLAY_SOUND(menu_enter);
+                al_set_display_flag(display, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
+                if ( !fullscreen ) {
+                  al_resize_display(display, window_sizes[2 * display_size_counter], window_sizes[2 * display_size_counter + 1]);
+                }
+                al_acknowledge_resize(display);
+                screen_width = al_get_display_width(display);
+                screen_height = al_get_display_height(display);
               }
-              al_acknowledge_resize(display);
-              screen_width = al_get_display_width(display);
-              screen_height = al_get_display_height(display);
             }
             break;
 
@@ -913,12 +920,8 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
   al_hide_mouse_cursor(display);
 
-  if ( select == QUIT ) return CLOSED;
-  return GAME;
-  if ( score_slide < 50 )
-    score_slide += 5;
-  else if ( score_slide < 100 )
-    score_slide += 10;
+  if ( select == QUIT ) return 0;
+  return 1;
 }
 
 /*******************************************************************************
@@ -929,10 +932,10 @@ game_state_t menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGR
 
 /************************MUST_SETUP*****************************/
 
-game_state_t must_setup(bool task, char *msg) {
+bool must_setup(bool task, char *msg) {
   if ( !task ) {
     fprintf(stderr, "%s%s\n", MSJ_ERR_INIT, msg);
-    return CLOSED;
+    return 0;
   }
   return 1;
 }

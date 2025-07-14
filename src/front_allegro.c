@@ -277,7 +277,10 @@ game_state_t front_init() {
 }
 
 game_state_t menu() {
-  return menu_allegro(disp, timer, queue, default_font, buffer, mixer, &kill_all_bitmaps, &kill_all_instances, &kill_all_samples, &kill_all_font);
+	bool play;
+  play = menu_allegro(disp, timer, queue, default_font, buffer, mixer, &kill_all_bitmaps, &kill_all_instances, &kill_all_samples, &kill_all_font);
+  if (play) return GAME;
+  else return CLOSED;
 }
 
 // Borders are grey (no hover) and white (hover)
