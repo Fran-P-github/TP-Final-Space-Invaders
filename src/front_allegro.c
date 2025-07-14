@@ -178,7 +178,6 @@ static void kill_all_font(int len, ...);
 star_t stars[STARS_N];
 
 
-static bool fullscreen = true;
 static ALLEGRO_TIMER *timer;
 static ALLEGRO_DISPLAY *disp;
 static ALLEGRO_EVENT_QUEUE *queue;
@@ -394,14 +393,9 @@ game_state_t game_pause(unsigned int* level, bool* new_level) {
                 break;
 
               case ALLEGRO_EVENT_KEY_DOWN:
-                switch(ev.keyboard.keycode){
-                  case ALLEGRO_KEY_ESCAPE:
+                if(ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
                     result = GAME;
                     done = true;
-                    break;
-                  case ALLEGRO_KEY_F:
-                    fullscreen = !fullscreen;
-                    al_toggle_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
                 }
                 break;
           }
@@ -569,15 +563,9 @@ game_state_t endgame() {
               break;
 
               case ALLEGRO_EVENT_KEY_DOWN:
-                switch(ev.keyboard.keycode){
-                  case ALLEGRO_KEY_ESCAPE:
+                if(ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE){
                     result = GAME;
                     done = true;
-                    break;
-                  case ALLEGRO_KEY_F:
-                    fullscreen = !fullscreen;
-                    al_toggle_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
-                    break;
                 }
                 break;
           }
@@ -726,12 +714,8 @@ game_state_t game_update(unsigned level, bool new_level) {
             al_stop_sample_instance(ufoSample); // Stop mothership sound
             return PAUSE;
           }
-          if ( key[ALLEGRO_KEY_F] ) {
-            fullscreen = !fullscreen;
-            al_toggle_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
-          }
           // X is used to shoot.
-          if ( key[ALLEGRO_KEY_X] && player_try_shoot() ) {
+          else if ( key[ALLEGRO_KEY_X] && player_try_shoot() ) {
             al_play_sample_instance(playerShotSample);
             player_shot_made = true;
           }
