@@ -21,6 +21,15 @@
  * PREPROCESSOR CONSTANT AND MACRO DEFINITIONS
  ******************************************************************************/
 
+#define SETUP_BACKGROUND setup_background(intro_background_frames)
+#define KILL_BACKGROUND kill_background(intro_background_frames, kill_all_bitmaps)
+
+#define DARK_COVER(mode) draw_dark_cover(mode)
+
+#define MAIN_MENU_BUTTONS(mode) main_menu_buttons(&button_play, &button_settings, &button_scoreboard, &button_exit, &button_credits, &mouse, screen_width, screen_height, font_supercharge, font_cartesian, &color_black, &color_white, (mode), play_background, settings_background, scoreboard_background, credits_background, exit_background)
+
+#define MENU_SETTINGS(reset) menu_settings(&button_left_arrow_enabled, &button_right_arrow_enabled, &button_left_arrow_disabled, &button_right_arrow_disabled, &button_fullscreen, &button_apply, &mouse, screen_width, screen_height, font_supercharge, font_toreks, font_toreks_big, font_cartesian, &color_black, &color_grey, &color_white, &fullscreen, (reset), window_sizes, display_size_counter)
+
 #define MSJ_ERR_INIT "Error with setup: "
 
 #define DRAW draw_frame(display, buffer)
@@ -31,16 +40,10 @@
 #define ERRCHECK(obj, txt) \
   if ( must_setup(obj, txt) == 0 ) return 0
 
-#define DRAW_BACKGROUND                                                       \
-  al_draw_bitmap(intro_background_frames[background_frames_loop++], 0, 0, 0); \
-  if ( background_frames_loop == 300 ) background_frames_loop = 0
+#define DRAW_BACKGROUND draw_background(intro_background_frames)
 
-#define DRAW_FLASH                                                                                                  \
-  if ( flash_and_cover_counter && flash_enable ) {                                                                  \
-    al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(255, 255, 255, flash_and_cover_counter)); \
-    if ( flash_and_cover_counter > 0 ) flash_and_cover_counter -= 10;                                               \
-    if ( flash_and_cover_counter < 0 ) flash_and_cover_counter = 0;                                                 \
-  }
+#define DRAW_FLASH \
+  if ( flash_enable ) draw_flash(&flash_enable)
 
 #define DRAW_SHIP_CURSOR                                                                                                                                                                        \
   al_draw_scaled_rotated_bitmap(intro_ship.sprite, intro_ship.cx, intro_ship.cy, mouse.x *WORLD_WIDTH / screen_width, mouse.y * WORLD_HEIGHT / screen_height, 0.5, 0.15 + Accel_y, Accel_x, 0); \
@@ -62,13 +65,23 @@
 #define DRAW_BUTTON(button) draw_button(&mouse, screen_width, screen_height, &(button))
 // Wrapper for drawing the button. Simpler and quicker
 
+#define DRAW_BUTTON_FOR_FUNCTIONS(button) draw_button(mouse, screen_width, screen_height, button)
+// Wrapper for drawing the button. Simpler and quicker
+
 #define BUTTON_TEXT(button, txt) draw_smart_text(&mouse, screen_width, screen_height, &(button), font_supercharge, color_black, color_white, ALLEGRO_ALIGN_RIGHT, (txt))
+// Wrapper for drawing text over a certain button
+
+#define BUTTON_TEXT_FOR_FUNCTIONS(button, txt) draw_smart_text(mouse, screen_width, screen_height, button, font, *color_1, *color_2, ALLEGRO_ALIGN_RIGHT, (txt))
 // Wrapper for drawing text over a certain button
 
 #define MOUSE_HOVER(button) mouse_hover_button(&(button), &mouse, screen_width, screen_height)
 // Wrapper to detect where the mouse is hovering over
 
+#define MOUSE_HOVER_FOR_FUNCTION(button) mouse_hover_button(button, mouse, screen_width, screen_height)
+
 #define BACK_TEXT al_draw_text(font_cartesian, color_black, WORLD_WIDTH * 0.85, WORLD_WIDTH * 0.02, 0, "Press [ESC] to go back")
+
+#define BACK_TEXT_FOR_FUNCTIONS(font, color) al_draw_text((font), *(color), WORLD_WIDTH * 0.85, WORLD_WIDTH * 0.02, 0, "Press [ESC] to go back")
 
 #define PLAY_SOUND(src) al_play_sample((src), 0.25, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
 
@@ -87,6 +100,12 @@ typedef enum choice { INTRO = 10,
                       MENU_CREDITS,
                       PLAY,
                       QUIT } choice_t;
+
+typedef enum { HIDE = 0,
+               SHOW,
+               EXTEND,
+               SHRINK,
+               RESET } window_t;
 
 typedef struct {
   int px;           // X position
@@ -122,7 +141,15 @@ static void insert_description(ALLEGRO_FONT *font, ALLEGRO_COLOR color, const ch
 static void smart_description(button_t *play, button_t *settings, button_t *scoreboard, button_t *credits, button_t *exit, ALLEGRO_MOUSE_STATE *mouse, ALLEGRO_FONT *font, ALLEGRO_COLOR color, short int *screen_width, short int *screen_height);
 static void background_slider_reset_except(short int n, short int *slider);
 static void draw_scoreboard(ALLEGRO_FONT *font_supercharge, ALLEGRO_FONT *font_toreks, ALLEGRO_FONT *font_toreks_big, float *score_slide, highscore_t *top_scores);
-
+static void draw_background(ALLEGRO_BITMAP **intro_background_frames);
+static void draw_flash(bool *flash_enable);
+static bool setup_background(ALLEGRO_BITMAP **intro_background_frames);
+static void kill_background(ALLEGRO_BITMAP **intro_background_frames, void (*kill_all_bitmaps)(int counter, ...));
+static short int detect_screen_sizes(short int *window_sizes);
+static bool draw_dark_cover(bool enable);
+static bool menu_slide_window(window_t mode);
+static bool main_menu_buttons(button_t *button_play, button_t *button_settings, button_t *button_scoreboard, button_t *button_exit, button_t *button_credits, ALLEGRO_MOUSE_STATE *mouse, short int screen_width, short int screen_height, ALLEGRO_FONT *font, ALLEGRO_FONT *font_2, ALLEGRO_COLOR *color_1, ALLEGRO_COLOR *color_2, window_t mode, ALLEGRO_BITMAP *play_background, ALLEGRO_BITMAP *settings_background, ALLEGRO_BITMAP *scoreboard_background, ALLEGRO_BITMAP *credits_background, ALLEGRO_BITMAP *exit_background);
+static void menu_settings(button_t *button_left_arrow_enabled, button_t *button_right_arrow_enabled, button_t *button_left_arrow_disabled, button_t *button_right_arrow_disabled, button_t *button_fullscreen, button_t *button_apply, ALLEGRO_MOUSE_STATE *mouse, short int screen_width, short int screen_height, ALLEGRO_FONT *font_supercharge, ALLEGRO_FONT *font_toreks, ALLEGRO_FONT *font_toreks_big, ALLEGRO_FONT *font_cartesian, ALLEGRO_COLOR *color_black, ALLEGRO_COLOR *color_grey, ALLEGRO_COLOR *color_white, bool *fullscreen, bool reset, short int *window_sizes, short int display_size_counter);
 /*******************************************************************************
  * ROM CONST VARIABLES WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -171,8 +198,6 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
   ALLEGRO_MOUSE_STATE mouse;
 
-  ALLEGRO_DISPLAY_MODE display_mode;
-
   button_t button_start;
 
   button_t button_play;
@@ -190,16 +215,13 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
   highscore_t top_scores[MAX_SCORES];
 
-  char intro_background_path[64];
-
-  short int background_frames_loop, flash_and_cover_counter, menu_slide_counter, display_size_counter;
+  short int /*menu_slide_counter,*/ display_size_counter;
   short int screen_width, screen_height, mouse_x, mouse_y;
   short int window_sizes[10];
 
-  float button_slide_1;
+  // float button_slide_1;
   float score_slide;
-  float settings_slide;
-  float window_factor;
+  // float settings_slide;
   float credits_slide;
 
   float Accel_x, Accel_y;
@@ -213,19 +235,17 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
   bool flash_enable;
   bool menu_enable;
   bool menu_buttons_enable;
-  bool menu_slide_done;
+  // bool menu_slide_done;
   bool scoreboard_enable;
-  bool default_size_registered;
 
   bool scoreboard_exit;
 
   /*
   background_frames_loop is used for the background frames loop
-  flash_and_cover_counter is used both for the initial "flashbang" and the background dark cover
   menu_slide_counter is used for the sliding menu window
   */
 
-  float main_menu_window[] = {WORLD_WIDTH, 0, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH, 0};
+  // float main_menu_window[] = {WORLD_WIDTH, 0, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH, 0};
 
   /**************************************************************/
 
@@ -244,10 +264,10 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
   scoreboard_exit = 1;
 
   score_slide = 1.0;
-  settings_slide = 1.0;
+  // settings_slide = 1.0;
   credits_slide = 1.0;
 
-  short int background_slide[5] = {-WORLD_WIDTH / 2};
+  // short int background_slide[5] = {-WORLD_WIDTH / 2};
 
   float button_base_vertex[8] = {16.0, 0.0, 0.0, 45.0, 350.0, 45.0, 350.0, 0.0};
   float left_arrow_base_vertex[6] = {0.0, 15.0, 26.0, 30.0, 26.0, 0.0};
@@ -280,56 +300,52 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
   /************************INITIALIZERS**************************/
 
   sample_instance = al_create_sample_instance(NULL);
-  ERRCHECK(sample_instance,"Sample Instance");
+  ERRCHECK(sample_instance, "Sample Instance");
   sample_instance2 = al_create_sample_instance(NULL);
-  ERRCHECK(sample_instance2,"Sample Instance 2");
+  ERRCHECK(sample_instance2, "Sample Instance 2");
 
   button_start = create_button(al_map_rgb(255, 125, 0), al_map_rgb(200, 0, 220), GRADIENT_CENTER, al_map_rgb(255, 0, 0), al_map_rgb(0, 0, 0), GRADIENT_CENTER, color_black, color_white, 4.0, 4, 50., 0., 0., 100., 200., 100., 250., 0.);
-  ERRCHECK(button_start.valid,"Start Button");
+  ERRCHECK(button_start.valid, "Start Button");
 
   button_play = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, button_base_vertex[0], button_base_vertex[1], button_base_vertex[2], button_base_vertex[3], button_base_vertex[4], button_base_vertex[5], button_base_vertex[6], button_base_vertex[7]);
-  ERRCHECK(button_play.valid,"Play Button");
+  ERRCHECK(button_play.valid, "Play Button");
 
   button_settings = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, button_base_vertex[0], button_base_vertex[1], button_base_vertex[2], button_base_vertex[3], button_base_vertex[4] + 20., button_base_vertex[5], button_base_vertex[6] + 20., button_base_vertex[7]);
-  ERRCHECK(button_settings.valid,"Settings Button");
+  ERRCHECK(button_settings.valid, "Settings Button");
 
   button_scoreboard = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, button_base_vertex[0], button_base_vertex[1], button_base_vertex[2], button_base_vertex[3], button_base_vertex[4] + 40., button_base_vertex[5], button_base_vertex[6] + 40., button_base_vertex[7]);
-  ERRCHECK(button_scoreboard.valid,"Scoreboard Button");
+  ERRCHECK(button_scoreboard.valid, "Scoreboard Button");
 
   button_exit = create_button(color_button_left, color_button_right, GRADIENT_LEFT_TO_RIGHT, color_button_hover_left, color_button_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, 0.0, 0.0, 0.0, button_base_vertex[3], button_base_vertex[4] / 2 + 20.0, button_base_vertex[5], button_base_vertex[6] / 2 + 20.0, button_base_vertex[7]);
-  ERRCHECK(button_exit.valid,"Exit Button");
+  ERRCHECK(button_exit.valid, "Exit Button");
 
   button_credits = create_button(color_button_right, color_button_left, GRADIENT_LEFT_TO_RIGHT, color_button_hover_right, color_button_hover_left, GRADIENT_LEFT_TO_RIGHT, color_black, color_black, 5.0, 4, button_base_vertex[0], button_base_vertex[1], button_base_vertex[2], button_base_vertex[3], button_base_vertex[4] / 2 + 20.0, button_base_vertex[5], button_base_vertex[6] / 2 + 20.0, button_base_vertex[7]);
-  ERRCHECK(button_credits.valid,"Credits Button");
+  ERRCHECK(button_credits.valid, "Credits Button");
 
   button_left_arrow_enabled = create_button(color_arrow_left, color_arrow_right, GRADIENT_LEFT_TO_RIGHT, color_arrow_hover_left, color_arrow_hover_right, GRADIENT_LEFT_TO_RIGHT, color_black, color_white, arrow_line_thickness, 3, left_arrow_base_vertex[0], left_arrow_base_vertex[1], left_arrow_base_vertex[2], left_arrow_base_vertex[3], left_arrow_base_vertex[4], left_arrow_base_vertex[5]);
-  ERRCHECK(button_left_arrow_enabled.valid,"Left enabled arrow Button");
+  ERRCHECK(button_left_arrow_enabled.valid, "Left enabled arrow Button");
 
   button_left_arrow_disabled = create_button(color_arrow_disabled, color_arrow_disabled, GRADIENT_LEFT_TO_RIGHT, color_arrow_disabled_hover, color_arrow_disabled_hover, GRADIENT_LEFT_TO_RIGHT, color_grey, color_grey, arrow_line_thickness, 3, left_arrow_base_vertex[0], left_arrow_base_vertex[1], left_arrow_base_vertex[2], left_arrow_base_vertex[3], left_arrow_base_vertex[4], left_arrow_base_vertex[5]);
-  ERRCHECK(button_left_arrow_disabled.valid,"Left disabled arrow Button");
+  ERRCHECK(button_left_arrow_disabled.valid, "Left disabled arrow Button");
 
   button_right_arrow_enabled = create_button(color_arrow_right, color_arrow_left, GRADIENT_LEFT_TO_RIGHT, color_arrow_hover_right, color_arrow_hover_left, GRADIENT_LEFT_TO_RIGHT, color_black, color_white, arrow_line_thickness, 3, right_arrow_base_vertex[0], right_arrow_base_vertex[1], right_arrow_base_vertex[2], right_arrow_base_vertex[3], right_arrow_base_vertex[4], right_arrow_base_vertex[5]);
-  ERRCHECK(button_right_arrow_enabled.valid,"Right enabled arrow Button");
+  ERRCHECK(button_right_arrow_enabled.valid, "Right enabled arrow Button");
 
   button_right_arrow_disabled = create_button(color_arrow_disabled, color_arrow_disabled, GRADIENT_LEFT_TO_RIGHT, color_arrow_disabled_hover, color_arrow_disabled_hover, GRADIENT_LEFT_TO_RIGHT, color_grey, color_grey, arrow_line_thickness, 3, right_arrow_base_vertex[0], right_arrow_base_vertex[1], right_arrow_base_vertex[2], right_arrow_base_vertex[3], right_arrow_base_vertex[4], right_arrow_base_vertex[5]);
-  ERRCHECK(button_right_arrow_disabled.valid,"Right disabled arrow Button");
+  ERRCHECK(button_right_arrow_disabled.valid, "Right disabled arrow Button");
 
   button_fullscreen = create_button(al_map_rgba(255, 125, 0, 240), al_map_rgba(200, 0, 220, 180), GRADIENT_CENTER, al_map_rgba(255, 0, 0, 240), al_map_rgba(0, 0, 0, 180), GRADIENT_CENTER, color_black, color_white, 4.0, 6, 0.0, 0.0, 10.0, 25.0, 0.0, 50.0, 210.0, 50.0, 200.0, 25.0, 210.0, 0.0);
-  ERRCHECK(button_fullscreen.valid,"Fullscreen Button");
+  ERRCHECK(button_fullscreen.valid, "Fullscreen Button");
 
   button_apply = create_button(al_map_rgba(255, 125, 0, 240), al_map_rgba(200, 0, 220, 180), GRADIENT_CENTER, al_map_rgba(255, 0, 0, 240), al_map_rgba(0, 0, 0, 180), GRADIENT_CENTER, color_black, color_white, 4.0, 5, 0.0, 0.0, 0.0, 30.0, 110.0, 30.0, 100.0, 15.0, 110.0, 0.0);
-  ERRCHECK(button_apply.valid,"Apply Button");
+  ERRCHECK(button_apply.valid, "Apply Button");
 
   al_attach_sample_instance_to_mixer(sample_instance, al_get_default_mixer());
   al_attach_sample_instance_to_mixer(sample_instance2, al_get_default_mixer());
 
   al_set_blender(ALLEGRO_ADD, ALLEGRO_ALPHA, ALLEGRO_INVERSE_ALPHA);
 
-  for ( background_frames_loop = 1; background_frames_loop <= 300 && select != QUIT; background_frames_loop++ ) {
-    sprintf(intro_background_path, "../assets/Bitmap/intro_background/frames/frame_%03d.png", background_frames_loop);
-    intro_background_frames[background_frames_loop - 1] = al_load_bitmap(intro_background_path);
-    ERRCHECK(intro_background_frames[background_frames_loop - 1], intro_background_path);
-  }
+  SETUP_BACKGROUND;
 
   intro_logo = al_load_bitmap(BITMAP_ROUTE("intro/intro_logo.png"));
   ERRCHECK(intro_logo, "intro logo");
@@ -380,33 +396,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
   al_hide_mouse_cursor(display);
 
-  al_get_display_mode(0, &display_mode);
-
-  for ( display_size_counter = 0, default_size_registered = 0, window_factor = 1.0; display_size_counter < 5; display_size_counter++ ) {
-    if ( display_mode.width * window_factor > WORLD_WIDTH || default_size_registered ) {
-      window_sizes[2 * display_size_counter] = display_mode.width * window_factor;
-      window_sizes[2 * display_size_counter + 1] = display_mode.height * window_factor;
-
-      window_factor -= 1. / 6;
-
-      if ( window_sizes[2 * display_size_counter] % 2 ) window_sizes[2 * display_size_counter]++;
-      if ( window_sizes[2 * display_size_counter + 1] % 2 ) window_sizes[2 * display_size_counter + 1]++;
-
-      if ( window_sizes[2 * display_size_counter] == WORLD_WIDTH && window_sizes[2 * display_size_counter + 1] == WORLD_HEIGHT ) {
-        window_sizes[2 * display_size_counter] = display_mode.width * window_factor;
-        window_sizes[2 * display_size_counter + 1] = display_mode.height * window_factor;
-
-        if ( window_sizes[2 * display_size_counter] % 2 ) window_sizes[2 * display_size_counter]++;
-        if ( window_sizes[2 * display_size_counter + 1] % 2 ) window_sizes[2 * display_size_counter + 1]++;
-      }
-
-    } else {
-      window_sizes[2 * display_size_counter] = WORLD_WIDTH;
-      window_sizes[2 * display_size_counter + 1] = WORLD_HEIGHT;
-      default_size_registered = 1;
-    }
-  }
-  display_size_counter = 0;
+  display_size_counter = detect_screen_sizes(window_sizes);
 
   /**************************************************************/
 
@@ -423,35 +413,32 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
   al_start_timer(timer);
 
-  background_frames_loop = 0;
-  flash_and_cover_counter = 255;
-
   button_start.position_x = WORLD_WIDTH / 2;
   button_start.position_y = WORLD_HEIGHT * (3. / 5);
 
   // button_play.position_x = WORLD_WIDTH * 0.75;
-  button_play.position_y = WORLD_HEIGHT * 0.15;
+  // button_play.position_y = WORLD_HEIGHT * 0.15;
 
   // button_settings.position_x = WORLD_WIDTH * 0.74;
-  button_settings.position_y = WORLD_HEIGHT * 0.25;
+  // button_settings.position_y = WORLD_HEIGHT * 0.25;
 
   // button_scoreboard.position_x = WORLD_WIDTH * 0.73;
-  button_scoreboard.position_y = WORLD_HEIGHT * 0.35;
+  // button_scoreboard.position_y = WORLD_HEIGHT * 0.35;
 
   // button_exit.position_x = WORLD_WIDTH * 0.83;
-  button_exit.position_y = WORLD_HEIGHT * 0.45;
+  // button_exit.position_y = WORLD_HEIGHT * 0.45;
 
   // button_credits.position_x = WORLD_WIDTH * 0.61;
-  button_credits.position_y = WORLD_HEIGHT * 0.45;
+  // button_credits.position_y = WORLD_HEIGHT * 0.45;
 
-  button_left_arrow_enabled.position_y = WORLD_HEIGHT * 0.25;
+  /*button_left_arrow_enabled.position_y = WORLD_HEIGHT * 0.25;
   button_left_arrow_disabled.position_y = button_left_arrow_enabled.position_y;
   button_right_arrow_enabled.position_y = button_left_arrow_enabled.position_y;
   button_right_arrow_disabled.position_y = button_left_arrow_enabled.position_y;
 
   button_fullscreen.position_y = WORLD_HEIGHT * 0.4;
 
-  button_apply.position_y = WORLD_HEIGHT * 0.6;
+  button_apply.position_y = WORLD_HEIGHT * 0.6;*/
 
   screen_width = al_get_display_width(display);
   screen_height = al_get_display_height(display);
@@ -509,26 +496,19 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             }
             break;
 
-          case ALLEGRO_EVENT_DISPLAY_RESIZE:
-
-            al_acknowledge_resize(display);
-            screen_width = al_get_display_width(display);
-            screen_height = al_get_display_height(display);
-            break;
-
           case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
 
             al_get_mouse_state(&mouse);
             if ( MOUSE_HOVER(button_start) && mouse.buttons & LEFT_CLICK ) {
-              button_slide_1 = 1;
+              // button_slide_1 = 1;
               select = MENU_MAIN;
-              flash_and_cover_counter = 0;
               flash_enable = 0;
               menu_enable = 1;
-              menu_slide_done = 0;
-              menu_slide_counter = 15;
+              // menu_slide_done = 0;
+              // menu_slide_counter = 15;
               al_show_mouse_cursor(display);
               PLAY_SOUND(menu_enter);
+              MAIN_MENU_BUTTONS(RESET);
             }
             break;
 
@@ -537,7 +517,6 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             select = QUIT;
             break;
         }
-
         break;
 
       case MENU_MAIN:
@@ -554,13 +533,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             DRAW_BACKGROUND;
             DRAW_LOGO;
 
-            al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(0, 0, 0, flash_and_cover_counter));
-            if ( flash_and_cover_counter < 150 && menu_enable )
-              flash_and_cover_counter += 15;
-            else if ( flash_and_cover_counter > 0 && !menu_enable && menu_slide_done )
-              flash_and_cover_counter -= 15;
-
-            if ( menu_slide_counter && menu_enable ) {
+            /*if ( menu_slide_counter && menu_enable ) {
               main_menu_window[0] = WORLD_WIDTH * (1 - (1. / 2) / (menu_slide_counter));
               main_menu_window[2] = WORLD_WIDTH * (1 - (7. / 10) / (menu_slide_counter--));
 
@@ -570,11 +543,46 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
               main_menu_window[0] = WORLD_WIDTH * (1. / 2 + (1. / 2) / (menu_slide_counter));
               main_menu_window[2] = WORLD_WIDTH * (3. / 10 + (7. / 10) / (menu_slide_counter--));
             }
-            al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));
+            al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));*/
 
-            if ( !menu_slide_counter && menu_enable ) menu_buttons_enable = 1;
+            /*if ( menu_buttons_enable ) {
+              MAIN_MENU_BUTTONS(SHOW);
+            } else if ( !menu_enable && !menu_buttons_enable ) {
+              if ( MAIN_MENU_BUTTONS(HIDE) ) {
+                if ( menu_slide_window(HIDE) ) {
+                  if ( DARK_COVER ) {
+                    select = INTRO;
+                    al_hide_mouse_cursor(display);
+                    CURSOR_UPDATE;
+                  }
+                }
+              }
+            }*/
 
-            if ( menu_buttons_enable || !menu_enable ) {
+            if ( menu_enable ) {
+              DARK_COVER(1);
+              if ( menu_slide_window(SHOW) ) {
+                MAIN_MENU_BUTTONS(SHOW);
+                menu_buttons_enable = 1;
+              }
+            } else {
+              if ( menu_buttons_enable ) {
+                DARK_COVER(1);
+                menu_slide_window(SHOW);
+              } else {
+                DARK_COVER(0);
+                if ( menu_slide_window(HIDE) ) {
+                  select = INTRO;
+                  al_hide_mouse_cursor(display);
+                  CURSOR_UPDATE;
+                }
+              }
+              if ( MAIN_MENU_BUTTONS(HIDE) ) {
+                menu_buttons_enable = 0;
+              }
+            }
+
+            /*if ( menu_buttons_enable ) {
 
               if ( !menu_slide_done ) {
                 button_play.position_x = (WORLD_WIDTH * 0.75) * (1 + 1 / button_slide_1);
@@ -595,8 +603,9 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
                     button_slide_1 -= 20;
                   else if ( button_slide_1 > 1 )
                     button_slide_1 -= 5;
-                  else
+                  else {
                     menu_slide_done = 1;
+                  }
                 }
               }
 
@@ -638,16 +647,8 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
                 background_slider_reset_except(5, background_slide);
               }
 
-              BACK_TEXT;
-            }
-
-            if ( flash_and_cover_counter <= 0 && !menu_enable && !menu_slide_counter ) {
-
-              select = INTRO;
-              flash_and_cover_counter = 0;
-              al_hide_mouse_cursor(display);
-              CURSOR_UPDATE;
-            }
+              BACK_TEXT;*/
+            // }
 
             break;
 
@@ -655,31 +656,31 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE && menu_enable ) {
               PLAY_SOUND(menu_back);
               menu_enable = 0;
-              menu_buttons_enable = 0;
-              menu_slide_done = 0;
-              menu_slide_counter = 15;
             }
             break;
 
           case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
             al_get_mouse_state(&mouse);
-            if ( mouse.buttons && LEFT_CLICK ) {
+            if ( mouse.buttons & LEFT_CLICK ) {
               if ( MOUSE_HOVER(button_play) ) {
                 select = PLAY;
               } else if ( MOUSE_HOVER(button_settings) ) {
                 PLAY_SOUND(menu_enter);
                 select = MENU_SETTINGS;
-                settings_slide = 1.0;
+                // settings_slide = 1.0;
+                MAIN_MENU_BUTTONS(RESET);
               } else if ( MOUSE_HOVER(button_scoreboard) ) {
                 PLAY_SOUND(menu_enter);
                 select = MENU_SCORE;
                 score_slide = 1.0;
                 scoreboard_enable = 1;
-                menu_slide_counter = 15;
+                // menu_slide_counter = 15;
+                MAIN_MENU_BUTTONS(RESET);
               } else if ( MOUSE_HOVER(button_credits) ) {
                 PLAY_SOUND(menu_enter);
                 select = MENU_CREDITS;
                 credits_slide = 1.0;
+                MAIN_MENU_BUTTONS(RESET);
               } else if ( MOUSE_HOVER(button_exit) )
                 select = QUIT;
             }
@@ -695,9 +696,9 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
               if ( scoreboard_exit ) {
                 PLAY_SOUND(menu_back);
                 scoreboard_enable = 0;
-                menu_slide_counter = 15;
-                button_slide_1 = 1;
-                menu_slide_done = 0;
+                // menu_slide_counter = 15;
+                // button_slide_1 = 1;
+                //  menu_slide_done = 0;
                 scoreboard_exit = 0;
               }
             }
@@ -708,8 +709,9 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
             DRAW_BACKGROUND;
             DRAW_LOGO;
-            al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(0, 0, 0, flash_and_cover_counter));
-            al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));
+            DARK_COVER(1);
+
+            /*al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));
 
             if ( menu_slide_counter && scoreboard_enable ) {
               main_menu_window[0] = WORLD_WIDTH * ((1. / 2) * (1 - 1. / (menu_slide_counter)));
@@ -720,19 +722,24 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             else if ( menu_slide_counter && !scoreboard_enable ) {
               main_menu_window[0] = WORLD_WIDTH * ((1. / 2) / (menu_slide_counter));
               main_menu_window[2] = WORLD_WIDTH * ((3. / 10) / (menu_slide_counter--));
-            }
+            }*/
 
-            if ( !menu_slide_counter && !scoreboard_enable ) {
+            /*if ( !menu_slide_counter && !scoreboard_enable ) {
               select = MENU_MAIN;
               scoreboard_exit = 1;
-            }
+            }*/
 
-            if ( !menu_slide_counter && scoreboard_enable ) {
+            if ( scoreboard_enable && menu_slide_window(EXTEND) ) {
               draw_scoreboard(font_supercharge, font_toreks, font_toreks_big, &score_slide, top_scores);
               if ( score_slide < 50 )
                 score_slide += 5;
               else if ( score_slide < 100 )
                 score_slide += 10;
+            }
+
+            else if ( !scoreboard_enable && menu_slide_window(SHRINK) ) {
+              select = MENU_MAIN;
+              scoreboard_exit = 1;
             }
 
             BACK_TEXT;
@@ -748,8 +755,9 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE ) {
               PLAY_SOUND(menu_back);
               select = MENU_MAIN;
-              button_slide_1 = 1;
-              menu_slide_done = 0;
+              // button_slide_1 = 1;
+              //  menu_slide_done = 0;
+              MENU_SETTINGS(1);
             }
             break;
 
@@ -761,10 +769,12 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
             DRAW_BACKGROUND;
             DRAW_LOGO;
-            al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(0, 0, 0, flash_and_cover_counter));
-            al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));
+            DARK_COVER(1);
+            menu_slide_window(SHOW);
 
-            al_draw_text(font_supercharge, color_black, WORLD_WIDTH * 0.55 * (1 + 1 / settings_slide), WORLD_HEIGHT * 0.1, 0, "settings");
+            MENU_SETTINGS(0);
+
+            /*al_draw_text(font_supercharge, color_black, WORLD_WIDTH * 0.55 * (1 + 1 / settings_slide), WORLD_HEIGHT * 0.1, 0, "settings");
             al_draw_line(WORLD_WIDTH * 0.55 * (1 + 1 / settings_slide), WORLD_HEIGHT * 0.15, WORLD_WIDTH * 0.9 * (1 + 1 / settings_slide), WORLD_HEIGHT * 0.15, color_black, 3.0);
 
             al_draw_text(font_toreks_big, color_black, WORLD_WIDTH * 0.5 * (1 + 1 / settings_slide), button_left_arrow_enabled.position_y - 14, 0, "window size");
@@ -805,7 +815,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             DRAW_BUTTON(button_apply);
             draw_smart_text(&mouse, screen_width, screen_height, &button_apply, font_toreks, color_black, color_white, ALLEGRO_ALIGN_CENTER, "Apply");
 
-            BACK_TEXT;
+            BACK_TEXT;*/
             redraw = true;
 
             break;
@@ -860,8 +870,8 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             CLEAR;
             DRAW_BACKGROUND;
             DRAW_LOGO;
-            al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(0, 0, 0, flash_and_cover_counter));
-            al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));
+            DARK_COVER(1);
+            menu_slide_window(SHOW);
 
             al_draw_text(font_supercharge, color_black, WORLD_WIDTH * 0.55 * (1 + 1 / credits_slide), WORLD_HEIGHT * 0.1, 0, "CrediTs");
             al_draw_line(WORLD_WIDTH * 0.55 * (1 + 1 / credits_slide), WORLD_HEIGHT * 0.15, WORLD_WIDTH * 0.9 * (1 + 1 / credits_slide), WORLD_HEIGHT * 0.15, color_black, 3.0);
@@ -886,8 +896,8 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE ) {
               PLAY_SOUND(menu_back);
               select = MENU_MAIN;
-              button_slide_1 = 1;
-              menu_slide_done = 0;
+              // button_slide_1 = 1;
+              //  menu_slide_done = 0;
             }
             break;
         }
@@ -905,7 +915,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
   /***********************RESOURCE-FREEING***********************/
 
-  for ( background_frames_loop = 0; background_frames_loop < 300; background_frames_loop++ ) (*kill_all_bitmaps)(1, intro_background_frames[background_frames_loop]);
+  KILL_BACKGROUND;
   (*kill_all_bitmaps)(7, intro_ship.sprite, intro_logo, play_background, settings_background, scoreboard_background, exit_background, credits_background);
   (*kill_all_samples)(7, logo_sound, intro_part1, intro_part2, menu_enter, menu_back, menu_locked, menu_modify);
   (*kill_all_instances)(2, sample_instance, sample_instance2);
@@ -1432,4 +1442,339 @@ void draw_scoreboard(ALLEGRO_FONT *font_supercharge, ALLEGRO_FONT *font_toreks, 
     al_draw_text(font_toreks_big, al_map_rgb_f(0, color_1, color_2), (WORLD_WIDTH * 0.60) * position_x, position_y - 7, 0, top_scores[counter_1 + 10].name);
     al_draw_textf(font_toreks, al_map_rgb_f(0, color_1, color_2), (WORLD_WIDTH * 0.7) * position_x, position_y, 0, "%d", top_scores[counter_1 + 10].score);
   }
+}
+
+bool setup_background(ALLEGRO_BITMAP **intro_background_frames) {
+  short int background_frames;
+  char intro_background_path[64];
+  for ( background_frames = 1; background_frames <= 300; background_frames++ ) {
+    sprintf(intro_background_path, "../assets/Bitmap/intro_background/frames/frame_%03d.png", background_frames);
+    intro_background_frames[background_frames - 1] = al_load_bitmap(intro_background_path);
+    ERRCHECK(intro_background_frames[background_frames - 1], intro_background_path);
+  }
+  return 1;
+}
+
+void draw_background(ALLEGRO_BITMAP **intro_background_frames) {
+  static short int background_frames_loop = 0;
+  al_draw_bitmap(intro_background_frames[background_frames_loop++], 0, 0, 0);
+  if ( background_frames_loop >= 300 ) background_frames_loop = 0;
+}
+
+void kill_background(ALLEGRO_BITMAP **intro_background_frames, void (*kill_all_bitmaps)(int counter, ...)) {
+  short int background_frames;
+  for ( background_frames = 0; background_frames < 300; background_frames++ )
+    (*kill_all_bitmaps)(1, intro_background_frames[background_frames]);
+}
+
+void draw_flash(bool *flash_enable) {
+  static short int flash_counter = 255;
+  if ( flash_counter && *flash_enable ) {
+    al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(255, 255, 255, flash_counter));
+    if ( flash_counter > 10 )
+      flash_counter -= 10;
+    else {
+      flash_counter = 0;
+      *flash_enable = 0;
+    }
+  }
+}
+
+short int detect_screen_sizes(short int *window_sizes) {
+  short int display_size_counter;
+  bool default_size_registered;
+  float window_factor;
+
+  ALLEGRO_DISPLAY_MODE display_mode;
+  al_get_display_mode(0, &display_mode);
+
+  for ( display_size_counter = 0, default_size_registered = 0, window_factor = 1.0; display_size_counter < 5; display_size_counter++ ) {
+    if ( display_mode.width * window_factor > WORLD_WIDTH || default_size_registered ) {
+      window_sizes[2 * display_size_counter] = display_mode.width * window_factor;
+      window_sizes[2 * display_size_counter + 1] = display_mode.height * window_factor;
+
+      window_factor -= 1. / 6;
+
+      if ( window_sizes[2 * display_size_counter] % 2 ) window_sizes[2 * display_size_counter]++;
+      if ( window_sizes[2 * display_size_counter + 1] % 2 ) window_sizes[2 * display_size_counter + 1]++;
+
+      if ( window_sizes[2 * display_size_counter] == WORLD_WIDTH && window_sizes[2 * display_size_counter + 1] == WORLD_HEIGHT ) {
+        window_sizes[2 * display_size_counter] = display_mode.width * window_factor;
+        window_sizes[2 * display_size_counter + 1] = display_mode.height * window_factor;
+
+        if ( window_sizes[2 * display_size_counter] % 2 ) window_sizes[2 * display_size_counter]++;
+        if ( window_sizes[2 * display_size_counter + 1] % 2 ) window_sizes[2 * display_size_counter + 1]++;
+      }
+
+    } else {
+      window_sizes[2 * display_size_counter] = WORLD_WIDTH;
+      window_sizes[2 * display_size_counter + 1] = WORLD_HEIGHT;
+      default_size_registered = 1;
+    }
+  }
+
+  display_size_counter = 0;
+  return display_size_counter;
+}
+
+bool draw_dark_cover(bool enable) {
+  static short int cover_counter = 0;
+  static bool reset = 0;
+  static bool old_mode = 0;
+  al_draw_filled_rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, al_map_rgba(0, 0, 0, cover_counter));
+
+  if ( old_mode != enable ) {
+    reset = 0;
+    old_mode = enable;
+  }
+
+  if ( cover_counter < 150 && enable ) {
+    if ( !reset ) {
+      cover_counter = 0;
+      reset = 1;
+    }
+    cover_counter += 15;
+  }
+
+  else if ( cover_counter > 0 && !(enable) ) {
+    if ( !reset ) {
+      cover_counter = 150;
+      reset = 1;
+    }
+    cover_counter -= 10;
+  }
+
+  if ( (cover_counter >= 150 && enable) || (cover_counter <= 0 && !enable) ) {
+    // reset = 0;
+    return 1;
+  }
+
+  else
+    return 0;
+}
+
+bool menu_slide_window(window_t mode) {
+  static float main_menu_window[] = {WORLD_WIDTH, 0, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH, 0};
+  static float menu_slide_counter;
+
+  static window_t old_mode = -1;
+
+  if ( old_mode != mode ) {
+    if ( old_mode != SHRINK ) menu_slide_counter = 15;
+    old_mode = mode;
+  }
+
+  switch ( mode ) {
+    case SHOW:
+      if ( menu_slide_counter ) {
+        main_menu_window[0] = WORLD_WIDTH * (1 - (1. / 2) / (menu_slide_counter));
+        main_menu_window[2] = WORLD_WIDTH * (1 - (7. / 10) / (menu_slide_counter--));
+      }
+      break;
+    case HIDE:
+      if ( menu_slide_counter ) {
+        main_menu_window[0] = WORLD_WIDTH * (1. / 2 + (1. / 2) / (menu_slide_counter));
+        main_menu_window[2] = WORLD_WIDTH * (3. / 10 + (7. / 10) / (menu_slide_counter--));
+      }
+      break;
+    case EXTEND:
+      if ( menu_slide_counter ) {
+        main_menu_window[0] = WORLD_WIDTH * ((1. / 2) * (1 - 1. / (menu_slide_counter)));
+        main_menu_window[2] = WORLD_WIDTH * (3. / 10) * (1 - 1. / (menu_slide_counter--));
+      }
+      break;
+    case SHRINK:
+      if ( menu_slide_counter ) {
+        main_menu_window[0] = WORLD_WIDTH * ((1. / 2) / (menu_slide_counter));
+        main_menu_window[2] = WORLD_WIDTH * ((3. / 10) / (menu_slide_counter--));
+      }
+      break;
+    default:
+      break;
+  }
+
+  al_draw_filled_polygon(main_menu_window, 4, al_map_rgba(255, 255, 255, 180));
+
+  if ( !menu_slide_counter && mode == old_mode ) {
+    return 1;
+  }
+  return 0;
+}
+
+bool main_menu_buttons(button_t *button_play, button_t *button_settings, button_t *button_scoreboard, button_t *button_exit, button_t *button_credits, ALLEGRO_MOUSE_STATE *mouse, short int screen_width, short int screen_height, ALLEGRO_FONT *font, ALLEGRO_FONT *font_2, ALLEGRO_COLOR *color_1, ALLEGRO_COLOR *color_2, window_t mode, ALLEGRO_BITMAP *play_background, ALLEGRO_BITMAP *settings_background, ALLEGRO_BITMAP *scoreboard_background, ALLEGRO_BITMAP *credits_background, ALLEGRO_BITMAP *exit_background) {
+  static float button_slide_1 = 1.0;
+
+  static bool menu_slide_done = 0;
+  static bool reset = 0;
+  static bool setup = 0;
+
+  static window_t old_mode = -1;
+
+  if ( !setup ) {
+    button_play->position_y = WORLD_HEIGHT * 0.15;
+    button_settings->position_y = WORLD_HEIGHT * 0.25;
+    button_scoreboard->position_y = WORLD_HEIGHT * 0.35;
+    button_exit->position_y = WORLD_HEIGHT * 0.45;
+    button_credits->position_y = WORLD_HEIGHT * 0.45;
+    setup = 1;
+  }
+
+  static short int background_slide[5] = {-WORLD_WIDTH / 2};
+
+  if ( mode == RESET ) {
+    reset = 0;
+    menu_slide_done = 0;
+    old_mode = mode;
+    return 1;
+  }
+
+  else if ( old_mode != mode ) {
+    reset = 0;
+    menu_slide_done = 0;
+    old_mode = mode;
+  }
+
+  if ( !menu_slide_done ) {
+
+    if ( mode == SHOW ) {
+      if ( !reset ) {
+        button_slide_1 = 1;
+        reset = 1;
+      }
+      if ( button_slide_1 < 100 )
+        button_slide_1 += 5;
+      else if ( button_slide_1 < 200 )
+        button_slide_1 += 20;
+      else {
+        menu_slide_done = 1;
+      }
+
+    } else {
+      if ( !reset ) {
+        button_slide_1 = 201;
+        reset = 1;
+      }
+      if ( button_slide_1 > 101 )
+        button_slide_1 -= 20;
+      else if ( button_slide_1 > 1 )
+        button_slide_1 -= 5;
+      else {
+        menu_slide_done = 1;
+      }
+    }
+
+    button_play->position_x = (WORLD_WIDTH * 0.75) * (1 + 1 / button_slide_1);
+    button_settings->position_x = (WORLD_WIDTH * 0.74) * (1 + 1 / button_slide_1);
+    button_scoreboard->position_x = (WORLD_WIDTH * 0.73) * (1 + 1 / button_slide_1);
+    button_exit->position_x = (WORLD_WIDTH * 0.83) * (1 + 1 / button_slide_1);
+    button_credits->position_x = (WORLD_WIDTH * 0.61) * (1 + 1 / button_slide_1);
+  }
+
+  DRAW_BUTTON_FOR_FUNCTIONS(button_play);
+  DRAW_BUTTON_FOR_FUNCTIONS(button_settings);
+  DRAW_BUTTON_FOR_FUNCTIONS(button_scoreboard);
+  DRAW_BUTTON_FOR_FUNCTIONS(button_exit);
+  DRAW_BUTTON_FOR_FUNCTIONS(button_credits);
+
+  BUTTON_TEXT_FOR_FUNCTIONS(button_play, "Take off!");
+  BUTTON_TEXT_FOR_FUNCTIONS(button_settings, "Settings");
+  BUTTON_TEXT_FOR_FUNCTIONS(button_scoreboard, "Scoreboard");
+  BUTTON_TEXT_FOR_FUNCTIONS(button_exit, "Quit game");
+  BUTTON_TEXT_FOR_FUNCTIONS(button_credits, "Credits");
+
+  smart_description(button_play, button_settings, button_scoreboard, button_credits, button_exit, mouse, font_2, *color_1, &screen_width, &screen_height);
+
+  if ( MOUSE_HOVER_FOR_FUNCTION(button_play) ) {
+    background_slider_reset_except(0, background_slide);
+    al_draw_bitmap(play_background, background_slide[0], 0, 0);
+    if ( background_slide[0] < 0 ) background_slide[0] += WORLD_WIDTH / 10;
+  } else if ( MOUSE_HOVER_FOR_FUNCTION(button_settings) ) {
+    background_slider_reset_except(1, background_slide);
+    al_draw_bitmap(settings_background, background_slide[1], 0, 0);
+    if ( background_slide[1] < 0 ) background_slide[1] += WORLD_WIDTH / 10;
+  } else if ( MOUSE_HOVER_FOR_FUNCTION(button_scoreboard) ) {
+    background_slider_reset_except(2, background_slide);
+    al_draw_bitmap(scoreboard_background, background_slide[2], 0, 0);
+    if ( background_slide[2] < 0 ) background_slide[2] += WORLD_WIDTH / 10;
+  } else if ( MOUSE_HOVER_FOR_FUNCTION(button_credits) ) {
+    background_slider_reset_except(3, background_slide);
+    al_draw_bitmap(credits_background, background_slide[3], 0, 0);
+    if ( background_slide[3] < 0 ) background_slide[3] += WORLD_WIDTH / 10;
+  } else if ( MOUSE_HOVER_FOR_FUNCTION(button_exit) ) {
+    background_slider_reset_except(4, background_slide);
+    al_draw_bitmap(exit_background, background_slide[4], 0, 0);
+    if ( background_slide[4] < 0 ) background_slide[4] += WORLD_WIDTH / 10;
+  } else {
+    background_slider_reset_except(5, background_slide);
+  }
+
+  BACK_TEXT_FOR_FUNCTIONS(font_2, color_1);
+
+  return menu_slide_done;
+}
+
+void menu_settings(button_t *button_left_arrow_enabled, button_t *button_right_arrow_enabled, button_t *button_left_arrow_disabled, button_t *button_right_arrow_disabled, button_t *button_fullscreen, button_t *button_apply, ALLEGRO_MOUSE_STATE *mouse, short int screen_width, short int screen_height, ALLEGRO_FONT *font_supercharge, ALLEGRO_FONT *font_toreks, ALLEGRO_FONT *font_toreks_big, ALLEGRO_FONT *font_cartesian, ALLEGRO_COLOR *color_black, ALLEGRO_COLOR *color_grey, ALLEGRO_COLOR *color_white, bool *fullscreen, bool reset, short int *window_sizes, short int display_size_counter) {
+  static float settings_slide = 1.0;
+  static bool setup = 0;
+
+  if ( !setup ) {
+    button_left_arrow_enabled->position_y = WORLD_HEIGHT * 0.25;
+    button_left_arrow_disabled->position_y = button_left_arrow_enabled->position_y;
+    button_right_arrow_enabled->position_y = button_left_arrow_enabled->position_y;
+    button_right_arrow_disabled->position_y = button_left_arrow_enabled->position_y;
+
+    button_fullscreen->position_y = WORLD_HEIGHT * 0.4;
+
+    button_apply->position_y = WORLD_HEIGHT * 0.6;
+
+    setup = 1;
+  }
+
+  if ( reset ) {
+    settings_slide = 1.0;
+    return;
+  }
+
+  al_draw_text(font_supercharge, *color_black, WORLD_WIDTH * 0.55 * (1 + 1 / settings_slide), WORLD_HEIGHT * 0.1, 0, "settings");
+  al_draw_line(WORLD_WIDTH * 0.55 * (1 + 1 / settings_slide), WORLD_HEIGHT * 0.15, WORLD_WIDTH * 0.9 * (1 + 1 / settings_slide), WORLD_HEIGHT * 0.15, *color_black, 3.0);
+
+  al_draw_text(font_toreks_big, *color_black, WORLD_WIDTH * 0.5 * (1 + 1 / settings_slide), button_left_arrow_enabled->position_y - 14, 0, "window size");
+  al_draw_text(font_toreks_big, *color_black, WORLD_WIDTH * 0.5 * (1 + 1 / settings_slide), button_fullscreen->position_y - 14, 0, "window mode");
+
+  if ( settings_slide < 100 ) {
+    button_left_arrow_enabled->position_x = WORLD_WIDTH * 0.7 * (1 + 1 / settings_slide);
+    button_left_arrow_disabled->position_x = button_left_arrow_enabled->position_x;
+    button_right_arrow_enabled->position_x = WORLD_WIDTH * 0.95 * (1 + 1 / settings_slide);
+    button_right_arrow_disabled->position_x = button_right_arrow_enabled->position_x;
+
+    button_fullscreen->position_x = WORLD_WIDTH * 0.825 * (1 + 1 / settings_slide);
+
+    button_apply->position_x = WORLD_WIDTH * 0.875 * (1 + 1 / settings_slide);
+
+    if ( settings_slide < 50 )
+      settings_slide += 5;
+    else
+      settings_slide += 10;
+  }
+
+  al_draw_filled_rectangle(button_left_arrow_enabled->position_x + 25, button_left_arrow_enabled->position_y - 20, button_right_arrow_enabled->position_x - 25, button_right_arrow_enabled->position_y + 20, al_map_rgba(50, 50, 50, 100));
+
+  DRAW_BUTTON_FOR_FUNCTIONS(button_fullscreen);
+
+  if ( !(*fullscreen) ) {
+    DRAW_BUTTON_FOR_FUNCTIONS(button_left_arrow_enabled);
+    DRAW_BUTTON_FOR_FUNCTIONS(button_right_arrow_enabled);
+    al_draw_textf(font_toreks_big, *color_black, button_right_arrow_enabled->position_x - 120, button_left_arrow_enabled->position_y - 12, ALLEGRO_ALIGN_CENTER, "%dx%d", window_sizes[2 * display_size_counter], window_sizes[2 * display_size_counter + 1]);
+    draw_smart_text(mouse, screen_width, screen_height, button_fullscreen, font_toreks_big, *color_black, *color_white, ALLEGRO_ALIGN_CENTER, "Windowed");
+  } else {
+    DRAW_BUTTON_FOR_FUNCTIONS(button_left_arrow_disabled);
+    DRAW_BUTTON_FOR_FUNCTIONS(button_right_arrow_disabled);
+    al_draw_textf(font_toreks_big, *color_grey, button_right_arrow_enabled->position_x - 120, button_left_arrow_enabled->position_y - 12, ALLEGRO_ALIGN_CENTER, "%dx%d", window_sizes[2 * display_size_counter], window_sizes[2 * display_size_counter + 1]);
+    draw_smart_text(mouse, screen_width, screen_height, button_fullscreen, font_toreks_big, *color_black, *color_white, ALLEGRO_ALIGN_CENTER, "Fullscreen");
+  }
+
+  DRAW_BUTTON_FOR_FUNCTIONS(button_apply);
+  draw_smart_text(mouse, screen_width, screen_height, button_apply, font_toreks, *color_black, *color_white, ALLEGRO_ALIGN_CENTER, "Apply");
+
+  BACK_TEXT_FOR_FUNCTIONS(font_cartesian, color_black);
 }
