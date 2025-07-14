@@ -4,7 +4,7 @@
 
      Description:
      Game configuration related constants.
-     Differentiates RPI and PC constants with PLATFORM definition, to be defined in compilation time.
+     Differentiates RPI and PC constants with PLATFORM definition.
 
 
   ******************************************************************************/
@@ -17,6 +17,8 @@
  ******************************************************************************/
 
 #define PLAYER_INITIAL_LIVES 3
+
+#define NEW_LEVEL_POINTS 50
 
 #define MOTHERSHIP_POINTS_SILVER 40
 #define MOTHERSHIP_POINTS_GOLD 60
@@ -31,8 +33,11 @@
 
 #define RPI 0
 #define ALLEGRO 2
+
 #ifndef PLATFORM
 #error no PLATFORM defined
+#elif PLATFORM != RPI && PLATFORM != ALLEGRO
+#error Invalid platform
 #endif
 
 /*******************************************************************************

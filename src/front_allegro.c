@@ -614,6 +614,8 @@ void front_deinit() {
       bulletsCollition
     );
   al_uninstall_audio();
+  al_uninstall_keyboard();
+  al_uninstall_mouse();
   sprites_deinit();
 }
 

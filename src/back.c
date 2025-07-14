@@ -409,8 +409,9 @@ level_state_t back_update(unsigned current_level, bool new_level) {
     return ALIENS_WIN;
   }
 
-  if ( total_aliens_alive() == 0 ) {
+  if ( total_aliens_alive() == 0 ) { // Player win condition
     player.lives++;
+    player.score += NEW_LEVEL_POINTS;
     player_death_start = MAX_ULL;
     return PLAYER_WINS;
   }
@@ -588,6 +589,8 @@ static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsign
         aliens[i][j].points = ALIEN_SMALL_POINTS;
       }
       
+      // Only allegro has special aliens, RPI doesn't
+      #if PLATFORM == ALLEGRO
       // 2% neon, 4% gold, 8%, silver
       int r = rand_between(1, 100);
       if(r <= 2) {
@@ -597,6 +600,7 @@ static void aliens_init(unsigned rows, unsigned cols, unsigned lives_min, unsign
       } else if(r <= 14) {
           aliens[i][j].points = ALIEN_POINTS_SILVER;
       }
+      #endif
 
       aliens[i][j].x = x;
       aliens[i][j].y = y;
@@ -862,6 +866,7 @@ static movement_t aliens_update_position(unsigned row, bool new_level) {
 void aliens_shield_collition() {
   // Shield collition
   int shield, i, j;
+  bool block_done;
   int alien_row, alien_column; // Only lowest alien row can collide
   for ( shield = 0; shield < SHIELDS_CANT; ++shield ) {
     for ( i = 0; i < SHIELD_H; ++i ) {
@@ -869,7 +874,7 @@ void aliens_shield_collition() {
         if ( shields[shield][i][j].lives == 0 ) continue;
 
         // Check rows starting from the lowst with aliens alive
-        for ( alien_row = get_lowest_alien_row(); alien_row >= 0; --alien_row ) {
+        for ( alien_row = get_lowest_alien_row(), block_done = false; alien_row >= 0 && !block_done; --alien_row ) {
           if(aliens[alien_row][0].y + ALIENS_H - 1 < shields[shield][0][0].y) break;
 
           for ( alien_column = 0; alien_column < ALIENS_COLUMNS; ++alien_column ) {
@@ -879,11 +884,10 @@ void aliens_shield_collition() {
             if ( collide(aliens[alien_row][alien_column].x, aliens[alien_row][alien_column].y, aliens[alien_row][alien_column].x + ALIENS_W - 1, aliens[alien_row][alien_column].y + ALIENS_H - 1, shields[shield][i][j].x, shields[shield][i][j].y, shields[shield][i][j].x + SHIELD_BLOCK_W - 1, shields[shield][i][j].y + SHIELD_BLOCK_H - 1) ) {
 
               shields[shield][i][j].lives = 0;
-              goto next_block; // Done with this block, check for next block
+              block_done = true; // Done with this block, check for next block
             }
           }
         }
-        next_block:;
       }
     }
   }
