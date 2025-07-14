@@ -139,7 +139,7 @@ static void player_reset_on_new_level();
 
 // Returns true if aliens win (reach the bottom of the screen)
 static bool aliens_update(unsigned current_level, bool new_level);
-static void mothership_update();
+static void mothership_update(bool new_level);
 // Returns true when aliens hit player
 static bool shots_update(); 
 
@@ -402,7 +402,7 @@ level_state_t back_update(unsigned current_level, bool new_level) {
     player_death_start = get_millis();
   }
 
-  mothership_update();
+  mothership_update(new_level);
 
   if ( aliens_update(current_level, new_level) ) {
     player_death_start = MAX_ULL;
@@ -491,8 +491,9 @@ static bool shots_update() {
   return alien_shot_update();
 }
 
-static void mothership_update() {
+static void mothership_update(bool new_level) {
   static unsigned long long start = 0;
+  if(new_level) start = get_millis();
   double elapsed = (double) (get_millis() - start) / 1000;
   if ( !mothership.is_active && !should_spawn_mothership(elapsed) ) return; // Mothership inactive and not activated yet
   start = get_millis();
@@ -549,7 +550,7 @@ static bool should_spawn_mothership(double elapsed_time) {
   const double rate = 0.00005; // increase per frame
 #elif PLATFORM == RPI
   const double max_prob = 0.5; // max
-  const double rate = 0.00005; // increase per frame
+  const double rate = 0.0001; // increase per frame
 #endif
 
   double probability = elapsed_time * rate;

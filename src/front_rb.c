@@ -149,6 +149,7 @@ static Audio *mothershipMusic = NULL;
 static Audio *playerShotSound = NULL;
 static Audio *playerDeathSound = NULL;
 static Audio *alienDeathSound = NULL;
+static Audio* mothershipDeathSound = NULL;
 static Audio *alienHitSound = NULL;
 static Audio *alienMovedSound = NULL;
 static Audio *shieldHitSound = NULL;
@@ -171,6 +172,7 @@ game_state_t front_init(){
     INIT_SOUND(playerShotSound, AUDIO_PLAYER_SHOT);
     INIT_SOUND(playerDeathSound, AUDIO_PLAYER_DEATH);
     INIT_SOUND(alienDeathSound, AUDIO_INVADER_DEATH);
+    INIT_SOUND(mothershipDeathSound, AUDIO_UFO_DEATH);
     INIT_SOUND(alienHitSound, AUDIO_INVADER_HIT);
     INIT_SOUND(alienMovedSound, AUDIO_INVADER_MOVED);
     INIT_SOUND(mothershipMusic, AUDIO_UFO);
@@ -286,6 +288,7 @@ game_state_t menu(){
 
     jswitch_t button = joy_read().sw;
     if(button == J_PRESS){
+        wait_button_release();
         return GAME;
     }else{
         return MENU;
@@ -396,6 +399,7 @@ void front_deinit(){
     freeAudio(playerShotSound);
     freeAudio(playerDeathSound);
     freeAudio(alienDeathSound);
+    freeAudio(mothershipDeathSound);
     freeAudio(alienHitSound);
     freeAudio(alienMovedSound);
     freeAudio(shieldHitSound);
@@ -434,7 +438,18 @@ static void sounds_update(){
     }
 
     if(alienWasKilled){
-        playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
+        explosion_t explosion;
+        get_explosion_state(&explosion);
+        switch(explosion.type){
+            case ALIEN_EXPLOSION:
+                playSoundFromMemory(alienDeathSound, SDL_MIX_MAXVOLUME);
+                break;
+            case UFO_EXPLOSION:
+                // We dont' play the ufo explosion sound here. It doesn't "fit" in the raspberry game
+                break;
+            case NO_EXPLOSION:
+                break;
+        }
     }
 }
 
