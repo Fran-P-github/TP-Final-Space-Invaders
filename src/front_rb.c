@@ -483,6 +483,7 @@ static bool leaderboard_menu_display(){
     else snprintf(buf, sizeof(buf), "TOP%d", current_score+1);
     draw_text_wrapped(buf, 0, 3);
     snprintf(buf, sizeof(buf), "%s", top_scores[current_score].name);
+    draw_text_wrapped("   ", 3, 10); // Print 3 spaces before putting name, to delete previous name if it was not set
     draw_text_wrapped(buf, 3, 10);
     disp_update();
 
