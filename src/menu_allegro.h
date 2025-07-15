@@ -94,7 +94,7 @@ draw_button: Draws the button on the selected buffer target. Receives:
 - screen_height
 - button pointer
 */
-void draw_button(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h),*/ ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button);
+void draw_button( ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button);
 
 /*
 draw_smart_text: Inserts static text on top of the button. Receives:
@@ -109,7 +109,7 @@ draw_smart_text: Inserts static text on top of the button. Receives:
 - text
 For non_static text, you can set a char buffer and use sprintf to insert variables
 */
-void draw_smart_text(/*bool (*mouse_hover)(button_t *button, ALLEGRO_MOUSE_STATE *mouse, float screen_w, float screen_h),*/ ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, const char *text);
+void draw_smart_text( ALLEGRO_MOUSE_STATE *mouse, float screen_width, float screen_height, button_t *button, ALLEGRO_FONT *font, ALLEGRO_COLOR color_default, ALLEGRO_COLOR color_hover, char alignment, const char *text);
 
 /*
 draw_rectangle_gradient: Draws a rectangle with gradient colors. Receives:
