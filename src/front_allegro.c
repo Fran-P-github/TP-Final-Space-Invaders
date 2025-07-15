@@ -408,6 +408,7 @@ game_state_t game_pause(unsigned int* level, bool* new_level) {
     al_clear_to_color(al_map_rgb(0, 0, 0)); // Clear screen on exit
     al_flip_display();
     al_play_sample_instance(pauseSample); // Play pause sound
+    kill_all_button(4, &buttons[0], &buttons[1], &buttons[2], &buttons[3]);
     return result;
 }
 
@@ -671,6 +672,7 @@ game_state_t endgame() {
     al_clear_to_color(al_map_rgb(0,0,0));
     al_flip_display();
     al_play_sample_instance(pauseSample); // Same sound as pause when exiting endgame scene
+    kill_all_button(3, &buttons[0], &buttons[1], &buttons[2]);
     return result;
 }
 
