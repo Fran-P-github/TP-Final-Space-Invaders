@@ -41,7 +41,7 @@ scores.o: scores.h scores.c general_defines.h
 
 # allegro only
 menu_allegro.o: menu_allegro.c menu_allegro.h general_defines.h
-	$(CC) $(FLAGS) -c menu_$(PLATFORM).c
+	$(CC) $(FLAGS) -c menu_allegro.c
 
 # rb only
 font_3x5.o: font_3x5.c font_3x5.h
