@@ -411,6 +411,100 @@ game_state_t game_pause(unsigned int* level, bool* new_level) {
     return result;
 }
 
+game_state_t game_update(unsigned level, bool new_level) {
+  if(new_level){ // Restart on new level
+    level_init(level, ALIENS_ROWS - 3 + level / 3, ALIENS_COLUMNS - 2 + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
+    if ( level == 0 ) player_reset_on_new_game();
+    background_init();
+  }
+
+  ALLEGRO_FONT *hud_font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 26, 0);
+  if(!hud_font) hud_font = default_font;
+  ALLEGRO_EVENT event;
+  bool redraw = false, done = false, moveThisFrame = true, player_shot_made = false;
+  level_state_t level_state = LEVEL_NOT_DONE;
+  unsigned long long frame = 0;
+  explosion_t explosion;
+  int explosion_interval = 0;
+
+  al_start_timer(timer);
+  al_hide_mouse_cursor(disp);
+  memset(key, 0, sizeof(key)); // Clear keys mask for going back to game
+
+  while ( !done && level_state == LEVEL_NOT_DONE ) {
+    // Events processing
+    if ( al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME) ) {
+      switch ( event.type ) {
+        case ALLEGRO_EVENT_TIMER:
+          background_update();
+          level_state = back_update(level, new_level);
+          new_level = false;
+          if(!(frame%2)) explosion_interval--;
+          if(explosion_interval <= 0){
+            explosion.type = NO_EXPLOSION;
+            explosion_interval = 0;
+          }
+          if(get_explosion_state(&explosion)){
+            explosion_interval = 5;
+          }
+
+          redraw = true;
+          ++frame;
+          moveThisFrame = false;
+          break;
+
+        case ALLEGRO_EVENT_KEY_DOWN:
+          key[event.keyboard.keycode] = 1;
+          if ( key[ALLEGRO_KEY_ESCAPE] ){
+            done = true;
+            al_stop_sample_instance(ufoSample); // Stop mothership sound
+            return PAUSE;
+          }
+          // X is used to shoot.
+          else if ( key[ALLEGRO_KEY_X] && player_try_shoot() ) {
+            al_play_sample_instance(playerShotSample);
+            player_shot_made = true;
+          }
+          break;
+        case ALLEGRO_EVENT_KEY_UP:
+          key[event.keyboard.keycode] = 0;
+          break;
+
+        case ALLEGRO_EVENT_DISPLAY_RESIZE:
+          al_acknowledge_resize(disp);
+          break;
+
+        case ALLEGRO_EVENT_DISPLAY_CLOSE:
+          done = true;
+          break;
+      }
+    }
+
+    // Use arrow keys to move the player. Player won't move if both arrows are pressed at the same time
+    if ( key[ALLEGRO_KEY_RIGHT] && !key[ALLEGRO_KEY_LEFT] && !moveThisFrame ) {
+      player_move_right();
+      moveThisFrame = true;
+    } else if ( key[ALLEGRO_KEY_LEFT] && !key[ALLEGRO_KEY_RIGHT] && !moveThisFrame ) {
+      player_move_left();
+      moveThisFrame = true;
+    }
+
+    if ( redraw ) {
+      redraw = false;
+      process_frame(frame, level, player_shot_made, explosion, explosion_interval, hud_font);
+    }
+
+      
+  }
+
+  al_stop_sample_instance(ufoSample); // Stop mothership sound
+  if ( level_state == PLAYER_WINS ) {
+    return GAME;
+  } else {
+    return ENDGAME;
+  }
+}
+
 game_state_t endgame() {
     game_state_t result;
 
@@ -621,6 +715,7 @@ static void kill_all_samples(int len, ...) {
   for ( i = 0; i < len; i++ ) {
     al_destroy_sample(va_arg(sample_list, ALLEGRO_SAMPLE *));
   }
+  va_end(sample_list);
 }
 
 // Function to destroy all audio instances.
@@ -631,6 +726,7 @@ static void kill_all_instances(int len, ...) {
   for ( i = 0; i < len; i++ ) {
     al_destroy_sample_instance(va_arg(instance_list, ALLEGRO_SAMPLE_INSTANCE *));
   }
+  va_end(instance_list);
 }
 
 // Function to destroy all bitmaps.
@@ -641,6 +737,7 @@ static void kill_all_bitmaps(int len, ...) {
   for ( i = 0; i < len; i++ ) {
     al_destroy_bitmap(va_arg(bitmap_list, ALLEGRO_BITMAP *));
   }
+  va_end(bitmap_list);
 }
 
 // Function to destroy all fonts.
@@ -651,6 +748,7 @@ static void kill_all_font(int len, ...) {
   for ( i = 0; i < len; i++ ) {
     al_destroy_font(va_arg(font_list, ALLEGRO_FONT *));
   }
+  va_end(font_list);
 }
 
 static void initAudioInstance(ALLEGRO_SAMPLE_INSTANCE *instance, float volume, ALLEGRO_PLAYMODE playmode) {
@@ -662,100 +760,6 @@ static void init_error(bool state, const char *name) {
   if ( !state ) {
     fprintf(stderr, "%s%s\n", MSJ_ERR_INIT, name);
     exit(-1);
-  }
-}
-
-game_state_t game_update(unsigned level, bool new_level) {
-  if(new_level){ // Restart on new level
-    level_init(level, ALIENS_ROWS - 3 + level / 3, ALIENS_COLUMNS - 2 + level / 2, 1 + level / 4, 4 + level / 3, SHIELD_BLOCK_LIVES - level / 6);
-    if ( level == 0 ) player_reset_on_new_game();
-    background_init();
-  }
-
-  ALLEGRO_FONT *hud_font = al_load_ttf_font(FONT_ROUTE("supercharge-font/Supercharge_halftone.otf"), 26, 0);
-  if(!hud_font) hud_font = default_font;
-  ALLEGRO_EVENT event;
-  bool redraw = false, done = false, moveThisFrame = true, player_shot_made = false;
-  level_state_t level_state = LEVEL_NOT_DONE;
-  unsigned long long frame = 0;
-  explosion_t explosion;
-  int explosion_interval = 0;
-
-  al_start_timer(timer);
-  al_hide_mouse_cursor(disp);
-  memset(key, 0, sizeof(key)); // Clear keys mask for going back to game
-
-  while ( !done && level_state == LEVEL_NOT_DONE ) {
-    // Events processing
-    if ( al_wait_for_event_timed(queue, &event, MAX_EVENT_WAIT_TIME) ) {
-      switch ( event.type ) {
-        case ALLEGRO_EVENT_TIMER:
-          background_update();
-          level_state = back_update(level, new_level);
-          new_level = false;
-          if(!(frame%2)) explosion_interval--;
-          if(explosion_interval <= 0){
-            explosion.type = NO_EXPLOSION;
-            explosion_interval = 0;
-          }
-          if(get_explosion_state(&explosion)){
-            explosion_interval = 5;
-          }
-
-          redraw = true;
-          ++frame;
-          moveThisFrame = false;
-          break;
-
-        case ALLEGRO_EVENT_KEY_DOWN:
-          key[event.keyboard.keycode] = 1;
-          if ( key[ALLEGRO_KEY_ESCAPE] ){
-            done = true;
-            al_stop_sample_instance(ufoSample); // Stop mothership sound
-            return PAUSE;
-          }
-          // X is used to shoot.
-          else if ( key[ALLEGRO_KEY_X] && player_try_shoot() ) {
-            al_play_sample_instance(playerShotSample);
-            player_shot_made = true;
-          }
-          break;
-        case ALLEGRO_EVENT_KEY_UP:
-          key[event.keyboard.keycode] = 0;
-          break;
-
-        case ALLEGRO_EVENT_DISPLAY_RESIZE:
-          al_acknowledge_resize(disp);
-          break;
-
-        case ALLEGRO_EVENT_DISPLAY_CLOSE:
-          done = true;
-          break;
-      }
-    }
-
-    // Use arrow keys to move the player. Player won't move if both arrows are pressed at the same time
-    if ( key[ALLEGRO_KEY_RIGHT] && !key[ALLEGRO_KEY_LEFT] && !moveThisFrame ) {
-      player_move_right();
-      moveThisFrame = true;
-    } else if ( key[ALLEGRO_KEY_LEFT] && !key[ALLEGRO_KEY_RIGHT] && !moveThisFrame ) {
-      player_move_left();
-      moveThisFrame = true;
-    }
-
-    if ( redraw ) {
-      redraw = false;
-      process_frame(frame, level, player_shot_made, explosion, explosion_interval, hud_font);
-    }
-
-      
-  }
-
-  al_stop_sample_instance(ufoSample); // Stop mothership sound
-  if ( level_state == PLAYER_WINS ) {
-    return GAME;
-  } else {
-    return ENDGAME;
   }
 }
 

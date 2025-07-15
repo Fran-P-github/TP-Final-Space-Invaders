@@ -36,11 +36,12 @@ front.o: front_$(PLATFORM).c front.h general_defines.h back.h
 back.o: back.c back.h general_defines.h
 	$(CC) $(FLAGS) -c back.c
 
-menu_$(PLATFORM).o: menu_$(PLATFORM).c menu_$(PLATFORM).h general_defines.h
-	$(CC) $(FLAGS) -c menu_$(PLATFORM).c
-
 scores.o: scores.h scores.c general_defines.h
 	$(CC) $(FLAGS) -c scores.c
+
+# allegro only
+menu_allegro.o: menu_allegro.c menu_allegro.h general_defines.h
+	$(CC) $(FLAGS) -c menu_allegro.c
 
 # rb only
 font_3x5.o: font_3x5.c font_3x5.h
