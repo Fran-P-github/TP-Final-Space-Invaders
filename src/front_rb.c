@@ -620,6 +620,11 @@ static void get_player_name(char name[4], unsigned x, unsigned y){
 }
 
 static void draw_text_wrapped(const char *str, int x, int y) {
+    if(!str){
+        fprintf(stderr, "ERROR: draw_text_wrapped called with NULL pointer");
+        exit(-1);
+    }
+
     int orig_x = x;
 
     for (const char *p = str; *p != '\0'; ++p) {
