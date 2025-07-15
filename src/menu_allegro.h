@@ -3,7 +3,8 @@
      menu_allegro.h
 
      Description:
-
+     Handles game main menu. Provides menu_allegro function to be called when going into main menu.
+     Also provides functions to work with buttons: creation, killing, and adding text.
 
 
   ******************************************************************************/
