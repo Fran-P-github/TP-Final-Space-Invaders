@@ -33,6 +33,8 @@
 
 /************************************FOR GENERAL DRAWING***************************************/
 
+// To have in mind: most of these macros assume specifica variables exist. They must be defined as expected for all macros to work
+
 // Draws a frame.
 #define DRAW draw_frame(display, buffer)
 // Sets the target buffer.
@@ -52,18 +54,23 @@
 
 /**********************************FOR ANIMATIONS**********************************************/
 
+// Calls draw_background() with corresponding argument
 #define DRAW_BACKGROUND draw_background(intro_background_frames)
 
+// Calls draw_flash if flash_enable is true
 #define DRAW_FLASH \
   if ( flash_enable ) draw_flash(&flash_enable)
 
+// Draws cursor in screen
 #define DRAW_SHIP_CURSOR                                                                                                                                                                        \
   al_draw_scaled_rotated_bitmap(intro_ship.sprite, intro_ship.cx, intro_ship.cy, mouse.x *WORLD_WIDTH / screen_width, mouse.y * WORLD_HEIGHT / screen_height, 0.5, 0.15 + Accel_y, Accel_x, 0); \
   al_draw_filled_polygon(intro_ship.trail, 10, al_map_rgba(255, 255, 255, 200))
 
+// Draws SPACE INVADERS logo
 #define DRAW_LOGO \
   al_draw_scaled_rotated_bitmap(intro_logo, al_get_bitmap_width(intro_logo) / 2, al_get_bitmap_height(intro_logo) / 2, WORLD_WIDTH / 2, WORLD_HEIGHT / 4, 1, 1, 0, 0)
 
+// Updates ship trail and follows cursor accel
 #define CURSOR_UPDATE                                                 \
   trail_accel(intro_ship.trail, &mouse, screen_width, screen_height); \
   cursor_accel(&mouse, &Accel_x, &Accel_y)
