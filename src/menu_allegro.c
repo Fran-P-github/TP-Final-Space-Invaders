@@ -294,8 +294,6 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
   short int screen_width, screen_height;
   short int window_sizes[10];
 
-  // float credits_slide;
-
   float Accel_x, Accel_y;
 
   static bool intro_already_shown = 0;
@@ -306,7 +304,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
   bool menu_enable;
   bool menu_buttons_enable;
   bool scoreboard_enable;
-
+  bool scoreboard_done;
   bool scoreboard_exit;
 
   /******************************************/
@@ -430,17 +428,6 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             DRAW_FLASH;
             break;
 
-          case ALLEGRO_EVENT_KEY_DOWN:
-
-            switch ( menu_event.keyboard.keycode ) {
-
-              case ALLEGRO_KEY_ESCAPE:
-
-                select = QUIT;
-                break;
-            }
-            break;
-
           case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
 
             al_get_mouse_state(&mouse);
@@ -452,11 +439,6 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
               PLAY_SOUND(menu_enter);
               MAIN_MENU_BUTTONS(RESET);
             }
-            break;
-
-          case ALLEGRO_EVENT_DISPLAY_CLOSE:
-
-            select = QUIT;
             break;
         }
         break;
@@ -546,7 +528,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
         switch ( menu_event.type ) {
           case ALLEGRO_EVENT_KEY_DOWN:
-            if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE ) {
+            if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE && scoreboard_done ) {
               if ( scoreboard_exit ) {
                 PLAY_SOUND(menu_back);
                 scoreboard_enable = 0;
@@ -562,11 +544,11 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             DRAW_LOGO;
             draw_dark_cover(1);
 
-            if ( scoreboard_enable && menu_slide_window(EXTEND) ) {
+            if ( scoreboard_enable && (scoreboard_done = menu_slide_window(EXTEND)) ) {
               MENU_SCOREBOARD(0);
             }
 
-            else if ( !scoreboard_enable && menu_slide_window(SHRINK) ) {
+            else if ( !scoreboard_enable && (scoreboard_done = menu_slide_window(SHRINK)) ) {
               select = MENU_MAIN;
               scoreboard_exit = 1;
             }
@@ -718,8 +700,10 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
   al_hide_mouse_cursor(display);
 
-  if ( select == QUIT ) return 0;
-  return 1;
+  if ( select == QUIT )
+    return 0;
+  else
+    return 1;
 
   /******************************************/
 }
