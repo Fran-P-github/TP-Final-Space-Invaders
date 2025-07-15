@@ -298,7 +298,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
   float Accel_x, Accel_y;
 
-  static bool intro_already_shown = 1;
+  static bool intro_already_shown = 0;
 
   bool redraw;
   bool fullscreen;
@@ -505,7 +505,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             break;
 
           case ALLEGRO_EVENT_KEY_DOWN:
-            if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE && menu_enable ) {
+            if ( menu_event.keyboard.keycode == ALLEGRO_KEY_ESCAPE && menu_enable && menu_buttons_enable ) {
               PLAY_SOUND(menu_back);
               menu_enable = 0;
             }
@@ -906,7 +906,7 @@ void kill_all_button(int count, ...) {
     al_destroy_bitmap(button->sprite[1]);
     button->valid = 0;
   }
-  va_end (list);
+  va_end(list);
 }
 
 /**********************************************************************************************/
