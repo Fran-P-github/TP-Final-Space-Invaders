@@ -906,6 +906,7 @@ void kill_all_button(int count, ...) {
     al_destroy_bitmap(button->sprite[1]);
     button->valid = 0;
   }
+  va_end (list);
 }
 
 /**********************************************************************************************/
