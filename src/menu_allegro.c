@@ -395,6 +395,9 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
 
   while ( select != QUIT && select != PLAY ) {
     al_wait_for_event(queue, &menu_event);
+    if(menu_event.type == ALLEGRO_EVENT_DISPLAY_CLOSE){
+      select = QUIT;
+    }
     switch ( select ) {
 
       case INTRO:
@@ -435,7 +438,6 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
             switch ( menu_event.keyboard.keycode ) {
 
               case ALLEGRO_KEY_ESCAPE:
-
                 select = QUIT;
                 break;
             }
@@ -452,11 +454,6 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
               PLAY_SOUND(menu_enter);
               MAIN_MENU_BUTTONS(RESET);
             }
-            break;
-
-          case ALLEGRO_EVENT_DISPLAY_CLOSE:
-
-            select = QUIT;
             break;
         }
         break;
@@ -534,6 +531,7 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
               } else if ( MOUSE_HOVER(button_exit) )
                 select = QUIT;
             }
+            break;
         }
 
         break;
@@ -645,9 +643,6 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
               }
             }
             break;
-
-          default:
-            break;
         }
         break;
 
@@ -686,10 +681,8 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
       default:
         break;
     }
-
     REDRAW;
   }
-
   /******************************************/
 
   /********RESOURCE-FREEING & RESETS*********/
@@ -709,15 +702,13 @@ bool menu_allegro(ALLEGRO_DISPLAY *display, ALLEGRO_TIMER *timer, ALLEGRO_EVENT_
   MAIN_MENU_BUTTONS(RESET);
   MENU_SETTINGS(1);
   menu_slide_window(RESET);
-  while ( draw_dark_cover(0) );
+  while ( !draw_dark_cover(0) );
   CLEAR;
-
   /******************************************/
 
   /*****************RETURN*******************/
 
   al_hide_mouse_cursor(display);
-
   if ( select == QUIT ) return 0;
   return 1;
 
